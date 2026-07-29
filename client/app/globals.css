@@ -1,0 +1,80 @@
+@import "tailwindcss";
+
+/*
+ * JusKel design tokens.
+ * NOTE: brand palette is "Not Yet Defined" (see business_overview.md).
+ * `--primary` is a PLACEHOLDER sustainability green — swap all values here
+ * once the official brand kit lands. Components reference tokens only,
+ * never raw hex, so a rebrand is a one-file change.
+ */
+:root {
+  --background: #ffffff;
+  --foreground: #0b0f0d;
+
+  --card: #ffffff;
+  --card-foreground: #0b0f0d;
+
+  --muted: #f4f5f7;
+  --muted-foreground: #5a6472;
+
+  --border: #e5e7eb;
+  --input: #e5e7eb;
+  --ring: #0f7a4d;
+
+  /* Placeholder brand accent — swap on rebrand */
+  --primary: #0f7a4d;
+  --primary-foreground: #ffffff;
+
+  /* Semantic status */
+  --success: #16a34a;
+  --warning: #d97706;
+  --danger: #dc2626;
+
+  /* ESG pillar accents (used later by scorecard / dataviz) */
+  --esg-environmental: #16a34a;
+  --esg-social: #2563eb;
+  --esg-governance: #7c3aed;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0c0b;
+    --foreground: #e8ebe9;
+
+    --card: #121614;
+    --card-foreground: #e8ebe9;
+
+    --muted: #1a1f1d;
+    --muted-foreground: #9aa4a0;
+
+    --border: #262b29;
+    --input: #262b29;
+    --ring: #34d399;
+
+    --primary: #34d399;
+    --primary-foreground: #06110c;
+  }
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-danger: var(--danger);
+  --color-esg-environmental: var(--esg-environmental);
+  --color-esg-social: var(--esg-social);
+  --color-esg-governance: var(--esg-governance);
+
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
