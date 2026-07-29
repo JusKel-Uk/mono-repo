@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sign-in — Flow — JusKel Technology Documentation</title>
+  <link rel="stylesheet" href="../../assets/css/main.css">
+</head>
+<body data-module="signin" data-page="flow" data-site-section="modules">
+  <header class="site-header">
+    <div class="site-header__inner">
+      <a href="../../index.html" class="site-logo">JusKel Technology Docs</a>
+      <button class="nav-toggle" aria-label="Toggle navigation" aria-expanded="false">
+        <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M4 6h16M4 12h16M4 18h16"/>
+        </svg>
+      </button>
+      <nav class="site-nav">
+        <a href="../../index.html" data-section="home">Home</a>
+        <a href="../index.html" data-section="modules">Modules</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="main-content">
+    <nav class="breadcrumbs" aria-label="Breadcrumb">
+      <a href="../../index.html">Home</a>
+      <span class="breadcrumbs__sep">/</span>
+      <a href="../index.html">Modules</a>
+      <span class="breadcrumbs__sep">/</span>
+      <a href="index.html">Sign-in</a>
+      <span class="breadcrumbs__sep">/</span>
+      <span>Flow</span>
+    </nav>
+
+    <header class="page-header">
+      <h1>Sign-in — Flow</h1>
+      <p>Request and response flows for authentication operations.</p>
+    </header>
+
+    <nav class="module-subnav" aria-label="Module navigation">
+      <a href="index.html" data-page="overview">Overview</a>
+      <a href="schematics.html" data-page="schematics">Schematics</a>
+      <a href="flow.html" data-page="flow">Flow</a>
+      <a href="implementation.html" data-page="implementation">Implementation</a>
+    </nav>
+
+    <section class="section">
+      <h2>Sign-in flow</h2>
+      <div class="flow-diagram">
+        <span class="flow-node">1. Client submits credentials</span>
+        <span class="flow-arrow">→</span>
+        <span class="flow-node">2. Validate input</span>
+        <span class="flow-arrow">→</span>
+        <span class="flow-node">3. Verify password</span>
+        <span class="flow-arrow">→</span>
+        <span class="flow-node">4. Issue JWT</span>
+        <span class="flow-arrow">→</span>
+        <span class="flow-node">5. Return tokens</span>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>Flow steps</h2>
+      <div class="content-block">
+        <h3>1. Credential submission</h3>
+        <p>Client sends POST request with email and password to the sign-in endpoint.</p>
+      </div>
+      <div class="content-block">
+        <h3>2. Input validation</h3>
+        <p>Controller validates request format. Returns 400 if email or password is missing or malformed.</p>
+      </div>
+      <div class="content-block">
+        <h3>3. Credential verification</h3>
+        <p>Auth service looks up user by email, compares password hash. Returns 401 on invalid credentials.</p>
+      </div>
+      <div class="content-block">
+        <h3>4. Token issuance</h3>
+        <p>On success, generate access token (short-lived) and refresh token (long-lived).</p>
+      </div>
+      <div class="content-block">
+        <h3>5. Response</h3>
+        <p>Return 200 with tokens, user profile summary, and assigned roles.</p>
+      </div>
+      <p class="placeholder-note">Sequence diagrams and error flows will be added during implementation.</p>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>JusKel Technology Documentation · Proprietary — JusKel UK</p>
+  </footer>
+
+  <script src="../../assets/js/main.js" defer></script>
+</body>
+</html>

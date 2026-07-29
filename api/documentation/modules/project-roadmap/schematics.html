@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Project Roadmap — Schematics — JusKel Technology Documentation</title>
+  <link rel="stylesheet" href="../../assets/css/main.css">
+  <link rel="stylesheet" href="../../assets/css/diagrams.css">
+</head>
+<body data-module="project-roadmap" data-page="schematics" data-site-section="modules">
+  <header class="site-header">
+    <div class="site-header__inner">
+      <a href="../../index.html" class="site-logo">JusKel Technology Docs</a>
+      <button class="nav-toggle" aria-label="Toggle navigation" aria-expanded="false">
+        <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M4 6h16M4 12h16M4 18h16"/>
+        </svg>
+      </button>
+      <nav class="site-nav">
+        <a href="../../index.html" data-section="home">Home</a>
+        <a href="../index.html" data-section="modules">Modules</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="main-content">
+    <nav class="breadcrumbs" aria-label="Breadcrumb">
+      <a href="../../index.html">Home</a>
+      <span class="breadcrumbs__sep">/</span>
+      <a href="../index.html">Modules</a>
+      <span class="breadcrumbs__sep">/</span>
+      <a href="index.html">Project Roadmap</a>
+      <span class="breadcrumbs__sep">/</span>
+      <span>Schematics</span>
+    </nav>
+
+    <header class="page-header">
+      <h1>Project Roadmap — Schematics</h1>
+      <p>Visual timeline of project phases and feature pillars.</p>
+    </header>
+
+    <nav class="module-subnav" aria-label="Module navigation">
+      <a href="index.html" data-page="overview">Overview</a>
+      <a href="flow.html" data-page="flow">Flow</a>
+      <a href="schematics.html" data-page="schematics">Schematics</a>
+      <a href="implementation.html" data-page="implementation">Roadmap</a>
+    </nav>
+
+    <section class="section">
+      <h2>Delivery timeline</h2>
+      <div class="diagram-canvas">
+        <div class="diagram-canvas__title">2026 – 2028 overview</div>
+        <div data-jk-persona-tree='{
+          "type":"rect","role":"platform","label":"JusKel Platform",
+          "children":[
+            {"type":"rect","role":"client","label":"H1 2026","sub":"Discovery"},
+            {"type":"rect","role":"api","label":"H2 2026","sub":"Foundation & MVP build"},
+            {"type":"rect","role":"module","label":"Q1 2027","sub":"Lean MVP pilot"},
+            {"type":"rect","role":"frontend","label":"2027","sub":"Year 1 commercial"},
+            {"type":"rect","role":"ai","label":"2027–28","sub":"Expansion"}
+          ]
+        }'></div>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>MVP feature pillars (Layer 1)</h2>
+      <div class="diagram-canvas">
+        <div class="diagram-canvas__title">Lean MVP scope</div>
+        <div data-jk-group='{
+          "label": "Layer 1 — Lean MVP",
+          "nodes": [
+            {"type":"square","role":"module","label":"SME Scorecard","sub":"Core"},
+            {"type":"square","role":"module","label":"Funding Match","sub":"Core"},
+            {"type":"square","role":"module","label":"Finance Terms","sub":"Indicative"},
+            {"type":"square","role":"frontend","label":"Readiness Dashboard","sub":"Core"},
+            {"type":"square","role":"api","label":"Auth & Admin","sub":"Platform"},
+            {"type":"square","role":"external","label":"Companies House","sub":"Integration"}
+          ]
+        }'></div>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>Deferred to later layers</h2>
+      <div class="diagram-flow" data-jk-flow='[
+        {"type":"rect","role":"later","label":"Open Banking"},
+        {"type":"rect","role":"later","label":"ESG Marketplace"},
+        {"type":"rect","role":"later","label":"Corporate pilots"},
+        {"type":"rect","role":"later","label":"Power BI / Fabric"},
+        {"type":"rect","role":"later","label":"Entra ID SSO"}
+      ]'></div>
+      <p class="placeholder-note">These items are explicitly out of Lean MVP scope per the requirement catalogue. They enter in Year 1 or later.</p>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>JusKel Technology Documentation · Proprietary — JusKel UK</p>
+  </footer>
+
+  <script src="../../assets/js/main.js" defer></script>
+  <script src="../../assets/js/diagrams.js" defer></script>
+</body>
+</html>

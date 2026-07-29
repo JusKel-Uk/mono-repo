@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Platform — JusKel Technology Documentation</title>
+  <link rel="stylesheet" href="../../assets/css/main.css">
+</head>
+<body data-module="platform" data-page="overview" data-site-section="modules">
+  <header class="site-header">
+    <div class="site-header__inner">
+      <a href="../../index.html" class="site-logo">JusKel Technology Docs</a>
+      <button class="nav-toggle" aria-label="Toggle navigation" aria-expanded="false">
+        <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M4 6h16M4 12h16M4 18h16"/>
+        </svg>
+      </button>
+      <nav class="site-nav">
+        <a href="../../index.html" data-section="home">Home</a>
+        <a href="../index.html" data-section="modules">Modules</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="main-content">
+    <nav class="breadcrumbs" aria-label="Breadcrumb">
+      <a href="../../index.html">Home</a>
+      <span class="breadcrumbs__sep">/</span>
+      <a href="../index.html">Modules</a>
+      <span class="breadcrumbs__sep">/</span>
+      <span>Platform</span>
+    </nav>
+
+    <header class="page-header">
+      <h1>Platform &amp; Tech Stack</h1>
+      <p>Architecture, technology choices, and infrastructure for the JusKel Sustainability Finance Hub MVP — sourced from the MVP Requirement Catalogue.</p>
+      <div class="page-header__meta">
+        <span class="status-pill status-pill--in-progress">In Progress</span>
+      </div>
+    </header>
+
+    <nav class="module-subnav" aria-label="Module navigation">
+      <a href="index.html" data-page="overview">Overview</a>
+      <a href="schematics.html" data-page="schematics">Schematics</a>
+      <a href="ideations.html" data-page="ideations">Ideations</a>
+      <a href="implementation.html" data-page="implementation">Implementation</a>
+    </nav>
+
+    <section class="section">
+      <h2>Microsoft story</h2>
+      <div class="content-block">
+        <p>We are building sustainability and finance infrastructure for SMEs, lenders, and corporates. Our customers already operate within the Microsoft ecosystem, so we are leveraging Microsoft cloud, AI, analytics, and workflow tools to reduce adoption friction and accelerate enterprise integration.</p>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>Architecture overview</h2>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Layer</th>
+            <th>Technology</th>
+            <th>Phase</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Front end</td>
+            <td>Next.js</td>
+            <td><span class="status-pill status-pill--implemented">MVP</span></td>
+          </tr>
+          <tr>
+            <td>Backend</td>
+            <td>C# (.NET / ASP.NET Core)</td>
+            <td><span class="status-pill status-pill--implemented">MVP</span></td>
+          </tr>
+          <tr>
+            <td>Database</td>
+            <td>SQL Server</td>
+            <td><span class="status-pill status-pill--implemented">MVP</span></td>
+          </tr>
+          <tr>
+            <td>Storage</td>
+            <td>Azure Blob Storage</td>
+            <td><span class="status-pill status-pill--implemented">MVP</span></td>
+          </tr>
+          <tr>
+            <td>Authentication</td>
+            <td>Custom auth (MVP) · Microsoft Entra ID (later)</td>
+            <td><span class="status-pill status-pill--planned">Later</span></td>
+          </tr>
+          <tr>
+            <td>AI</td>
+            <td>Azure OpenAI</td>
+            <td><span class="status-pill status-pill--implemented">MVP</span></td>
+          </tr>
+          <tr>
+            <td>Analytics</td>
+            <td>Power BI · Microsoft Fabric (under review)</td>
+            <td><span class="status-pill status-pill--planned">Later</span></td>
+          </tr>
+          <tr>
+            <td>Infrastructure</td>
+            <td>Microsoft Azure</td>
+            <td><span class="status-pill status-pill--implemented">MVP</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="section">
+      <h2>MVP objective</h2>
+      <div class="content-block">
+        <p>The MVP should be delivered as a secure, scalable web application built on the Microsoft ecosystem, with a modular backend, API layer, rule-based scoring engine, and future-ready AI capability. The architecture should support:</p>
+        <ul>
+          <li>SME data capture</li>
+          <li>Companies House lookups</li>
+          <li>Funding matching</li>
+          <li>Future open banking integrations</li>
+          <li>ESG data sources</li>
+          <li>Lender workflows</li>
+          <li>Corporate reporting use cases</li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>Further reading</h2>
+      <ul>
+        <li><a href="schematics.html">Schematics</a> — MVP architecture diagram</li>
+        <li><a href="ideations.html">Ideations</a> — stack suggestions, notes, and open questions</li>
+        <li><a href="implementation.html">Implementation</a> — CTO verdicts and decided stack</li>
+      </ul>
+      <p class="source-note">Source: discovery/raw_ideations_drafts/JusKel MVP Requirement Catalogue — Tech Stack</p>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>JusKel Technology Documentation · Proprietary — JusKel UK</p>
+  </footer>
+
+  <script src="../../assets/js/main.js" defer></script>
+</body>
+</html>

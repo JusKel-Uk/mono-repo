@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{MODULE_TITLE}} — Flow — JusKel Technology Documentation</title>
+  <link rel="stylesheet" href="../../assets/css/main.css">
+</head>
+<body data-module="{{MODULE_SLUG}}" data-page="flow" data-site-section="modules">
+  <header class="site-header">
+    <div class="site-header__inner">
+      <a href="../../index.html" class="site-logo">JusKel Technology Docs</a>
+      <button class="nav-toggle" aria-label="Toggle navigation" aria-expanded="false">
+        <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M4 6h16M4 12h16M4 18h16"/>
+        </svg>
+      </button>
+      <nav class="site-nav">
+        <a href="../../index.html" data-section="home">Home</a>
+        <a href="../index.html" data-section="modules">Modules</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="main-content">
+    <nav class="breadcrumbs" aria-label="Breadcrumb">
+      <a href="../../index.html">Home</a>
+      <span class="breadcrumbs__sep">/</span>
+      <a href="../index.html">Modules</a>
+      <span class="breadcrumbs__sep">/</span>
+      <a href="index.html">{{MODULE_TITLE}}</a>
+      <span class="breadcrumbs__sep">/</span>
+      <span>Flow</span>
+    </nav>
+
+    <header class="page-header">
+      <h1>{{MODULE_TITLE}} — Flow</h1>
+      <p>Request and response flows for this module.</p>
+    </header>
+
+    <nav class="module-subnav" aria-label="Module navigation">
+      <a href="index.html" data-page="overview">Overview</a>
+      <a href="schematics.html" data-page="schematics">Schematics</a>
+      <a href="flow.html" data-page="flow">Flow</a>
+      <a href="ideations.html" data-page="ideations">Ideations</a>
+      <a href="implementation.html" data-page="implementation">Implementation</a>
+    </nav>
+
+    <section class="section">
+      <h2>Primary flow</h2>
+      <div class="flow-diagram">
+        <span class="flow-node">Step 1</span>
+        <span class="flow-arrow">→</span>
+        <span class="flow-node">Step 2</span>
+        <span class="flow-arrow">→</span>
+        <span class="flow-node">Step 3</span>
+      </div>
+      <p class="placeholder-note">Document process flows and error handling paths here.</p>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>JusKel Technology Documentation · Proprietary — JusKel UK</p>
+  </footer>
+
+  <script src="../../assets/js/main.js" defer></script>
+</body>
+</html>

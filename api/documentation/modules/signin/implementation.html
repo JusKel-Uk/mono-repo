@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sign-in — Implementation — JusKel Technology Documentation</title>
+  <link rel="stylesheet" href="../../assets/css/main.css">
+</head>
+<body data-module="signin" data-page="implementation" data-site-section="modules">
+  <header class="site-header">
+    <div class="site-header__inner">
+      <a href="../../index.html" class="site-logo">JusKel Technology Docs</a>
+      <button class="nav-toggle" aria-label="Toggle navigation" aria-expanded="false">
+        <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M4 6h16M4 12h16M4 18h16"/>
+        </svg>
+      </button>
+      <nav class="site-nav">
+        <a href="../../index.html" data-section="home">Home</a>
+        <a href="../index.html" data-section="modules">Modules</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="main-content">
+    <nav class="breadcrumbs" aria-label="Breadcrumb">
+      <a href="../../index.html">Home</a>
+      <span class="breadcrumbs__sep">/</span>
+      <a href="../index.html">Modules</a>
+      <span class="breadcrumbs__sep">/</span>
+      <a href="index.html">Sign-in</a>
+      <span class="breadcrumbs__sep">/</span>
+      <span>Implementation</span>
+    </nav>
+
+    <header class="page-header">
+      <h1>Sign-in — Implementation</h1>
+      <p>Endpoints, DTOs, and build status for the authentication module.</p>
+      <div class="page-header__meta">
+        <span class="status-pill status-pill--planned">Planned</span>
+      </div>
+    </header>
+
+    <nav class="module-subnav" aria-label="Module navigation">
+      <a href="index.html" data-page="overview">Overview</a>
+      <a href="schematics.html" data-page="schematics">Schematics</a>
+      <a href="flow.html" data-page="flow">Flow</a>
+      <a href="implementation.html" data-page="implementation">Implementation</a>
+    </nav>
+
+    <section class="section">
+      <h2>Endpoints</h2>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Method</th>
+            <th>Route</th>
+            <th>Description</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>POST</td>
+            <td>/api/auth/signin</td>
+            <td>Authenticate user with email and password</td>
+            <td><span class="status-pill status-pill--planned">Planned</span></td>
+          </tr>
+          <tr>
+            <td>POST</td>
+            <td>/api/auth/signout</td>
+            <td>Invalidate current session</td>
+            <td><span class="status-pill status-pill--planned">Planned</span></td>
+          </tr>
+          <tr>
+            <td>POST</td>
+            <td>/api/auth/refresh</td>
+            <td>Refresh access token using refresh token</td>
+            <td><span class="status-pill status-pill--planned">Planned</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="section">
+      <h2>Request / response DTOs</h2>
+      <div class="content-block">
+        <h3>SignInRequest</h3>
+        <ul>
+          <li><code>email</code> — string, required</li>
+          <li><code>password</code> — string, required</li>
+        </ul>
+      </div>
+      <div class="content-block">
+        <h3>SignInResponse</h3>
+        <ul>
+          <li><code>accessToken</code> — string</li>
+          <li><code>refreshToken</code> — string</li>
+          <li><code>expiresIn</code> — integer (seconds)</li>
+          <li><code>user</code> — UserSummary object</li>
+        </ul>
+      </div>
+      <p class="placeholder-note">DTOs and endpoint contracts will be finalised when the .NET API project is scaffolded.</p>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>JusKel Technology Documentation · Proprietary — JusKel UK</p>
+  </footer>
+
+  <script src="../../assets/js/main.js" defer></script>
+</body>
+</html>
