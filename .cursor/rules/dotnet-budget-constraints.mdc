@@ -1,0 +1,38 @@
+---
+description: Azure cost-optimized architecture for $5–$15/mo Container Apps deployment
+alwaysApply: true
+---
+
+# MVP Budget & Infrastructure Constraints
+
+Target: Azure Container Apps (scale-to-zero) + Azure SQL Basic or Postgres free tier.
+
+## Cold Starts
+
+- Keep application startup under ~1 second.
+- Avoid heavy runtime reflection, service locator patterns, expensive startup tasks.
+- Minimize DI registrations and middleware in the hot path.
+
+## Health Checks (Critical)
+
+- `/health` must be **in-memory only** — no database pings.
+- Do NOT add DB queries to Liveness or Readiness probes.
+- Continuous health-check DB pings prevent Azure SQL Serverless auto-pause and exhaust Basic DTU.
+
+## Logging & Telemetry
+
+```csharp
+builder.Logging.AddFilter("Microsoft", LogLevel.Warning);
+builder.Logging.AddFilter("System", LogLevel.Warning);
+builder.Logging.AddFilter("System.Net.Http", LogLevel.Warning);
+// App namespace at Information only
+builder.Logging.AddFilter("juskel", LogLevel.Information);
+```
+
+Stay under Application Insights 5 GB/month free ingestion quota.
+
+## Database
+
+- Use `AddDbContextPool` instead of `AddDbContext`.
+- Pass `CancellationToken` on all async DB calls.
+- Select only required columns; avoid `SELECT *`.

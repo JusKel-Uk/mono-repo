@@ -1,6 +1,6 @@
-# JusKel API
+# juskel API
 
-Backend API for the JusKel platform.
+Backend API for the juskel platform.
 
 ## Tech Stack
 

@@ -1,0 +1,76 @@
+---
+description: Modular Monolith macro architecture — strict module boundaries, single deployable
+alwaysApply: true
+---
+
+# Modular Monolith Architecture
+
+Single deployable app (one process, one CI/CD pipeline) with strict, independent business modules. Microservice-style boundaries without distributed-system overhead.
+
+## Four Non-Negotiable Rules
+
+1. **Module autonomy:** Each module owns its business logic, entities, and data access. Never reference another module's internal classes or DB tables.
+2. **Encapsulation via `internal`:** Implementation is `internal`. Only contracts/DTOs/events are public via a `*.Contracts` project.
+3. **Database isolation:** One physical DB is fine. Each module gets its own EF Core `DbContext` and schema (e.g. `identity.Users`, `funding.Applications`). **No cross-module SQL joins.**
+4. **In-process communication only:**
+   - **Sync (queries):** Call via DI-resolved interface (`IFundingModule`, `IIdentityModule`).
+   - **Async (events):** In-memory domain events via MediatR notifications or `System.Threading.Channels`.
+
+## juskel Solution Layout
+
+```text
+juskel.sln
+├── src/
+│   ├── Host/
+│   │   └── juskel.Api/              # Bootstrapper, auth, OpenAPI, module registration
+│   ├── Shared/
+│   │   └── juskel.Shared/           # Shared kernel, base events, cross-cutting abstractions
+│   └── Modules/
+│       ├── Identity/                # Sign-in, sessions, verification
+│       │   ├── Identity.Contracts/
+│       │   └── Identity.Core/
+│       ├── Scoring/                 # Sustainability scoring
+│       │   ├── Scoring.Contracts/
+│       │   └── Scoring.Core/
+│       ├── Funding/                 # Funding readiness & match
+│       │   ├── Funding.Contracts/
+│       │   └── Funding.Core/
+│       └── Lender/                  # Lean lender participation
+│           ├── Lender.Contracts/
+│           └── Lender.Core/
+```
+
+Each `*.Core` project uses **Vertical Slice Architecture** under `Features/`.
+
+## Module Communication Pattern
+
+```csharp
+// Identity.Contracts (public)
+public record UserSummaryDto(Guid Id, string Email);
+public interface IIdentityModule
+{
+    Task<UserSummaryDto?> GetUserAsync(Guid id, CancellationToken ct = default);
+}
+
+// Funding.Core (internal) — never touches IdentityDbContext
+internal sealed class CreateApplicationHandler(IIdentityModule identity, FundingDbContext db)
+{
+    public async Task<Guid> Handle(CreateApplicationCommand cmd, CancellationToken ct)
+    {
+        var user = await identity.GetUserAsync(cmd.UserId, ct)
+            ?? throw new InvalidOperationException("User not found");
+        // ...
+    }
+}
+```
+
+## Anti-Patterns (Reject These)
+
+- `Funding.Core` referencing `Identity.Core` directly
+- Cross-schema JOINs (`identity.Users` joined with `funding.Applications` in one query)
+- Shared entity classes across modules
+- Leaking `DbContext` instances across module boundaries
+
+## When to Extract a Module
+
+Only extract to a microservice when a module needs independent scaling. Until then, keep it in-process.
