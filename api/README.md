@@ -1,11 +1,19 @@
-# JusKel API
+# juskel API
 
-Backend API for the JusKel platform.
+Backend API for the juskel platform.
 
 ## Tech Stack
 
 - **.NET 10**
 - **SQL Server**
+
+## Documentation
+
+Hostable technology documentation lives in [`documentation/`](documentation/). It is a static HTML site organised by feature module (schematics, flow, ideations, implementation).
+
+**Local preview:** open `documentation/index.html` or run `python3 -m http.server 8080` from that folder.
+
+**Deploy to Netlify:** drag the `documentation/` folder onto [Netlify Drop](https://app.netlify.com/drop).
 
 ## Status
 

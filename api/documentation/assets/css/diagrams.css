@@ -1,0 +1,418 @@
+/* Draw.io-style diagram system — soft cool palette */
+
+:root {
+  --diagram-canvas-bg: #f0f4f8;
+  --diagram-grid: #d4dce6;
+  --diagram-connector: #7c9ab8;
+
+  --diagram-client-fill: #dbeafe;
+  --diagram-client-stroke: #60a5fa;
+  --diagram-client-text: #1e3a5f;
+
+  --diagram-frontend-fill: #e0e7ff;
+  --diagram-frontend-stroke: #818cf8;
+  --diagram-frontend-text: #312e81;
+
+  --diagram-api-fill: #e0f2fe;
+  --diagram-api-stroke: #38bdf8;
+  --diagram-api-text: #0c4a6e;
+
+  --diagram-data-fill: #ccfbf1;
+  --diagram-data-stroke: #2dd4bf;
+  --diagram-data-text: #134e4a;
+
+  --diagram-decision-fill: #f3e8ff;
+  --diagram-decision-stroke: #c084fc;
+  --diagram-decision-text: #581c87;
+
+  --diagram-storage-fill: #d1fae5;
+  --diagram-storage-stroke: #34d399;
+  --diagram-storage-text: #065f46;
+
+  --diagram-ai-fill: #cffafe;
+  --diagram-ai-stroke: #22d3ee;
+  --diagram-ai-text: #164e63;
+
+  --diagram-external-fill: #f1f5f9;
+  --diagram-external-stroke: #94a3b8;
+  --diagram-external-text: #475569;
+
+  --diagram-platform-fill: #ede9fe;
+  --diagram-platform-stroke: #a78bfa;
+  --diagram-platform-text: #4c1d95;
+
+  --diagram-module-fill: #fce7f3;
+  --diagram-module-stroke: #f472b6;
+  --diagram-module-text: #831843;
+
+  --diagram-later-fill: #f8fafc;
+  --diagram-later-stroke: #cbd5e1;
+  --diagram-later-text: #64748b;
+}
+
+.diagram-canvas {
+  position: relative;
+  background-color: var(--diagram-canvas-bg);
+  background-image: radial-gradient(circle, var(--diagram-grid) 1px, transparent 1px);
+  background-size: 18px 18px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 24px;
+  margin: 20px 0;
+  overflow-x: auto;
+}
+
+.diagram-canvas__title {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-text-muted);
+  margin-bottom: 16px;
+}
+
+.diagram-svg {
+  display: block;
+  width: 100%;
+  min-width: 640px;
+  height: auto;
+  font-family: "Inter", -apple-system, sans-serif;
+}
+
+.diagram-svg .shape-label {
+  font-size: 12px;
+  font-weight: 500;
+  pointer-events: none;
+}
+
+.diagram-svg .shape-sublabel {
+  font-size: 10px;
+  fill: var(--color-text-muted);
+  pointer-events: none;
+}
+
+.diagram-svg .connector {
+  fill: none;
+  stroke: var(--diagram-connector);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.diagram-svg .connector--dashed {
+  stroke-dasharray: 6 4;
+  opacity: 0.85;
+}
+
+.diagram-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px 24px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--color-border);
+}
+
+.diagram-legend__item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+
+.diagram-legend__swatch {
+  width: 28px;
+  height: 20px;
+  border-radius: 4px;
+  border: 2px solid transparent;
+  flex-shrink: 0;
+}
+
+.diagram-legend__swatch--circle {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+}
+
+.diagram-legend__swatch--diamond {
+  width: 18px;
+  height: 18px;
+  transform: rotate(45deg);
+  border-radius: 2px;
+}
+
+/* Flow layout */
+.diagram-flow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0;
+  min-height: 120px;
+}
+
+.diagram-flow__arrow {
+  width: 40px;
+  height: 2px;
+  background: var(--diagram-connector);
+  position: relative;
+  flex-shrink: 0;
+}
+
+.diagram-flow__arrow::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  border: 5px solid transparent;
+  border-left: 8px solid var(--diagram-connector);
+}
+
+/* Shape primitives */
+.shape {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  flex-shrink: 0;
+  line-height: 1.3;
+  border: 2px solid transparent;
+}
+
+.shape small {
+  display: block;
+  font-size: 0.6875rem;
+  font-weight: 400;
+  margin-top: 2px;
+  opacity: 0.85;
+}
+
+.shape--rect {
+  border-radius: 8px;
+  padding: 12px 18px;
+  min-width: 110px;
+}
+
+.shape--square {
+  width: 88px;
+  height: 88px;
+  padding: 8px;
+  border-radius: 6px;
+}
+
+.shape--circle {
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  padding: 12px;
+}
+
+.shape--diamond-wrap {
+  width: 72px;
+  height: 72px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.shape--diamond {
+  width: 52px;
+  height: 52px;
+  transform: rotate(45deg);
+  border-radius: 6px;
+  padding: 4px;
+}
+
+.shape--diamond .shape__inner {
+  transform: rotate(-45deg);
+  font-size: 0.6875rem;
+  line-height: 1.2;
+}
+
+.shape--cylinder {
+  border-radius: 6px 6px 14px 14px;
+  padding: 14px 18px 12px;
+  min-width: 110px;
+  position: relative;
+}
+
+.shape--cylinder::before {
+  content: "";
+  position: absolute;
+  top: -7px;
+  left: 10px;
+  right: 10px;
+  height: 14px;
+  border: 2px solid inherit;
+  border-radius: 50%;
+  background: inherit;
+  filter: brightness(1.03);
+}
+
+/* Semantic roles — shared across all modules */
+.shape--role-client {
+  background: var(--diagram-client-fill);
+  border-color: var(--diagram-client-stroke);
+  color: var(--diagram-client-text);
+}
+
+.shape--role-frontend {
+  background: var(--diagram-frontend-fill);
+  border-color: var(--diagram-frontend-stroke);
+  color: var(--diagram-frontend-text);
+}
+
+.shape--role-api {
+  background: var(--diagram-api-fill);
+  border-color: var(--diagram-api-stroke);
+  color: var(--diagram-api-text);
+}
+
+.shape--role-data {
+  background: var(--diagram-data-fill);
+  border-color: var(--diagram-data-stroke);
+  color: var(--diagram-data-text);
+}
+
+.shape--role-decision {
+  background: var(--diagram-decision-fill);
+  border-color: var(--diagram-decision-stroke);
+  color: var(--diagram-decision-text);
+}
+
+.shape--role-storage {
+  background: var(--diagram-storage-fill);
+  border-color: var(--diagram-storage-stroke);
+  color: var(--diagram-storage-text);
+}
+
+.shape--role-ai {
+  background: var(--diagram-ai-fill);
+  border-color: var(--diagram-ai-stroke);
+  color: var(--diagram-ai-text);
+}
+
+.shape--role-external {
+  background: var(--diagram-external-fill);
+  border-color: var(--diagram-external-stroke);
+  color: var(--diagram-external-text);
+}
+
+.shape--role-platform {
+  background: var(--diagram-platform-fill);
+  border-color: var(--diagram-platform-stroke);
+  color: var(--diagram-platform-text);
+}
+
+.shape--role-module {
+  background: var(--diagram-module-fill);
+  border-color: var(--diagram-module-stroke);
+  color: var(--diagram-module-text);
+}
+
+.shape--role-later {
+  background: var(--diagram-later-fill);
+  border-color: var(--diagram-later-stroke);
+  color: var(--diagram-later-text);
+  border-style: dashed;
+}
+
+/* Tree layout */
+.diagram-tree {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+}
+
+.diagram-tree__level {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+.diagram-tree__connector-v {
+  width: 2px;
+  height: 28px;
+  background: var(--diagram-connector);
+  position: relative;
+}
+
+.diagram-tree__connector-v::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 5px solid transparent;
+  border-top: 7px solid var(--diagram-connector);
+}
+
+.diagram-tree__branch {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.diagram-tree__branch::before {
+  content: "";
+  width: 2px;
+  height: 14px;
+  background: var(--diagram-connector);
+}
+
+.diagram-group {
+  border: 2px dashed var(--diagram-api-stroke);
+  border-radius: 10px;
+  padding: 20px 16px 16px;
+  position: relative;
+  margin-top: 8px;
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.diagram-group__label {
+  position: absolute;
+  top: -10px;
+  left: 16px;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--diagram-api-text);
+  background: var(--diagram-canvas-bg);
+  padding: 0 8px;
+}
+
+@media (max-width: 640px) {
+  .diagram-svg {
+    min-width: 520px;
+  }
+
+  .diagram-flow {
+    flex-direction: column;
+  }
+
+  .diagram-flow__arrow {
+    width: 2px;
+    height: 28px;
+  }
+
+  .diagram-flow__arrow::after {
+    right: 50%;
+    top: auto;
+    bottom: 0;
+    transform: translateX(50%);
+    border-left: 5px solid transparent;
+    border-right: 5px solid transparent;
+    border-top: 8px solid var(--diagram-connector);
+    border-bottom: none;
+  }
+}

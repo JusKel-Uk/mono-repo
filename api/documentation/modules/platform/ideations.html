@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Platform — Ideations — JusKel Technology Documentation</title>
+  <link rel="stylesheet" href="../../assets/css/main.css">
+</head>
+<body data-module="platform" data-page="ideations" data-site-section="modules">
+  <header class="site-header">
+    <div class="site-header__inner">
+      <a href="../../index.html" class="site-logo">JusKel Technology Docs</a>
+      <button class="nav-toggle" aria-label="Toggle navigation" aria-expanded="false">
+        <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M4 6h16M4 12h16M4 18h16"/>
+        </svg>
+      </button>
+      <nav class="site-nav">
+        <a href="../../index.html" data-section="home">Home</a>
+        <a href="../index.html" data-section="modules">Modules</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="main-content">
+    <nav class="breadcrumbs" aria-label="Breadcrumb">
+      <a href="../../index.html">Home</a>
+      <span class="breadcrumbs__sep">/</span>
+      <a href="../index.html">Modules</a>
+      <span class="breadcrumbs__sep">/</span>
+      <a href="index.html">Platform</a>
+      <span class="breadcrumbs__sep">/</span>
+      <span>Ideations</span>
+    </nav>
+
+    <header class="page-header">
+      <h1>Platform — Ideations</h1>
+      <p>Development stack suggestions, design notes, and considerations from the requirement catalogue.</p>
+    </header>
+
+    <nav class="module-subnav" aria-label="Module navigation">
+      <a href="index.html" data-page="overview">Overview</a>
+      <a href="schematics.html" data-page="schematics">Schematics</a>
+      <a href="ideations.html" data-page="ideations">Ideations</a>
+      <a href="implementation.html" data-page="implementation">Implementation</a>
+    </nav>
+
+    <section class="section">
+      <h2>Backend</h2>
+      <div class="content-block">
+        <h3>Suggestion</h3>
+        <p>Use <strong>.NET / ASP.NET Core</strong> or <strong>Node.js on Azure App Service</strong> for API development and core backend services.</p>
+        <h3 style="margin-top:16px;font-size:0.875rem;">Note 1</h3>
+        <p>For the MVP, avoid heavy microservices too early. Start with a modular monolith where the scoring engine, funding match engine, user management, and reporting logic are separated internally but deployed simply.</p>
+        <h3 style="margin-top:16px;font-size:0.875rem;">Note 2</h3>
+        <p>Use <strong>Azure Functions</strong> for lightweight background tasks such as score recalculation, document processing, alerts, and scheduled data refreshes. Use <strong>Azure Service Bus</strong> later when workflows become more event-driven.</p>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>Frontend</h2>
+      <div class="content-block">
+        <h3>Suggestion</h3>
+        <p>Use <strong>React</strong> or <strong>Next.js</strong> for the web application.</p>
+        <h3 style="margin-top:16px;font-size:0.875rem;">Note 1</h3>
+        <p>Use <strong>Tailwind CSS</strong> or Microsoft Fluent UI for consistent styling and clean dashboard components.</p>
+        <h3 style="margin-top:16px;font-size:0.875rem;">Note 2</h3>
+        <p>The frontend should focus on clear user journeys for SME onboarding, ESG data input, score visibility, funding readiness, and improvement actions.</p>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>Database &amp; storage</h2>
+      <div class="content-block">
+        <h3>Suggestion</h3>
+        <p>Use a relational database for users, SME profiles, ESG inputs, scoring outputs, funding products, eligibility rules, and audit logs.</p>
+        <h3 style="margin-top:16px;font-size:0.875rem;">Note 1</h3>
+        <p>Use <strong>Azure Blob Storage</strong> for ESG evidence, uploaded documents, supporting files, and future lender documentation.</p>
+        <h3 style="margin-top:16px;font-size:0.875rem;">Note 2</h3>
+        <p>Use <strong>Azure Cache for Redis</strong> later for caching score calculations, dashboard data, and funding recommendations when usage grows.</p>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>AI layer</h2>
+      <div class="content-block">
+        <h3>Suggestion</h3>
+        <p>Use <strong>Azure OpenAI Service</strong> rather than building a proprietary AI model at MVP stage.</p>
+        <h3 style="margin-top:16px;font-size:0.875rem;">AI should support</h3>
+        <ul>
+          <li>ESG input interpretation</li>
+          <li>Explanation of scores</li>
+          <li>Funding readiness summaries</li>
+          <li>Suggested improvement actions</li>
+          <li>Document summarisation</li>
+          <li>Future ESG data extraction</li>
+        </ul>
+        <h3 style="margin-top:16px;font-size:0.875rem;">Key principle</h3>
+        <p>The core scoring logic should remain <strong>rule-based and explainable</strong> at MVP stage. AI should assist interpretation, not replace the scoring engine.</p>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>Identity &amp; access</h2>
+      <div class="content-block">
+        <h3>Suggestion</h3>
+        <p>Use <strong>Microsoft Entra ID / Entra External ID</strong> for authentication when the platform becomes more mature.</p>
+        <h3 style="margin-top:16px;font-size:0.875rem;">MVP approach</h3>
+        <p>Keep authentication simple but architect it so that later you can support:</p>
+        <ul>
+          <li>SME users</li>
+          <li>Internal admin users</li>
+          <li>Lender users</li>
+          <li>Corporate users</li>
+          <li>Role-based access control</li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>Analytics &amp; reporting</h2>
+      <div class="content-block">
+        <h3>Suggestion</h3>
+        <p>Use <strong>Power BI</strong> later for advanced reporting, lender dashboards, portfolio insights, and corporate ESG visibility.</p>
+        <p style="margin-top:8px;">For MVP, keep reporting inside the web app. Power BI becomes more valuable once there is enough SME and lender data — <span class="phase-later">later phases</span>.</p>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>Third-party services</h2>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Service</th>
+            <th>Purpose</th>
+            <th>Phase</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Companies House API</td>
+            <td>Company lookup and baseline company data</td>
+            <td><span class="status-pill status-pill--implemented">MVP</span></td>
+          </tr>
+          <tr>
+            <td>Open Banking (TrueLayer, Yapily)</td>
+            <td>Financial data integration</td>
+            <td><span class="phase-later">Later phases</span></td>
+          </tr>
+          <tr>
+            <td>ESG data providers</td>
+            <td>External ESG data sources</td>
+            <td><span class="phase-later">Later phases</span></td>
+          </tr>
+          <tr>
+            <td>DocuSign / Adobe Sign</td>
+            <td>LOIs, lender agreements, pilot documentation</td>
+            <td><span class="status-pill status-pill--implemented">MVP</span></td>
+          </tr>
+          <tr>
+            <td>Microsoft Teams / Outlook</td>
+            <td>Workflow notifications and enterprise adoption</td>
+            <td><span class="phase-later">Later</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>JusKel Technology Documentation · Proprietary — JusKel UK</p>
+  </footer>
+
+  <script src="../../assets/js/main.js" defer></script>
+</body>
+</html>

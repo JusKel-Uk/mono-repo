@@ -1,0 +1,73 @@
+---
+description: CQRS-Lite inside modules — vertical slices, no separate read DB for MVP
+globs: "**/*.cs"
+alwaysApply: false
+---
+
+# CQRS-Lite (MVP)
+
+CQRS sits at the **micro level** inside each module's `Core` project. Modular Monolith is the **macro level**.
+
+## Vertical Slice Folder Structure
+
+```text
+Modules/Funding/Funding.Core/
+├── FundingDbContext.cs
+└── Features/
+    ├── CreateApplication/          # Command (write)
+    │   ├── CreateApplicationCommand.cs
+    │   ├── CreateApplicationHandler.cs
+    │   └── CreateApplicationEndpoint.cs
+    └── GetApplicationById/         # Query (read)
+        ├── GetApplicationByIdQuery.cs
+        ├── GetApplicationByIdHandler.cs
+        └── GetApplicationByIdEndpoint.cs
+```
+
+## MVP: CQRS-Lite Only
+
+### Do
+
+- **Single database** with per-module schemas and `DbContext` instances.
+- **Write path:** EF domain models, business rules, transactional `SaveChangesAsync`.
+- **Read path:** `.AsNoTracking()` projecting directly into DTOs — bypass domain models.
+- **MediatR** (optional) for in-module command/query dispatch — keep registration lean for cold starts.
+
+### Do NOT (MVP)
+
+- Separate read/write databases (PostgreSQL + Elasticsearch)
+- Event sourcing or outbox pattern
+- Eventual consistency between databases
+
+## Write vs Read Pattern
+
+```csharp
+// WRITE — domain validation, tracked entities
+internal sealed class CreateApplicationHandler(FundingDbContext db)
+{
+    public async Task<Guid> Handle(CreateApplicationCommand cmd, CancellationToken ct)
+    {
+        var app = FundingApplication.Create(cmd.UserId, cmd.Amount); // decimal, not float
+        db.Applications.Add(app);
+        await db.SaveChangesAsync(ct);
+        return app.Id;
+    }
+}
+
+// READ — direct projection, no tracking
+internal sealed class GetApplicationByIdHandler(FundingDbContext db)
+{
+    public async Task<ApplicationDetailsDto?> Handle(GetApplicationByIdQuery q, CancellationToken ct)
+    {
+        return await db.Applications
+            .AsNoTracking()
+            .Where(a => a.Id == q.ApplicationId)
+            .Select(a => new ApplicationDetailsDto(a.Id, a.Status, a.Amount))
+            .FirstOrDefaultAsync(ct);
+    }
+}
+```
+
+## Financial Fields
+
+Use `decimal` for money in commands, DTOs, and domain models. Never `float`/`double`.

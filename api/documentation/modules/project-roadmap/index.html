@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Project Roadmap — JusKel Technology Documentation</title>
+  <link rel="stylesheet" href="../../assets/css/main.css">
+</head>
+<body data-module="project-roadmap" data-page="overview" data-site-section="modules">
+  <header class="site-header">
+    <div class="site-header__inner">
+      <a href="../../index.html" class="site-logo">JusKel Technology Docs</a>
+      <button class="nav-toggle" aria-label="Toggle navigation" aria-expanded="false">
+        <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M4 6h16M4 12h16M4 18h16"/>
+        </svg>
+      </button>
+      <nav class="site-nav">
+        <a href="../../index.html" data-section="home">Home</a>
+        <a href="../index.html" data-section="modules">Modules</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="main-content">
+    <nav class="breadcrumbs" aria-label="Breadcrumb">
+      <a href="../../index.html">Home</a>
+      <span class="breadcrumbs__sep">/</span>
+      <a href="../index.html">Modules</a>
+      <span class="breadcrumbs__sep">/</span>
+      <span>Project Roadmap</span>
+    </nav>
+
+    <header class="page-header">
+      <h1>Project Roadmap &amp; PM Brief</h1>
+      <p>My role, what I've delivered so far, and my forward plan with indicative timescales — for project alignment and our group meeting.</p>
+      <div class="page-header__meta">
+        <span class="status-pill status-pill--in-progress">Living document</span>
+        <span class="status-pill status-pill--planned">Updated Jul 2026</span>
+      </div>
+    </header>
+
+    <nav class="module-subnav" aria-label="Module navigation">
+      <a href="index.html" data-page="overview">Overview</a>
+      <a href="flow.html" data-page="flow">Flow</a>
+      <a href="schematics.html" data-page="schematics">Schematics</a>
+      <a href="implementation.html" data-page="implementation">Roadmap</a>
+    </nav>
+
+    <div class="pm-callout">
+      <h2>Note for project management</h2>
+      <p>Hi — I've put together a summary of my role, what I've done on the project so far, and how I'm planning to take things forward for the JusKel Sustainability Finance Hub (MVP). I'm sharing this ahead of our group meeting so we can stay aligned on delivery and timelines.</p>
+    </div>
+
+    <section class="section">
+      <h2>My role on this project</h2>
+      <div class="content-block">
+        <h3>Engineering lead — backend &amp; platform documentation</h3>
+        <p>I am responsible for establishing the technical foundation of the JusKel platform and delivering the backend API alongside supporting documentation that keeps engineering, product, and stakeholders aligned.</p>
+        <ul>
+          <li>Define and document architecture, tech stack, and module boundaries</li>
+          <li>Scaffold and build the .NET 10 API and SQL Server data layer</li>
+          <li>Coordinate with the Next.js client team on API contracts and flows</li>
+          <li>Maintain the technology documentation site as a living source of truth</li>
+          <li>Translate discovery requirements into implementable, phased delivery plans</li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>Project objective</h2>
+      <div class="content-block">
+        <p>My goal is to deliver the <strong>JusKel Sustainability Finance Hub MVP</strong> — a secure, scalable web platform on the Microsoft ecosystem that proves the SME-side value loop: sustainability scoring, funding readiness, and funding match — with optional lean lender participation.</p>
+        <p>Commercial wedge: <strong>SME first</strong> · Lender progressive · Corporate pilot · Climate fintech core as infrastructure expansion.</p>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>Work I've completed to date</h2>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Phase</th>
+            <th>Deliverable</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Discovery</td>
+            <td>MVP Requirement Catalogue (user stories, business rules, tech stack, master roadmap)</td>
+            <td><span class="status-pill status-pill--implemented">Complete</span></td>
+          </tr>
+          <tr>
+            <td>Foundation</td>
+            <td>Monorepo structure (<code>api/</code>, <code>client/</code>, <code>discovery/</code>) with Git workflow (<code>dev</code> → feature branches → PRs)</td>
+            <td><span class="status-pill status-pill--implemented">Complete</span></td>
+          </tr>
+          <tr>
+            <td>Architecture</td>
+            <td>Tech stack decisions: .NET 10, SQL Server, Next.js, Azure (documented with CTO verdicts)</td>
+            <td><span class="status-pill status-pill--implemented">Complete</span></td>
+          </tr>
+          <tr>
+            <td>Documentation</td>
+            <td>Hostable technology docs site with modular pages (platform, sign-in, diagrams)</td>
+            <td><span class="status-pill status-pill--in-progress">In progress</span></td>
+          </tr>
+          <tr>
+            <td>Engineering</td>
+            <td>.NET API scaffolding, database schema, core modules</td>
+            <td><span class="status-pill status-pill--planned">Planned</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="section">
+      <h2>High-level delivery layers</h2>
+      <p>Aligned with the Master Product Roadmap from discovery.</p>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Layer</th>
+            <th>Stage</th>
+            <th>Objective</th>
+            <th>Indicative timing</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Layer 1</td>
+            <td>Lean MVP</td>
+            <td>Prove SME value loop and pilot usability</td>
+            <td>Q4 2026 – Q1 2027</td>
+          </tr>
+          <tr>
+            <td>Layer 2</td>
+            <td>Year 1 commercial rollout</td>
+            <td>Commercialise SME product; deepen lender &amp; corporate pilots</td>
+            <td>2027</td>
+          </tr>
+          <tr>
+            <td>Layer 3</td>
+            <td>Year 1.5 – Year 2 expansion</td>
+            <td>Deeper integrations, workflow maturity, ecosystem platform</td>
+            <td>2027 – 2028</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="section">
+      <h2>Further reading</h2>
+      <ul>
+        <li><a href="flow.html">Flow</a> — delivery phase progression</li>
+        <li><a href="schematics.html">Schematics</a> — visual roadmap timeline</li>
+        <li><a href="implementation.html">Roadmap</a> — detailed milestones and engineering plan</li>
+      </ul>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>JusKel Technology Documentation · Proprietary — JusKel UK</p>
+  </footer>
+
+  <script src="../../assets/js/main.js" defer></script>
+</body>
+</html>

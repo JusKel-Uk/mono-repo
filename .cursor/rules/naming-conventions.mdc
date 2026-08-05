@@ -1,0 +1,34 @@
+---
+description: Codebase naming — juskel is always lowercase in code, folders, and filenames
+alwaysApply: true
+---
+
+# Naming: `juskel` (always lowercase)
+
+In this repository, **`juskel` is always all lowercase** in code, folders, filenames, solution names, and log namespace filters.
+
+## Required
+
+| Item | Correct | Wrong |
+|------|---------|-------|
+| Solution | `juskel.sln` / `juskel.slnx` | `JusKel.sln` |
+| Host project | `juskel.Api` | `JusKel.Api` |
+| Shared project | `juskel.Shared` | `JusKel.Shared` |
+| Module projects | `identity.Core`, `funding.Contracts` | — |
+| Folders | `src/Host/juskel.Api/` | `src/Host/JusKel.Api/` |
+| Log filter | `"juskel"` | `"JusKel"` |
+| Dockerfile ENTRYPOINT | `juskel.Api.dll` | `JusKel.Api.dll` |
+
+## C# conventions (unchanged)
+
+- **Namespaces** follow folder names: `juskel.Api`, `identity.Core`
+- **Types** remain PascalCase: `GlobalExceptionHandler`, `CreateOrderCommand`
+- **Module names** remain PascalCase in project suffix: `identity.Contracts`, `funding.Core`
+
+## User-facing docs
+
+Marketing/legal prose (e.g. "JusKel UK" in footers) may use brand casing. **All technical artifacts** (code, paths, configs, cursor rules) use `juskel` lowercase.
+
+## Agent duty
+
+Before suggesting any path, project name, or namespace, verify it uses `juskel` not `JusKel`. Flag and correct any mixed-case `juskel` references.

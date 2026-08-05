@@ -1,0 +1,34 @@
+---
+description: .NET 10 C# coding standards for the juskel API
+globs: "**/*.cs"
+alwaysApply: false
+---
+
+# Core C# / .NET 10 Standards
+
+## Performance & Allocations
+
+- Prefer `ReadOnlySpan<T>`, `Memory<T>`, and `record` structs where applicable.
+- Seal classes by default: `public sealed class Foo`.
+- Use `AddDbContextPool` for EF Core.
+
+## Async Hygiene
+
+- `async`/`await` for all I/O.
+- Pass `CancellationToken` through controller actions and database calls.
+
+## Error Handling
+
+- Use native RFC 7807 `ProblemDetails` with `IExceptionHandler`.
+- Register: `builder.Services.AddProblemDetails()` and `builder.Services.AddExceptionHandler<GlobalExceptionHandler>()`.
+
+## Financial Data (Fintech)
+
+- Never use `float`/`double` for money — use `decimal` or integer minor units (kobo).
+- Store with `Decimal(18,2)` or integer kobo in the database.
+
+## Module Boundaries
+
+- Mark implementation `internal`; expose only via `*.Contracts` assemblies.
+- Never import another module's `*.Core` project — only its `*.Contracts`.
+- Each module registers its own `DbContext` with `AddDbContextPool` and a dedicated schema.

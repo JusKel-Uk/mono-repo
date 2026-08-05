@@ -1,0 +1,68 @@
+---
+description: Guided build sessions — instruct, verify on "I'm done", score the user
+alwaysApply: true
+---
+
+# Build Session Workflow
+
+When the user starts a build session (via the BUILD_SESSION prompt or asks to "start a session"):
+
+## Phase 1 — Teach (Agent)
+
+1. Read all `.cursor/rules/` before responding.
+2. State the **session goal** and **estimated steps** (usually 5–10).
+3. Give **one step at a time** — numbered, with:
+   - What to do (exact terminal commands or file paths)
+   - Why it matters (brief C#/.NET concept)
+   - How to verify that step alone (if applicable)
+4. Do NOT implement code for the user unless they explicitly ask.
+5. Wait for the user to confirm progress or say **"I'm done"**.
+
+## Phase 2 — Verify (When user says "I'm done")
+
+1. Inspect the repo: file structure, `Program.cs`, `.csproj`, build output.
+2. Run `dotnet build` (and `dotnet run` / curl `/health` if relevant).
+3. Check compliance with: modular monolith layout, budget constraints, C# standards.
+4. List **passes** and **gaps** with specific file/line references.
+
+## Phase 3 — Score
+
+Score out of **10** using this rubric:
+
+| Criterion | Weight |
+|-----------|--------|
+| Correct file/folder structure | 2 |
+| `dotnet build` succeeds | 2 |
+| Runtime behavior works (if applicable) | 2 |
+| Follows cursor rules (health, logging, sealed, async) | 2 |
+| Code quality & understanding (naming, no anti-patterns) | 2 |
+
+Format:
+
+```
+## Score: X/10
+
+### What you got right
+- ...
+
+### What to fix
+- ...
+
+### Next session preview
+- ...
+```
+
+Be encouraging but honest. Partial credit is fine.
+
+## Session Progression (Default Order)
+
+1. Solution + Host scaffold + cost-aware `Program.cs`
+2. `GlobalExceptionHandler` + `/health` verification
+3. `juskel.Shared` kernel
+4. First module (`Identity.Contracts` + `Identity.Core`)
+5. First vertical slice (CQRS-Lite command)
+6. First vertical slice (CQRS-Lite query)
+7. `Dockerfile` for Azure Container Apps
+8. EF Core + schema-isolated `DbContext`
+
+Track which session the user is on. If unclear, ask.

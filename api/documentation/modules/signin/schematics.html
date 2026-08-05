@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sign-in — Schematics — JusKel Technology Documentation</title>
+  <link rel="stylesheet" href="../../assets/css/main.css">
+  <link rel="stylesheet" href="../../assets/css/diagrams.css">
+</head>
+<body data-module="signin" data-page="schematics" data-site-section="modules">
+  <header class="site-header">
+    <div class="site-header__inner">
+      <a href="../../index.html" class="site-logo">JusKel Technology Docs</a>
+      <button class="nav-toggle" aria-label="Toggle navigation" aria-expanded="false">
+        <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M4 6h16M4 12h16M4 18h16"/>
+        </svg>
+      </button>
+      <nav class="site-nav">
+        <a href="../../index.html" data-section="home">Home</a>
+        <a href="../index.html" data-section="modules">Modules</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="main-content">
+    <nav class="breadcrumbs" aria-label="Breadcrumb">
+      <a href="../../index.html">Home</a>
+      <span class="breadcrumbs__sep">/</span>
+      <a href="../index.html">Modules</a>
+      <span class="breadcrumbs__sep">/</span>
+      <a href="index.html">Sign-in</a>
+      <span class="breadcrumbs__sep">/</span>
+      <span>Schematics</span>
+    </nav>
+
+    <header class="page-header">
+      <h1>Sign-in — Schematics</h1>
+      <p>Architecture diagrams and component layout for the authentication module.</p>
+    </header>
+
+    <nav class="module-subnav" aria-label="Module navigation">
+      <a href="index.html" data-page="overview">Overview</a>
+      <a href="schematics.html" data-page="schematics">Schematics</a>
+      <a href="flow.html" data-page="flow">Flow</a>
+      <a href="implementation.html" data-page="implementation">Implementation</a>
+    </nav>
+
+    <section class="section">
+      <h2>System context</h2>
+      <p>Authentication module within the platform boundary.</p>
+      <div class="diagram-canvas">
+        <div class="diagram-canvas__title">Auth system context</div>
+        <div class="diagram-flow" data-jk-flow='[
+          {"type":"circle","role":"client","label":"User","sub":"Browser"},
+          {"type":"rect","role":"frontend","label":"Next.js Client","sub":"Login form"},
+          {"type":"rect","role":"api","label":"Auth Controller","sub":"API layer"},
+          {"type":"rect","role":"api","label":"Auth Service","sub":"Business logic"},
+          {"type":"cylinder","role":"storage","label":"SQL Server","sub":"Users & roles"}
+        ]'></div>
+        <div class="diagram-legend" data-jk-legend='[
+          {"role":"client","label":"Actor","shape":"circle"},
+          {"role":"frontend","label":"Client","shape":"rect"},
+          {"role":"api","label":"API layer","shape":"rect"},
+          {"role":"storage","label":"Database","shape":"rect"}
+        ]'></div>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>Component tree</h2>
+      <p>Internal structure of the sign-in module.</p>
+      <div class="diagram-canvas">
+        <div class="diagram-canvas__title">Module components</div>
+        <svg class="diagram-svg" viewBox="0 0 640 380" data-jk-svg="signin-component-tree" xmlns="http://www.w3.org/2000/svg"></svg>
+        <div class="diagram-legend" data-jk-legend='[
+          {"role":"module","label":"Module","shape":"rect"},
+          {"role":"api","label":"Component","shape":"rect"},
+          {"role":"decision","label":"Decision","shape":"diamond"},
+          {"role":"frontend","label":"Output","shape":"circle"},
+          {"role":"storage","label":"Data store","shape":"rect"}
+        ]'></div>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>Role model</h2>
+      <div class="diagram-canvas">
+        <div class="diagram-canvas__title">User personas &amp; access</div>
+        <div data-jk-persona-tree='{
+          "type":"rect","role":"api","label":"Authenticated User",
+          "children":[
+            {"type":"square","role":"client","label":"SME"},
+            {"type":"square","role":"api","label":"Lender"},
+            {"type":"square","role":"module","label":"Admin"},
+            {"type":"square","role":"later","label":"Corporate"}
+          ]
+        }'></div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>JusKel Technology Documentation · Proprietary — JusKel UK</p>
+  </footer>
+
+  <script src="../../assets/js/main.js" defer></script>
+  <script src="../../assets/js/diagrams.js" defer></script>
+</body>
+</html>

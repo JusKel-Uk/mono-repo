@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Project Roadmap — Flow — JusKel Technology Documentation</title>
+  <link rel="stylesheet" href="../../assets/css/main.css">
+  <link rel="stylesheet" href="../../assets/css/diagrams.css">
+</head>
+<body data-module="project-roadmap" data-page="flow" data-site-section="modules">
+  <header class="site-header">
+    <div class="site-header__inner">
+      <a href="../../index.html" class="site-logo">JusKel Technology Docs</a>
+      <button class="nav-toggle" aria-label="Toggle navigation" aria-expanded="false">
+        <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M4 6h16M4 12h16M4 18h16"/>
+        </svg>
+      </button>
+      <nav class="site-nav">
+        <a href="../../index.html" data-section="home">Home</a>
+        <a href="../index.html" data-section="modules">Modules</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="main-content">
+    <nav class="breadcrumbs" aria-label="Breadcrumb">
+      <a href="../../index.html">Home</a>
+      <span class="breadcrumbs__sep">/</span>
+      <a href="../index.html">Modules</a>
+      <span class="breadcrumbs__sep">/</span>
+      <a href="index.html">Project Roadmap</a>
+      <span class="breadcrumbs__sep">/</span>
+      <span>Flow</span>
+    </nav>
+
+    <header class="page-header">
+      <h1>Project Roadmap — Flow</h1>
+      <p>How I see the project progressing from discovery through MVP to commercial expansion.</p>
+    </header>
+
+    <nav class="module-subnav" aria-label="Module navigation">
+      <a href="index.html" data-page="overview">Overview</a>
+      <a href="flow.html" data-page="flow">Flow</a>
+      <a href="schematics.html" data-page="schematics">Schematics</a>
+      <a href="implementation.html" data-page="implementation">Roadmap</a>
+    </nav>
+
+    <section class="section">
+      <h2>Delivery phase flow</h2>
+      <div class="diagram-canvas">
+        <div class="diagram-canvas__title">Product &amp; engineering phases</div>
+        <div class="diagram-flow" data-jk-flow='[
+          {"type":"rect","role":"client","label":"Discovery","sub":"Requirements"},
+          {"type":"rect","role":"platform","label":"Foundation","sub":"Repo & architecture"},
+          {"type":"rect","role":"api","label":"Lean MVP Build","sub":"SME core loop"},
+          {"type":"diamond","role":"decision","label":"Pilot ready?"},
+          {"type":"rect","role":"module","label":"Pilot & validate","sub":"SME + lean lender"},
+          {"type":"rect","role":"frontend","label":"Year 1 Rollout","sub":"Commercial SME"},
+          {"type":"rect","role":"ai","label":"Platform expansion","sub":"Y1.5 – Y2"}
+        ]'></div>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>Engineering flow within Lean MVP</h2>
+      <div class="diagram-canvas">
+        <div class="diagram-canvas__title">MVP build sequence</div>
+        <div class="diagram-flow" data-jk-flow='[
+          {"type":"square","role":"platform","label":"Platform setup"},
+          {"type":"square","role":"api","label":"Auth & onboarding"},
+          {"type":"square","role":"module","label":"Scoring engine"},
+          {"type":"square","role":"module","label":"Funding match"},
+          {"type":"square","role":"frontend","label":"SME dashboard"},
+          {"type":"cylinder","role":"storage","label":"Go-live"}
+        ]'></div>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>User maturity by phase</h2>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>User type</th>
+            <th>Lean MVP</th>
+            <th>Year 1</th>
+            <th>Year 1.5 – 2</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>SME</td>
+            <td>Real product user</td>
+            <td>Full commercial user</td>
+            <td>Connected, richer, automated user</td>
+          </tr>
+          <tr>
+            <td>Lender</td>
+            <td>Optional pilot / design partner</td>
+            <td>Pilot operator with meaningful workflow</td>
+            <td>Partner-grade workflow &amp; integration</td>
+          </tr>
+          <tr>
+            <td>Corporate</td>
+            <td>Not in scope</td>
+            <td>Pilot validation user</td>
+            <td>Structured expansion user</td>
+          </tr>
+          <tr>
+            <td>Admin</td>
+            <td>Core operational role</td>
+            <td>Expanded multi-role operator</td>
+            <td>Governance &amp; ecosystem operations</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>JusKel Technology Documentation · Proprietary — JusKel UK</p>
+  </footer>
+
+  <script src="../../assets/js/main.js" defer></script>
+  <script src="../../assets/js/diagrams.js" defer></script>
+</body>
+</html>
