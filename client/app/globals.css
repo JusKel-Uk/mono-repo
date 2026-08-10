@@ -1,80 +1,159 @@
 @import "tailwindcss";
+@import "tw-animate-css";
 
-/*
- * JusKel design tokens.
- * NOTE: brand palette is "Not Yet Defined" (see business_overview.md).
- * `--primary` is a PLACEHOLDER sustainability green — swap all values here
- * once the official brand kit lands. Components reference tokens only,
- * never raw hex, so a rebrand is a one-file change.
- */
+@custom-variant dark (&:is(.dark *));
+
+/* =====================================================================
+ * JusKel color system  (shadcn/ui-compatible)
+ * ---------------------------------------------------------------------
+ * Layer 1 — BRAND PRIMITIVES: raw Figma palette, named by color.
+ * Layer 2 — SEMANTIC TOKENS: shadcn roles → primitives. Components use
+ *           these (bg-primary, text-muted-foreground…), never raw hex.
+ * Layer 3 — bridge tokens to Tailwind utilities via @theme inline.
+ * Re-theme by editing Layer 2; a rebrand is Layer 1.
+ * ===================================================================== */
+
+/* ---- Layer 1: Brand primitives (Figma) ---- */
+@theme {
+  --color-black: #000000;
+  --color-white: #ffffff;
+  --color-teal-charcoal: #0e2f2a;       /* Primary */
+  --color-carbon-black: #0b0f12;        /* Secondary */
+  --color-data-teal: #1f6f68;           /* Secondary — links / interactive accent */
+  --color-mineral-white: #f7f8f6;       /* Secondary */
+  --color-sage-grey: #8fa6a0;           /* Secondary */
+  --color-stone-grey: #d6ded9;          /* Secondary */
+  --color-abyssal: #0a1b2a;             /* Secondary Accent — Abyssal Blue-Black */
+  --color-refined-gold: #cba052;        /* Signature Accent — Refined Gold */
+  --color-carbon-green-black: #0f1e1a;  /* Structural */
+}
+
+/* ---- Layer 2: Semantic tokens (shadcn role → primitive) ---- */
 :root {
-  --background: #ffffff;
-  --foreground: #0b0f0d;
+  --radius: 0.625rem;
 
-  --card: #ffffff;
-  --card-foreground: #0b0f0d;
+  /* Surfaces */
+  --background: var(--color-white);
+  --foreground: var(--color-carbon-black);
+  --card: var(--color-white);
+  --card-foreground: var(--color-carbon-black);
+  --popover: var(--color-white);
+  --popover-foreground: var(--color-carbon-black);
 
-  --muted: #f4f5f7;
-  --muted-foreground: #5a6472;
+  /* Roles */
+  --primary: var(--color-teal-charcoal);
+  --primary-foreground: var(--color-white);
+  --secondary: var(--color-stone-grey);
+  --secondary-foreground: var(--color-carbon-black);
+  --muted: var(--color-mineral-white);
+  --muted-foreground: #717680; /* Figma Gray/500 — accessible secondary text + placeholders */
+  --accent: var(--color-mineral-white);          /* shadcn: neutral hover surface */
+  --accent-foreground: var(--color-carbon-black);
+  --destructive: #d92d20; /* Figma Error/600 */
+  --destructive-foreground: var(--color-white);
 
-  --border: #e5e7eb;
-  --input: #e5e7eb;
-  --ring: #0f7a4d;
+  /* Lines — Figma Gray/200 */
+  --border: #e9eaeb;
+  --input: #e9eaeb;
+  --ring: var(--color-data-teal);
 
-  /* Placeholder brand accent — swap on rebrand */
-  --primary: #0f7a4d;
-  --primary-foreground: #ffffff;
-
-  /* Semantic status */
-  --success: #16a34a;
+  /* Brand extras (not shadcn standard) */
+  --gold: var(--color-refined-gold);
+  --gold-foreground: var(--color-carbon-black);
+  --success: #039855; /* Figma Success/600 */
   --warning: #d97706;
-  --danger: #dc2626;
 
-  /* ESG pillar accents (used later by scorecard / dataviz) */
-  --esg-environmental: #16a34a;
-  --esg-social: #2563eb;
-  --esg-governance: #7c3aed;
+  /* Accessible secondary text on light surfaces (~7:1 on white).
+     `muted-foreground` (Sage Grey) fails WCAG AA for body text, so use this
+     for secondary/helper copy. From Figma. */
+  --foreground-secondary: #535862;
+
+  /* Charts — brand-driven categorical set */
+  --chart-1: var(--color-data-teal);
+  --chart-2: var(--color-teal-charcoal);
+  --chart-3: var(--color-refined-gold);
+  --chart-4: var(--color-sage-grey);
+  --chart-5: var(--color-abyssal);
+
+  /* Sidebar */
+  --sidebar: var(--color-mineral-white);
+  --sidebar-foreground: var(--color-carbon-black);
+  --sidebar-primary: var(--color-teal-charcoal);
+  --sidebar-primary-foreground: var(--color-white);
+  --sidebar-accent: var(--color-white);
+  --sidebar-accent-foreground: var(--color-carbon-black);
+  --sidebar-border: var(--color-stone-grey);
+  --sidebar-ring: var(--color-data-teal);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0c0b;
-    --foreground: #e8ebe9;
+/* Dark theme deferred: add a `.dark { … }` block remapping the Layer 2 tokens
+ * once Figma defines it. Deep primitives (abyssal, carbon-green-black,
+ * teal-charcoal) are the intended basis. Shipping light-only for now. */
 
-    --card: #121614;
-    --card-foreground: #e8ebe9;
-
-    --muted: #1a1f1d;
-    --muted-foreground: #9aa4a0;
-
-    --border: #262b29;
-    --input: #262b29;
-    --ring: #34d399;
-
-    --primary: #34d399;
-    --primary-foreground: #06110c;
-  }
-}
-
+/* ---- Layer 3: Bridge tokens → Tailwind utilities ---- */
 @theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
   --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
   --color-muted: var(--muted);
   --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
-  --color-primary: var(--primary);
-  --color-primary-foreground: var(--primary-foreground);
+
+  --color-gold: var(--gold);
+  --color-gold-foreground: var(--gold-foreground);
   --color-success: var(--success);
   --color-warning: var(--warning);
-  --color-danger: var(--danger);
-  --color-esg-environmental: var(--esg-environmental);
-  --color-esg-social: var(--esg-social);
-  --color-esg-governance: var(--esg-governance);
+  --color-foreground-secondary: var(--foreground-secondary);
 
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  --font-sans: "SF Pro", "SF Pro Text", -apple-system, BlinkMacSystemFont,
+    ui-sans-serif, system-ui, "Segoe UI", Roboto, "Helvetica Neue", Arial,
+    sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+    "Liberation Mono", monospace;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+.c-border {
+  border: 2px solid red
 }

@@ -4,17 +4,22 @@
  * `/sme` and `/lender` prefixes.
  */
 export const ROUTES = {
-  home: "/",
-  login: "/login",
-  signup: "/signup",
+  home: '/',
+  auth: {
+    login: '/login',
+    signup: '/signup',
+    forgotPassword: '/forgot-password',
+    verifyResetCode: '/forgot-password/verify',
+    resetPassword: '/reset-password',
+  },
   sme: {
-    root: "/sme",
-    dashboard: "/sme/dashboard",
+    root: '/sme',
+    dashboard: '/sme/dashboard',
   },
   lender: {
-    root: "/lender",
-    dashboard: "/lender/dashboard",
+    root: '/lender',
+    dashboard: '/lender/dashboard',
   },
 } as const;
 
-export type Role = "sme" | "lender";
+export type Role = 'sme' | 'lender';
