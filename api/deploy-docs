@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+# Deploy juskel technology docs to Netlify.
+# Usage (from api/):
+#   ./deploy-docs          # draft / preview URL
+#   ./deploy-docs --prod   # production
+
+set -euo pipefail
+
+API_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+exec "$API_DIR/documentation/deploy.sh" "$@"

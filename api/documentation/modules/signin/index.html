@@ -32,10 +32,10 @@
     </nav>
 
     <header class="page-header">
-      <h1>Sign-in</h1>
-      <p>Authentication, session management, and identity verification for platform users including SMEs, lenders, and admins.</p>
+      <h1>Sign-in &amp; Identity</h1>
+      <p>Registration, OTP email verification, JWT sessions, and protected routes for the juskel platform.</p>
       <div class="page-header__meta">
-        <span class="status-pill status-pill--planned">Planned</span>
+        <span class="status-pill status-pill--implemented">MVP Live</span>
       </div>
     </header>
 
@@ -50,24 +50,34 @@
       <h2>Overview</h2>
       <div class="content-block">
         <h3>Purpose</h3>
-        <p>The Sign-in module handles user authentication across all JusKel platform personas. It will support secure credential validation, session token issuance, and role-based access control integration.</p>
+        <p>The Identity module (<code>identity.Core</code>) handles user onboarding and authentication. New users register with a business email, receive a 6-digit OTP by email, and must verify before signing in. The API returns <strong>HTTP 403</strong> with <code>errorCode: EMAIL_NOT_VERIFIED</code> when credentials are valid but verification is pending — so the frontend can route to OTP entry or resend.</p>
       </div>
       <div class="content-block">
-        <h3>Scope</h3>
+        <h3>Implemented (MVP)</h3>
         <ul>
-          <li>Email and password authentication</li>
-          <li>JWT or session-based token management</li>
-          <li>Role assignment (SME, Lender, Admin)</li>
-          <li>Password reset flow (future phase)</li>
-          <li>Microsoft Entra ID integration (future phase)</li>
+          <li>User registration with business-email validation</li>
+          <li>OTP generation, hashing, and branded email (Resend / Console)</li>
+          <li>Email verification endpoint</li>
+          <li>OTP resend endpoint (anti-enumeration safe)</li>
+          <li>JWT sign-in gated on <code>emailVerified</code></li>
+          <li><code>GET /identity/me</code> (Bearer token)</li>
+        </ul>
+      </div>
+      <div class="content-block">
+        <h3>Planned</h3>
+        <ul>
+          <li>Refresh tokens and sign-out</li>
+          <li>Password reset flow</li>
+          <li>Role claims (SME, Lender, Admin)</li>
+          <li>Microsoft Entra ID integration</li>
         </ul>
       </div>
       <div class="content-block">
         <h3>Available documentation</h3>
         <ul>
-          <li><a href="schematics.html">Schematics</a> — architecture and component layout</li>
-          <li><a href="flow.html">Flow</a> — authentication request/response flows</li>
-          <li><a href="implementation.html">Implementation</a> — endpoints and build status</li>
+          <li><a href="flow.html">Flow</a> — OTP onboarding diagrams, 403 sign-in nuance, resend &amp; verify paths</li>
+          <li><a href="implementation.html">Implementation</a> — endpoints, status codes, DTOs</li>
+          <li><a href="schematics.html">Schematics</a> — module layout and components</li>
         </ul>
       </div>
     </section>

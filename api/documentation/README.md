@@ -15,6 +15,44 @@ Then visit http://localhost:8080
 
 ## Netlify deployment
 
+Static site — **no build step**. Publish directory is this folder (`api/documentation`).
+
+### Netlify CLI (recommended)
+
+**One-time setup** (requires browser login):
+
+```bash
+brew install netlify-cli
+# or: npm install -g netlify-cli
+
+cd api/documentation
+netlify login
+netlify link          # select existing site: juskel
+```
+
+**Deploy:**
+
+```bash
+cd api/documentation
+./deploy.sh           # preview URL
+./deploy.sh --prod    # production
+```
+
+Or directly:
+
+```bash
+netlify deploy --dir .
+netlify deploy --prod --dir .
+```
+
+### Netlify UI (Git-connected)
+
+1. [Netlify dashboard](https://app.netlify.com) → site **juskel** → Project configuration
+2. **Build & deploy** → set **Base directory** to `api/documentation`
+3. **Build command:** *(empty)*
+4. **Publish directory:** `.`
+5. Connect GitHub for auto-deploy on push (optional)
+
 ### Drag and drop
 
 1. Go to [Netlify Drop](https://app.netlify.com/drop)
@@ -23,11 +61,7 @@ Then visit http://localhost:8080
 
 The folder must contain `index.html` at its root.
 
-### Repo-connected
-
-If connecting this repository to Netlify, set the publish directory to `api/documentation`.
-
-The included `netlify.toml` is configured for deploying this folder directly.
+`netlify.toml` in this folder configures headers and publish settings.
 
 ## Structure
 

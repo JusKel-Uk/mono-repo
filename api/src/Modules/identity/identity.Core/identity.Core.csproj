@@ -6,6 +6,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\..\Shared\juskel.Shared\juskel.Shared.csproj" />
     <ProjectReference Include="..\identity.Contracts\identity.Contracts.csproj" />
   </ItemGroup>
 

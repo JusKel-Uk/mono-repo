@@ -4,6 +4,7 @@ using identity.Core.Persistence;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using identity.Core.Validation;
+using identity.Core.Services;
 
 namespace identity.Core.Features.RegisterUser;
 
@@ -11,10 +12,17 @@ internal sealed class RegisterUserHandler
 {
     private readonly IdentityDbContext _db;
     private readonly PasswordHasher<User> _passwordHasher = new();
+    private readonly IEmailOtpService _emailOtpService;
+    private readonly IEmailVerificationNotifier _emailVerificationNotifier;
 
-    public RegisterUserHandler(IdentityDbContext db)
+    public RegisterUserHandler(
+        IdentityDbContext db,
+        IEmailOtpService emailOtpService,
+        IEmailVerificationNotifier emailVerificationNotifier)
     {
         _db = db;
+        _emailOtpService = emailOtpService;
+        _emailVerificationNotifier = emailVerificationNotifier;
     }
 
     public async Task<RegisterUserResponse> HandleAsync(
@@ -23,8 +31,6 @@ internal sealed class RegisterUserHandler
     {
         if (!BusinessEmailValidator.IsBusinessEmail(command.Email))
         {
-            Console.WriteLine(command);
-            Console.WriteLine(nameof(command.Email));
             throw new ArgumentException("A business email address is required. Personal email providers (e.g. Gmail, Yahoo) are not allowed.");
         }
 
@@ -62,10 +68,15 @@ internal sealed class RegisterUserHandler
         };
 
         user.PasswordHash = _passwordHasher.HashPassword(user, command.Password);
+        user.EmailVerified = false;
 
+        var otp = _emailOtpService.IssueOtp(user);
         _db.Users.Add(user);
+
         await _db.SaveChangesAsync(ct);
 
-        return new RegisterUserResponse(user.Id, user.Email);
+        await _emailVerificationNotifier.SendVerificationOtpAsync(user, otp.DisplayCode, ct);
+
+        return new RegisterUserResponse(user.Id, user.Email, user.EmailVerified);
     }
 }

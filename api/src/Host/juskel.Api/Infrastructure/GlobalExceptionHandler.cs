@@ -1,3 +1,4 @@
+using identity.Contracts;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 
@@ -10,20 +11,42 @@ public sealed class GlobalExceptionHandler : IExceptionHandler
         Exception exception,
         CancellationToken cancellationToken)
     {
-        var statusCode = exception switch
+        var (statusCode, title, problemType, extensions) = exception switch
         {
-            ArgumentException => StatusCodes.Status400BadRequest,
-            _ => StatusCodes.Status500InternalServerError
+            EmailNotVerifiedException emailNotVerified => (
+                StatusCodes.Status403Forbidden,
+                "Email not verified.",
+                "https://juskel.com/problems/email-not-verified",
+                new Dictionary<string, object?>
+                {
+                    ["errorCode"] = IdentityErrorCodes.EmailNotVerified,
+                    ["email"] = emailNotVerified.Email
+                }),
+            ArgumentException => (
+                StatusCodes.Status400BadRequest,
+                "Validation failed.",
+                (string?)null,
+                null),
+            _ => (
+                StatusCodes.Status500InternalServerError,
+                "An error occurred while processing your request.",
+                (string?)null,
+                null)
         };
 
         var problemDetails = new ProblemDetails
         {
             Status = statusCode,
-            Title = statusCode == StatusCodes.Status400BadRequest
-                ? "Validation failed."
-                : "An error occurred while processing your request.",
+            Title = title,
+            Type = problemType,
             Detail = exception.Message
         };
+
+        if (extensions is not null)
+        {
+            foreach (var (key, value) in extensions)
+                problemDetails.Extensions[key] = value;
+        }
 
         httpContext.Response.StatusCode = statusCode;
         await httpContext.Response.WriteAsJsonAsync(problemDetails, cancellationToken);

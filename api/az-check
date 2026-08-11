@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+# Quick Azure CLI sanity check (run from api/).
+# Usage: ./az-check
+
+set -euo pipefail
+
+if ! command -v az >/dev/null 2>&1; then
+  echo "Azure CLI not found. Install with: brew install azure-cli"
+  exit 1
+fi
+
+AZ_VERSION="$(az version 2>/dev/null | sed -n 's/.*"azure-cli": "\([^"]*\)".*/\1/p' | head -1)"
+echo "Azure CLI: ${AZ_VERSION:-unknown}"
+echo
+
+if ! az account show >/dev/null 2>&1; then
+  echo "Not logged in."
+  echo "Run: az login"
+  echo "Then (if needed): az account set --subscription \"<name-or-id>\""
+  exit 1
+fi
+
+echo "Logged in:"
+az account show --query "{name:name, id:id, user:user.name, tenant:tenantId}" -o table
+echo
+echo "Resource groups:"
+az group list --query "[].{Name:name, Location:location}" -o table

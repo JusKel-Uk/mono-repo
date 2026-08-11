@@ -1,4 +1,5 @@
 using juskel.Shared;
+using juskel.Email;
 using juskel.Api.Infrastructure;
 using juskel.Api.Contracts.Examples;
 using juskel.Api.Contracts.Responses;
@@ -6,10 +7,14 @@ using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Filters;
 using identity.Core;
 using identity.Core.Examples;
+using System.Text;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi;
 
 var builder = WebApplication.CreateBuilder(args);
 
-
+builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection(JwtOptions.SectionName));
 builder.Logging.AddFilter("Microsoft", LogLevel.Warning);
 builder.Logging.AddFilter("System", LogLevel.Warning);
 builder.Logging.AddFilter("juskel", LogLevel.Information);
@@ -22,21 +27,75 @@ builder.Services.AddSwaggerGen(options=>{
         Title =ApiConstants.ApiName, Version = ApiConstants.ApiVersion
     });
     options.ExampleFilters();
+    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+        {
+            Name = "Authorization",
+            Type = SecuritySchemeType.Http,
+            Scheme = "bearer",
+            BearerFormat = "JWT",
+            In = ParameterLocation.Header,
+            Description = "Paste the accessToken from POST /identity/sessions"
+        });
+
+        options.AddSecurityRequirement(document => new OpenApiSecurityRequirement
+        {
+            [new OpenApiSecuritySchemeReference("Bearer", document)] = []
+        });
 });
 
 builder.Services.AddSwaggerExamplesFromAssemblyOf<RootResponseExample>();
 builder.Services.AddSwaggerExamplesFromAssemblyOf<UserSummaryExample>();
 builder.Services.AddHealthChecks();
+
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddIdentityModule(builder.Configuration);
+builder.Services.AddEmail(builder.Configuration);
 
+var jwtOptions = builder.Configuration
+    .GetSection(JwtOptions.SectionName)
+    .Get<JwtOptions>()
+    ?? throw new InvalidOperationException("JWT configuration is missing.");
+
+if (string.IsNullOrWhiteSpace(jwtOptions.Secret))
+    throw new InvalidOperationException("JWT secret is not configured.");
+
+
+builder.Services
+    .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = jwtOptions.Issuer,
+            ValidAudience = jwtOptions.Audience,
+            IssuerSigningKey = new SymmetricSecurityKey(
+                Encoding.UTF8.GetBytes(jwtOptions.Secret)),
+            ClockSkew = TimeSpan.Zero
+        };
+    });
+
+builder.Services.AddAuthorization();
 
 
 
 var app = builder.Build();
 app.UseExceptionHandler();
+app.UseStaticFiles();
+
+
+app.UseAuthentication();
+app.UseAuthorization();
+
+
 app.MapHealthChecks("/health");
+
+
+
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
@@ -59,7 +118,6 @@ if (app.Environment.IsDevelopment()){
 
 
 app.MapIdentityEndpoints();
-
 
 
 app.MapGet("/", () => Results.Ok(new RootResponse("online",ApiConstants.ApiVersion)))

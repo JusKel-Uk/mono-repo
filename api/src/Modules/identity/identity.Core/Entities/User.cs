@@ -21,4 +21,14 @@ internal sealed class User
     public DateTime? LastLoginAt { get; set; }
 
     public DateTime? LastPasswordChangeAt { get; set; }
+
+    public bool EmailVerified { get; set; }
+
+    public DateTime? EmailVerifiedAt { get; set; }
+
+    public string? EmailOtpHash { get; set; }
+
+    public DateTime? EmailOtpExpiresAt { get; set; }
+
+    public int EmailOtpAttempts { get; set; }
 }
