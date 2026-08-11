@@ -1,0 +1,17 @@
+<Solution>
+  <Folder Name="/src/" />
+  <Folder Name="/src/Host/">
+    <Project Path="src/Host/juskel.Api/juskel.Api.csproj" />
+  </Folder>
+  <Folder Name="/src/Infrastructure/">
+    <Project Path="src/Infrastructure/juskel.Email/juskel.Email.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/" />
+  <Folder Name="/src/Modules/identity/">
+    <Project Path="src/Modules/identity/identity.Contracts/identity.Contracts.csproj" />
+    <Project Path="src/Modules/identity/identity.Core/identity.Core.csproj" />
+  </Folder>
+  <Folder Name="/src/Shared/">
+    <Project Path="src/Shared/juskel.Shared/juskel.Shared.csproj" />
+  </Folder>
+</Solution>

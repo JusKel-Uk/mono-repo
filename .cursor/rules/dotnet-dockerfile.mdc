@@ -1,0 +1,29 @@
+---
+description: Ultra-lean multi-stage Dockerfile for Azure Container Apps scale-to-zero
+globs: "**/Dockerfile"
+alwaysApply: false
+---
+
+# Dockerfile Pattern
+
+Multi-stage build for fast pull and cold start on Azure Container Apps:
+
+```dockerfile
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+WORKDIR /src
+COPY ["juskel.Api/juskel.Api.csproj", "juskel.Api/"]
+RUN dotnet restore "juskel.Api/juskel.Api.csproj"
+COPY . .
+WORKDIR "/src/juskel.Api"
+RUN dotnet publish "juskel.Api.csproj" -c Release -o /app/publish /p:UseAppHost=false
+
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final
+WORKDIR /app
+COPY --from=build /app/publish .
+ENV ASPNETCORE_URLS=http://+:8080
+EXPOSE 8080
+USER app
+ENTRYPOINT ["dotnet", "juskel.Api.dll"]
+```
+
+Adjust project path/name to match the actual `.csproj`. Use `/p:UseAppHost=false` to keep the image lean.

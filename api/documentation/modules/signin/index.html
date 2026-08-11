@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sign-in — JusKel Technology Documentation</title>
+  <link rel="stylesheet" href="../../assets/css/main.css">
+</head>
+<body data-module="signin" data-page="overview" data-site-section="modules">
+  <header class="site-header">
+    <div class="site-header__inner">
+      <a href="../../index.html" class="site-logo">JusKel Technology Docs</a>
+      <button class="nav-toggle" aria-label="Toggle navigation" aria-expanded="false">
+        <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M4 6h16M4 12h16M4 18h16"/>
+        </svg>
+      </button>
+      <nav class="site-nav">
+        <a href="../../index.html" data-section="home">Home</a>
+        <a href="../index.html" data-section="modules">Modules</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="main-content">
+    <nav class="breadcrumbs" aria-label="Breadcrumb">
+      <a href="../../index.html">Home</a>
+      <span class="breadcrumbs__sep">/</span>
+      <a href="../index.html">Modules</a>
+      <span class="breadcrumbs__sep">/</span>
+      <span>Sign-in</span>
+    </nav>
+
+    <header class="page-header">
+      <h1>Sign-in &amp; Identity</h1>
+      <p>Registration, OTP email verification, JWT sessions, and protected routes for the juskel platform.</p>
+      <div class="page-header__meta">
+        <span class="status-pill status-pill--implemented">MVP Live</span>
+      </div>
+    </header>
+
+    <nav class="module-subnav" aria-label="Module navigation">
+      <a href="index.html" data-page="overview">Overview</a>
+      <a href="schematics.html" data-page="schematics">Schematics</a>
+      <a href="flow.html" data-page="flow">Flow</a>
+      <a href="implementation.html" data-page="implementation">Implementation</a>
+    </nav>
+
+    <section class="section">
+      <h2>Overview</h2>
+      <div class="content-block">
+        <h3>Purpose</h3>
+        <p>The Identity module (<code>identity.Core</code>) handles user onboarding and authentication. New users register with a business email, receive a 6-digit OTP by email, and must verify before signing in. The API returns <strong>HTTP 403</strong> with <code>errorCode: EMAIL_NOT_VERIFIED</code> when credentials are valid but verification is pending — so the frontend can route to OTP entry or resend.</p>
+      </div>
+      <div class="content-block">
+        <h3>Implemented (MVP)</h3>
+        <ul>
+          <li>User registration with business-email validation</li>
+          <li>OTP generation, hashing, and branded email (Resend / Console)</li>
+          <li>Email verification endpoint</li>
+          <li>OTP resend endpoint (anti-enumeration safe)</li>
+          <li>JWT sign-in gated on <code>emailVerified</code></li>
+          <li><code>GET /identity/me</code> (Bearer token)</li>
+        </ul>
+      </div>
+      <div class="content-block">
+        <h3>Planned</h3>
+        <ul>
+          <li>Refresh tokens and sign-out</li>
+          <li>Password reset flow</li>
+          <li>Role claims (SME, Lender, Admin)</li>
+          <li>Microsoft Entra ID integration</li>
+        </ul>
+      </div>
+      <div class="content-block">
+        <h3>Available documentation</h3>
+        <ul>
+          <li><a href="flow.html">Flow</a> — OTP onboarding diagrams, 403 sign-in nuance, resend &amp; verify paths</li>
+          <li><a href="implementation.html">Implementation</a> — endpoints, status codes, DTOs</li>
+          <li><a href="schematics.html">Schematics</a> — module layout and components</li>
+        </ul>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>JusKel Technology Documentation · Proprietary — JusKel UK</p>
+  </footer>
+
+  <script src="../../assets/js/main.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,19 @@
+{
+  "ConnectionStrings": {
+    "Identity": "Server=localhost,1433;Database=juskel;User Id=sa;Password=YOUR_DEV_PASSWORD;TrustServerCertificate=True"
+  },
+  "Jwt": {
+    "Secret": "YOUR_DEV_JWT_SECRET_MIN_32_CHARS"
+  },
+  "Email": {
+    "Provider": "Resend",
+    "DefaultFrom": "juskel <hello@juskel.co.uk>",
+    "AssetsBaseUrl": "http://localhost:5242/email"
+  },
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft.AspNetCore": "Warning"
+    }
+  }
+}

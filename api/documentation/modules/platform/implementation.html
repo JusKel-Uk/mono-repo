@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Platform — Implementation — JusKel Technology Documentation</title>
+  <link rel="stylesheet" href="../../assets/css/main.css">
+</head>
+<body data-module="platform" data-page="implementation" data-site-section="modules">
+  <header class="site-header">
+    <div class="site-header__inner">
+      <a href="../../index.html" class="site-logo">JusKel Technology Docs</a>
+      <button class="nav-toggle" aria-label="Toggle navigation" aria-expanded="false">
+        <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M4 6h16M4 12h16M4 18h16"/>
+        </svg>
+      </button>
+      <nav class="site-nav">
+        <a href="../../index.html" data-section="home">Home</a>
+        <a href="../index.html" data-section="modules">Modules</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="main-content">
+    <nav class="breadcrumbs" aria-label="Breadcrumb">
+      <a href="../../index.html">Home</a>
+      <span class="breadcrumbs__sep">/</span>
+      <a href="../index.html">Modules</a>
+      <span class="breadcrumbs__sep">/</span>
+      <a href="index.html">Platform</a>
+      <span class="breadcrumbs__sep">/</span>
+      <span>Implementation</span>
+    </nav>
+
+    <header class="page-header">
+      <h1>Platform — Implementation</h1>
+      <p>CTO verdicts and decided technology stack for the JusKel MVP.</p>
+      <div class="page-header__meta">
+        <span class="status-pill status-pill--in-progress">In Progress</span>
+      </div>
+    </header>
+
+    <nav class="module-subnav" aria-label="Module navigation">
+      <a href="index.html" data-page="overview">Overview</a>
+      <a href="schematics.html" data-page="schematics">Schematics</a>
+      <a href="ideations.html" data-page="ideations">Ideations</a>
+      <a href="implementation.html" data-page="implementation">Implementation</a>
+    </nav>
+
+    <section class="section">
+      <h2>Decided stack</h2>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Layer</th>
+            <th>Decision</th>
+            <th>CTO verdict</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Frontend</td>
+            <td>Next.js</td>
+            <td>Superior performance and array of configuration to suit modern frontend applications</td>
+          </tr>
+          <tr>
+            <td>Backend</td>
+            <td>C# (.NET 10 / ASP.NET Core)</td>
+            <td>Part of the Microsoft ecosystem and battle tested for fintech development; scales well with multi-parallel thread processing</td>
+          </tr>
+          <tr>
+            <td>Database</td>
+            <td>SQL Server</td>
+            <td>Relational database on Azure for structured platform data</td>
+          </tr>
+          <tr>
+            <td>Storage</td>
+            <td>Azure Blob Storage</td>
+            <td>Agreed — documents and ESG evidence</td>
+          </tr>
+          <tr>
+            <td>Infrastructure</td>
+            <td>Microsoft Azure</td>
+            <td>Agreed</td>
+          </tr>
+          <tr>
+            <td>AI</td>
+            <td>Azure OpenAI</td>
+            <td>Agreed — assist interpretation, not replace rule-based scoring</td>
+          </tr>
+          <tr>
+            <td>Identity</td>
+            <td>Custom auth (MVP)</td>
+            <td>Post-MVP: Microsoft Entra — less than 5% of SMEs use Microsoft OAuth</td>
+          </tr>
+          <tr>
+            <td>Analytics</td>
+            <td>In-app reporting (MVP)</td>
+            <td>May explore Microsoft Fabric; Power BI in later phases</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="section">
+      <h2>Engineering decisions</h2>
+      <div class="content-block">
+        <h3>Modular monolith</h3>
+        <p>Single deployable API with internal module boundaries: scoring engine, funding match engine, user management, reporting logic.</p>
+        <div class="verdict-callout">
+          <strong>Principle</strong>
+          Do not overbuild cloud architecture too early. Structure for evolution into a workflow platform for SMEs, lenders, and corporates.
+        </div>
+      </div>
+      <div class="content-block">
+        <h3>Scoring engine</h3>
+        <p>Rule-based and explainable at MVP. Azure OpenAI supports summaries and interpretation only.</p>
+      </div>
+      <div class="content-block">
+        <h3>Monorepo layout</h3>
+        <ul>
+          <li><code>api/</code> — .NET 10 backend</li>
+          <li><code>client/</code> — Next.js frontend</li>
+          <li><code>api/documentation/</code> — this documentation site</li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>Catalogue evolution</h2>
+      <div class="content-block">
+        <p>The original requirement catalogue listed Python (FastAPI) and Azure PostgreSQL in an early architecture draft. The updated catalogue (with CTO verdicts) confirms <strong>Next.js</strong> and <strong>C# (.NET)</strong>. The engineering team has further decided on <strong>SQL Server</strong> as the primary database for this monorepo.</p>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>JusKel Technology Documentation · Proprietary — JusKel UK</p>
+  </footer>
+
+  <script src="../../assets/js/main.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Project Roadmap — Roadmap — JusKel Technology Documentation</title>
+  <link rel="stylesheet" href="../../assets/css/main.css">
+</head>
+<body data-module="project-roadmap" data-page="implementation" data-site-section="modules">
+  <header class="site-header">
+    <div class="site-header__inner">
+      <a href="../../index.html" class="site-logo">JusKel Technology Docs</a>
+      <button class="nav-toggle" aria-label="Toggle navigation" aria-expanded="false">
+        <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M4 6h16M4 12h16M4 18h16"/>
+        </svg>
+      </button>
+      <nav class="site-nav">
+        <a href="../../index.html" data-section="home">Home</a>
+        <a href="../index.html" data-section="modules">Modules</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="main-content">
+    <nav class="breadcrumbs" aria-label="Breadcrumb">
+      <a href="../../index.html">Home</a>
+      <span class="breadcrumbs__sep">/</span>
+      <a href="../index.html">Modules</a>
+      <span class="breadcrumbs__sep">/</span>
+      <a href="index.html">Project Roadmap</a>
+      <span class="breadcrumbs__sep">/</span>
+      <span>Roadmap</span>
+    </nav>
+
+    <header class="page-header">
+      <h1>Project Roadmap — Detailed plan</h1>
+      <p>My backdated milestones, current focus, and forward engineering plan with indicative timescales.</p>
+      <div class="page-header__meta">
+        <span class="status-pill status-pill--in-progress">Living document</span>
+      </div>
+    </header>
+
+    <nav class="module-subnav" aria-label="Module navigation">
+      <a href="index.html" data-page="overview">Overview</a>
+      <a href="flow.html" data-page="flow">Flow</a>
+      <a href="schematics.html" data-page="schematics">Schematics</a>
+      <a href="implementation.html" data-page="implementation">Roadmap</a>
+    </nav>
+
+    <section class="section">
+      <h2>Timeline</h2>
+      <p>These are indicative dates — I'll refine them with the team at our group meetings. My anchor point is <strong>July 2026</strong>.</p>
+
+      <div class="roadmap-timeline">
+        <div class="roadmap-item roadmap-item--done">
+          <div class="roadmap-item__period">Q1 – Q2 2026 · Complete</div>
+          <h3>Discovery &amp; requirements</h3>
+          <p>I worked through product discovery, the MVP requirement catalogue, business rules, user stories, master product roadmap, and initial tech stack evaluation.</p>
+          <ul>
+            <li>MVP Requirement Catalogue finalised</li>
+            <li>Build phasing defined (Lean MVP → Year 1 → Year 1.5/2)</li>
+            <li>Microsoft ecosystem alignment agreed</li>
+          </ul>
+        </div>
+
+        <div class="roadmap-item roadmap-item--done">
+          <div class="roadmap-item__period">July 2026 · Complete</div>
+          <h3>Repository &amp; architecture foundation</h3>
+          <p>I established the monorepo, engineering workflow, and documented our technology decisions.</p>
+          <ul>
+            <li>GitHub monorepo (<code>dev</code> branch, feature branches, PR workflow)</li>
+            <li>Tech stack confirmed: .NET 10, SQL Server, Next.js, Azure</li>
+            <li>Technology documentation site launched (modular, hostable)</li>
+            <li>Platform and sign-in modules documented</li>
+          </ul>
+        </div>
+
+        <div class="roadmap-item roadmap-item--current">
+          <div class="roadmap-item__period">Aug – Sep 2026 · Current</div>
+          <h3>API scaffolding &amp; platform core</h3>
+          <p>I'm now moving into hands-on engineering — project setup, authentication, and the database foundation.</p>
+          <ul>
+            <li>.NET 10 API project scaffold (modular monolith structure)</li>
+            <li>SQL Server schema — users, roles, audit logs</li>
+            <li>Sign-in / auth module implementation</li>
+            <li>CI pipeline and Azure environment setup</li>
+            <li>API contract alignment with Next.js client</li>
+          </ul>
+        </div>
+
+        <div class="roadmap-item roadmap-item--future">
+          <div class="roadmap-item__period">Oct – Nov 2026</div>
+          <h3>Lean MVP core features</h3>
+          <p>I plan to build the SME value loop — scoring, funding match, and the readiness dashboard.</p>
+          <ul>
+            <li>Rule-based sustainability scoring engine</li>
+            <li>Funding match logic and product eligibility rules</li>
+            <li>Companies House API integration</li>
+            <li>SME onboarding and profile capture</li>
+            <li>Azure OpenAI — score explanations and summaries (assist only)</li>
+            <li>Document upload via Azure Blob Storage</li>
+          </ul>
+        </div>
+
+        <div class="roadmap-item roadmap-item--future">
+          <div class="roadmap-item__period">Dec 2026 – Q1 2027</div>
+          <h3>Integration, QA &amp; pilot readiness</h3>
+          <p>End-to-end testing, security review, and pilot preparation.</p>
+          <ul>
+            <li>Frontend–backend integration testing</li>
+            <li>Security hardening and penetration review</li>
+            <li>Admin tooling for pilot operations</li>
+            <li>Optional lean lender module (design partner)</li>
+            <li>Pilot onboarding and support documentation</li>
+          </ul>
+        </div>
+
+        <div class="roadmap-item roadmap-item--future">
+          <div class="roadmap-item__period">Q1 – Q4 2027 · Layer 2</div>
+          <h3>Year 1 commercial rollout</h3>
+          <p>Commercialise SME product; expand lender and corporate pilot modules.</p>
+          <ul>
+            <li>ESG Lite Toolkit and improvement roadmap</li>
+            <li>Enhanced lender workflows (review notes, handoff pilots)</li>
+            <li>Corporate pilot modules (scorecard, benchmarking)</li>
+            <li>Controlled Xero / QuickBooks integration</li>
+            <li>Power BI reporting exploration</li>
+          </ul>
+        </div>
+
+        <div class="roadmap-item roadmap-item--future">
+          <div class="roadmap-item__period">2027 – 2028 · Layer 3</div>
+          <h3>Advanced platform expansion</h3>
+          <p>Deeper integrations, workflow maturity, and ecosystem connectivity.</p>
+          <ul>
+            <li>Open Banking (TrueLayer / Yapily)</li>
+            <li>Microsoft Entra ID / SSO</li>
+            <li>Azure Service Bus event-driven workflows</li>
+            <li>Climate data APIs and advanced ESG providers</li>
+            <li>Model governance and mature consent framework</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>My priorities (next 8 weeks)</h2>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Priority</th>
+            <th>Work item</th>
+            <th>Target</th>
+            <th>Dependency</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>P0</td>
+            <td>.NET API scaffold + SQL Server setup</td>
+            <td>Aug 2026</td>
+            <td>Azure provisioning</td>
+          </tr>
+          <tr>
+            <td>P0</td>
+            <td>Auth module (sign-in, roles, JWT)</td>
+            <td>Aug – Sep 2026</td>
+            <td>API scaffold</td>
+          </tr>
+          <tr>
+            <td>P1</td>
+            <td>SME onboarding API</td>
+            <td>Sep 2026</td>
+            <td>Auth module</td>
+          </tr>
+          <tr>
+            <td>P1</td>
+            <td>Scoring engine (rule-based v1)</td>
+            <td>Oct 2026</td>
+            <td>SME data model</td>
+          </tr>
+          <tr>
+            <td>P2</td>
+            <td>Funding match engine v1</td>
+            <td>Nov 2026</td>
+            <td>Scoring engine</td>
+          </tr>
+          <tr>
+            <td>P2</td>
+            <td>Companies House integration</td>
+            <td>Oct 2026</td>
+            <td>API scaffold</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="section">
+      <h2>Risks &amp; assumptions</h2>
+      <div class="content-block">
+        <ul>
+          <li>My timescales assume I have dedicated engineering capacity and timely Azure environment provisioning</li>
+          <li>I'm keeping Lean MVP scope fixed — if we creep into Year 1 features, the pilot will slip</li>
+          <li>The lender module at MVP stays optional and lean — it depends on design partner availability</li>
+          <li>I need the Next.js client delivery to stay aligned on API contracts throughout</li>
+        </ul>
+      </div>
+      <p class="source-note">Based on the MVP Requirement Catalogue, Master Product Roadmap, and my progress to date (Jul 2026).</p>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>JusKel Technology Documentation · Proprietary — JusKel UK</p>
+  </footer>
+
+  <script src="../../assets/js/main.js" defer></script>
+</body>
+</html>

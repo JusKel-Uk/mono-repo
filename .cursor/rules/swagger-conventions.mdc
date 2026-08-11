@@ -1,0 +1,84 @@
+---
+description: Swagger UI mandatory — every endpoint MUST expose sample request and response
+alwaysApply: true
+---
+
+# Swagger Conventions (Non-Negotiable)
+
+Every API endpoint MUST appear in Swagger UI with **sample request** and **sample response** always visible.
+
+Stack: **Swashbuckle.AspNetCore** + **Swashbuckle.AspNetCore.Filters** (dev only).
+
+Swagger UI URL (Development): `http://localhost:{port}/swagger`
+
+## Every Endpoint Checklist
+
+Before an endpoint is considered done:
+
+- [ ] **Response DTO** — `public sealed record` in `Contracts/Responses/` (or feature folder)
+- [ ] **Request DTO** — for POST/PUT/PATCH only, in `Contracts/Requests/`
+- [ ] **Response example** — class implementing `IExamplesProvider<TResponse>` in `Contracts/Examples/`
+- [ ] **Request example** — class implementing `IExamplesProvider<TRequest>` (body endpoints only)
+- [ ] **`.Produces<TResponse>(status)`** — declares response schema to Swashbuckle
+- [ ] **`.Produces<ProblemDetails>(400)`** and **`.Produces<ProblemDetails>(500)`** — error shapes
+- [ ] **`.Accepts<TRequest>("application/json")`** — for body endpoints
+- [ ] **`.WithMetadata(new SwaggerResponseExampleAttribute(...))`** — wires example into UI
+- [ ] **`.WithMetadata(new SwaggerRequestExampleAttribute(...))`** — wires request example (body endpoints)
+- [ ] **`.WithName()`** and **`.WithTags("module-name")`** — consistent grouping in Swagger
+
+GET endpoints: response example required. No request body example needed.
+
+## File Layout (Host + future modules)
+
+```text
+juskel.Api/
+├── Contracts/
+│   ├── Requests/
+│   ├── Responses/
+│   └── Examples/          # IExamplesProvider<T> classes
+├── Program.cs
+```
+
+Inside modules (`identity.Core/Features/...`), colocate DTOs + Examples in the same vertical slice folder.
+
+## Example Pattern
+
+```csharp
+// Contracts/Responses/RootResponse.cs
+public sealed record RootResponse(string Status, string Version);
+
+// Contracts/Examples/RootResponseExample.cs
+public sealed class RootResponseExample : IExamplesProvider<RootResponse>
+{
+    public RootResponse GetExamples() => new("Online", "1.0.0");
+}
+
+// Program.cs
+app.MapGet("/", () => Results.Ok(new RootResponse("Online", "1.0.0")))
+    .WithName("GetRoot")
+    .WithTags("system")
+    .Produces<RootResponse>(StatusCodes.Status200OK)
+    .Produces<ProblemDetails>(StatusCodes.Status500InternalServerError)
+    .WithMetadata(new SwaggerResponseExampleAttribute(StatusCodes.Status200OK, typeof(RootResponseExample)));
+```
+
+POST pattern:
+
+```csharp
+app.MapPost("/applications", HandleCreate)
+    .WithName("CreateApplication")
+    .WithTags("funding")
+    .Accepts<CreateApplicationRequest>("application/json")
+    .Produces<CreateApplicationResponse>(StatusCodes.Status201Created)
+    .Produces<ProblemDetails>(StatusCodes.Status400BadRequest)
+    .Produces<ProblemDetails>(StatusCodes.Status500InternalServerError)
+    .WithMetadata(new SwaggerRequestExampleAttribute(typeof(CreateApplicationRequest), typeof(CreateApplicationRequestExample)))
+    .WithMetadata(new SwaggerResponseExampleAttribute(StatusCodes.Status201Created, typeof(CreateApplicationResponseExample)));
+```
+
+## Agent Duty
+
+- Never add an endpoint without DTOs + example providers.
+- Never use anonymous types (`new { status = ... }`) in endpoints — they produce weak/no examples in Swagger.
+- Reject PRs or suggestions that skip `.Produces<>()` or example classes.
+- Swagger is **Development only** — do not enable in Production (cost + security).
