@@ -7,5 +7,6 @@ public sealed class RegisterUserResponseExample : IExamplesProvider<RegisterUser
 {
     public RegisterUserResponse GetExamples() => new(
         UserId: Guid.Parse("11111111-1111-1111-1111-111111111111"),
-        Email: "ada@example.com");
+        Email: "ada@example.com",
+        EmailVerified: false);
 }

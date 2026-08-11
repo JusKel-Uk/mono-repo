@@ -3,6 +3,9 @@
   <Folder Name="/src/Host/">
     <Project Path="src/Host/juskel.Api/juskel.Api.csproj" />
   </Folder>
+  <Folder Name="/src/Infrastructure/">
+    <Project Path="src/Infrastructure/juskel.Email/juskel.Email.csproj" />
+  </Folder>
   <Folder Name="/src/Modules/" />
   <Folder Name="/src/Modules/identity/">
     <Project Path="src/Modules/identity/identity.Contracts/identity.Contracts.csproj" />

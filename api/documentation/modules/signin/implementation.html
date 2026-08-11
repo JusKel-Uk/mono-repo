@@ -35,9 +35,9 @@
 
     <header class="page-header">
       <h1>Sign-in — Implementation</h1>
-      <p>Endpoints, DTOs, and build status for the authentication module.</p>
+      <p>Identity module endpoints, DTOs, and HTTP contracts (juskel API).</p>
       <div class="page-header__meta">
-        <span class="status-pill status-pill--planned">Planned</span>
+        <span class="status-pill status-pill--implemented">Implemented</span>
       </div>
     </header>
 
@@ -50,6 +50,7 @@
 
     <section class="section">
       <h2>Endpoints</h2>
+      <p>Base URL (development): <code>http://localhost:5242</code> · Swagger: <code>/swagger</code></p>
       <table class="data-table">
         <thead>
           <tr>
@@ -62,21 +63,84 @@
         <tbody>
           <tr>
             <td>POST</td>
-            <td>/api/auth/signin</td>
-            <td>Authenticate user with email and password</td>
-            <td><span class="status-pill status-pill--planned">Planned</span></td>
+            <td><code>/identity/users</code></td>
+            <td>Register user; issues OTP and sends verification email</td>
+            <td><span class="status-pill status-pill--implemented">Live</span></td>
           </tr>
           <tr>
             <td>POST</td>
-            <td>/api/auth/signout</td>
-            <td>Invalidate current session</td>
-            <td><span class="status-pill status-pill--planned">Planned</span></td>
+            <td><code>/identity/verification</code></td>
+            <td>Verify email with OTP code</td>
+            <td><span class="status-pill status-pill--implemented">Live</span></td>
           </tr>
           <tr>
             <td>POST</td>
-            <td>/api/auth/refresh</td>
-            <td>Refresh access token using refresh token</td>
-            <td><span class="status-pill status-pill--planned">Planned</span></td>
+            <td><code>/identity/verification/resend</code></td>
+            <td>Resend OTP to unverified account</td>
+            <td><span class="status-pill status-pill--implemented">Live</span></td>
+          </tr>
+          <tr>
+            <td>POST</td>
+            <td><code>/identity/sessions</code></td>
+            <td>Sign in with email + password (JWT)</td>
+            <td><span class="status-pill status-pill--implemented">Live</span></td>
+          </tr>
+          <tr>
+            <td>GET</td>
+            <td><code>/identity/me</code></td>
+            <td>Current user (Bearer JWT required)</td>
+            <td><span class="status-pill status-pill--implemented">Live</span></td>
+          </tr>
+          <tr>
+            <td>GET</td>
+            <td><code>/identity/users/{id}</code></td>
+            <td>User summary by id</td>
+            <td><span class="status-pill status-pill--implemented">Live</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="section">
+      <h2>HTTP status codes (sign-in &amp; OTP)</h2>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Endpoint</th>
+            <th>Code</th>
+            <th>When</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>POST /identity/users</code></td>
+            <td><code>201</code></td>
+            <td>User created; OTP emailed</td>
+          </tr>
+          <tr>
+            <td><code>POST /identity/sessions</code></td>
+            <td><code>201</code></td>
+            <td>Authenticated + email verified → JWT returned</td>
+          </tr>
+          <tr>
+            <td><code>POST /identity/sessions</code></td>
+            <td><code>403</code></td>
+            <td>Valid password but <code>emailVerified = false</code> → <code>errorCode: EMAIL_NOT_VERIFIED</code></td>
+          </tr>
+          <tr>
+            <td><code>POST /identity/sessions</code></td>
+            <td><code>400</code></td>
+            <td>Invalid credentials or validation error</td>
+          </tr>
+          <tr>
+            <td><code>POST /identity/verification</code></td>
+            <td><code>200</code></td>
+            <td>OTP accepted; user marked verified</td>
+          </tr>
+          <tr>
+            <td><code>POST /identity/verification/resend</code></td>
+            <td><code>202</code></td>
+            <td>Always — generic success message (anti-enumeration)</td>
           </tr>
         </tbody>
       </table>
@@ -85,22 +149,80 @@
     <section class="section">
       <h2>Request / response DTOs</h2>
       <div class="content-block">
-        <h3>SignInRequest</h3>
+        <h3>RegisterUserRequest → RegisterUserResponse (201)</h3>
         <ul>
-          <li><code>email</code> — string, required</li>
-          <li><code>password</code> — string, required</li>
+          <li><code>firstName</code>, <code>lastName</code>, <code>email</code>, <code>password</code></li>
+          <li>Response: <code>userId</code>, <code>email</code>, <code>emailVerified</code> (always <code>false</code> on create)</li>
         </ul>
       </div>
       <div class="content-block">
-        <h3>SignInResponse</h3>
+        <h3>VerifyEmailRequest → VerifyEmailResponse (200)</h3>
         <ul>
-          <li><code>accessToken</code> — string</li>
-          <li><code>refreshToken</code> — string</li>
-          <li><code>expiresIn</code> — integer (seconds)</li>
-          <li><code>user</code> — UserSummary object</li>
+          <li><code>email</code> — string, required</li>
+          <li><code>otpCode</code> — string, accepts <code>482917</code> or <code>482 917</code></li>
+          <li>Response: <code>userId</code>, <code>email</code>, <code>emailVerified</code></li>
         </ul>
       </div>
-      <p class="placeholder-note">DTOs and endpoint contracts will be finalised when the .NET API project is scaffolded.</p>
+      <div class="content-block">
+        <h3>ResendOtpRequest → ResendOtpResponse (202)</h3>
+        <ul>
+          <li><code>email</code> — string, required</li>
+          <li>Response: <code>message</code> — generic confirmation string</li>
+        </ul>
+      </div>
+      <div class="content-block">
+        <h3>SignInRequest → SignInResponse (201)</h3>
+        <ul>
+          <li><code>email</code>, <code>password</code></li>
+          <li>Response: <code>userId</code>, <code>accessToken</code> (JWT)</li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>Email &amp; OTP internals</h2>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Component</th>
+            <th>Project</th>
+            <th>Role</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>IEmailSender</code> / <code>IEmailTemplateRenderer</code></td>
+            <td>juskel.Shared + juskel.Email</td>
+            <td>Provider-agnostic send (Resend or Console)</td>
+          </tr>
+          <tr>
+            <td><code>EmailOtpService</code></td>
+            <td>identity.Core</td>
+            <td>Generate 6-digit OTP, hash, verify, 10 min expiry</td>
+          </tr>
+          <tr>
+            <td><code>EmailVerificationNotifier</code></td>
+            <td>identity.Core</td>
+            <td>Branded HTML template (<code>otp-verification</code>)</td>
+          </tr>
+          <tr>
+            <td><code>identity.Users</code> columns</td>
+            <td>SQL Server</td>
+            <td><code>EmailVerified</code>, <code>EmailOtpHash</code>, <code>EmailOtpExpiresAt</code>, <code>EmailOtpAttempts</code></td>
+          </tr>
+        </tbody>
+      </table>
+      <p>Default sender: <code>juskel &lt;hello@juskel.co.uk&gt;</code> via Resend in production.</p>
+    </section>
+
+    <section class="section">
+      <h2>Planned (not yet implemented)</h2>
+      <ul>
+        <li>Refresh tokens / sign-out</li>
+        <li>Password reset flow</li>
+        <li>Microsoft Entra ID SSO</li>
+        <li>Role-based claims in JWT</li>
+      </ul>
     </section>
   </main>
 

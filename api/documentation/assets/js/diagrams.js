@@ -299,6 +299,70 @@
     svg.setAttribute("aria-label", "Sign-in component tree");
   }
 
+  function renderIdentityOtpFlow(svg) {
+    if (!svg) return;
+    var m = "jk-arrow-identity-otp";
+    var s = svgDefs(m);
+
+    s += '<text class="shape-sublabel" x="20" y="24" font-weight="600">A. Registration &amp; OTP delivery</text>';
+    s += svgEllipse(56, 58, 40, 22, { label: "User", role: "client" });
+    s += svgLine(96, 58, 128, 58, m);
+    s += svgRect(128, 38, 148, 40, { label: "POST /identity/users", role: "api" });
+    s += svgLine(276, 58, 308, 58, m);
+    s += svgRect(308, 38, 120, 40, { label: "Issue OTP hash", role: "module" });
+    s += svgLine(428, 58, 460, 58, m);
+    s += svgRect(460, 38, 130, 40, { label: "Resend email", sub: "hello@juskel.co.uk", role: "external" });
+    s += svgLine(590, 58, 622, 58, m);
+    s += svgRect(622, 38, 120, 40, { label: "emailVerified", sub: "false", role: "data" });
+
+    s += '<text class="shape-sublabel" x="20" y="128" font-weight="600">B. Sign-in — unverified user (frontend nuance)</text>';
+    s += svgEllipse(56, 162, 40, 22, { label: "User", role: "client" });
+    s += svgLine(96, 162, 128, 162, m);
+    s += svgRect(128, 142, 156, 40, { label: "POST /identity/sessions", role: "api" });
+    s += svgLine(284, 162, 316, 162, m);
+    s += svgDiamond(356, 162, 56, { label: "Password OK?" });
+    s += svgLine(384, 162, 416, 162, m);
+    s += svgLabel(392, 154, "Yes");
+    s += svgDiamond(476, 162, 64, { label: "Verified?" });
+    s += svgLine(508, 162, 540, 162, m);
+    s += svgLabel(516, 154, "Yes");
+    s += svgRect(540, 142, 110, 40, { label: "201 + JWT", role: "frontend" });
+
+    s += svgLine(328, 162, 328, 200, null, true);
+    s += svgLabel(336, 188, "No");
+    s += svgRect(268, 200, 120, 36, { label: "400 Invalid", sub: "credentials", role: "later" });
+
+    s += svgLine(476, 190, 476, 228, m);
+    s += svgLabel(488, 214, "No");
+    s += svgRect(406, 228, 140, 52, { label: "403 Forbidden", sub: "errorCode: EMAIL_NOT_VERIFIED", role: "decision" });
+    s += svgLabel(476, 268, "email in body");
+
+    s += '<text class="shape-sublabel" x="20" y="318" font-weight="600">C. Recovery paths (from 403 screen)</text>';
+    s += svgRect(40, 338, 160, 44, { label: "OTP entry screen", sub: "pre-fill email from 403", role: "frontend" });
+    s += svgLine(200, 360, 232, 360, m);
+    s += svgDiamond(268, 360, 56, { label: "Action?" });
+
+    s += svgLine(296, 360, 328, 360, m);
+    s += svgLabel(304, 352, "Verify");
+    s += svgRect(328, 340, 168, 40, { label: "POST /identity/verification", role: "api" });
+    s += svgLine(496, 360, 528, 360, m);
+    s += svgRect(528, 340, 120, 40, { label: "emailVerified", sub: "true", role: "data" });
+
+    s += svgLine(268, 388, 268, 416, m);
+    s += svgLabel(280, 404, "Resend");
+    s += svgRect(188, 416, 188, 40, { label: "POST /verification/resend", sub: "202 Accepted", role: "api" });
+    s += svgLine(376, 436, 408, 436, m);
+    s += svgRect(408, 416, 130, 40, { label: "New OTP emailed", role: "external" });
+
+    s += svgLine(588, 360, 648, 360, m);
+
+    s += svgLine(648, 360, 680, 360, m);
+    s += svgRect(680, 340, 156, 40, { label: "Retry sign-in", sub: "POST /sessions → 201", role: "frontend" });
+
+    svg.innerHTML = s;
+    svg.setAttribute("aria-label", "Identity OTP onboarding and sign-in flow");
+  }
+
   function initPage() {
     document.querySelectorAll("[data-jk-flow]").forEach(function (el) {
       try {
@@ -321,6 +385,7 @@
     document.querySelectorAll("[data-jk-svg='platform-architecture']").forEach(renderPlatformArchitectureTree);
     document.querySelectorAll("[data-jk-svg='mvp-data-flow']").forEach(renderMvpDataFlow);
     document.querySelectorAll("[data-jk-svg='signin-component-tree']").forEach(renderSigninComponentTree);
+    document.querySelectorAll("[data-jk-svg='identity-otp-flow']").forEach(renderIdentityOtpFlow);
 
     document.querySelectorAll("[data-jk-group]").forEach(function (el) {
       try {
@@ -339,6 +404,7 @@
     renderPlatformArchitectureTree: renderPlatformArchitectureTree,
     renderMvpDataFlow: renderMvpDataFlow,
     renderSigninComponentTree: renderSigninComponentTree,
+    renderIdentityOtpFlow: renderIdentityOtpFlow,
     initPage: initPage
   };
 

@@ -7,6 +7,7 @@ COPY ["src/Host/juskel.Api/juskel.Api.csproj", "src/Host/juskel.Api/"]
 COPY ["src/Shared/juskel.Shared/juskel.Shared.csproj", "src/Shared/juskel.Shared/"]
 COPY ["src/Modules/identity/identity.Contracts/identity.Contracts.csproj", "src/Modules/identity/identity.Contracts/"]
 COPY ["src/Modules/identity/identity.Core/identity.Core.csproj", "src/Modules/identity/identity.Core/"]
+COPY ["src/Infrastructure/juskel.Email/juskel.Email.csproj", "src/Infrastructure/juskel.Email/"]
 
 RUN dotnet restore "src/Host/juskel.Api/juskel.Api.csproj"
 

@@ -26,9 +26,11 @@ internal static class SignInEndpoint
         .Accepts<SignInRequest>("application/json")
         .Produces<SignInResponse>(StatusCodes.Status201Created)
         .Produces<ProblemDetails>(StatusCodes.Status400BadRequest)
+        .Produces<ProblemDetails>(StatusCodes.Status403Forbidden)
         .Produces<ProblemDetails>(StatusCodes.Status500InternalServerError)
         .WithMetadata(new SwaggerRequestExampleAttribute(typeof(SignInRequest), typeof(SignInRequestExample)))
         .WithMetadata(new SwaggerResponseExampleAttribute(StatusCodes.Status400BadRequest, typeof(ValidationProblemDetailsExample)))
+        .WithMetadata(new SwaggerResponseExampleAttribute(StatusCodes.Status403Forbidden, typeof(EmailNotVerifiedProblemDetailsExample)))
         .WithMetadata(new SwaggerResponseExampleAttribute(StatusCodes.Status201Created, typeof(SignInResponseExample)));
 
         return app;

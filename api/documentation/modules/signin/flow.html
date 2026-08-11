@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Sign-in — Flow — JusKel Technology Documentation</title>
   <link rel="stylesheet" href="../../assets/css/main.css">
+  <link rel="stylesheet" href="../../assets/css/diagrams.css">
 </head>
 <body data-module="signin" data-page="flow" data-site-section="modules">
   <header class="site-header">
@@ -35,7 +36,10 @@
 
     <header class="page-header">
       <h1>Sign-in — Flow</h1>
-      <p>Request and response flows for authentication operations.</p>
+      <p>Onboarding, OTP email verification, sign-in gating, and frontend recovery paths.</p>
+      <div class="page-header__meta">
+        <span class="status-pill status-pill--implemented">Implemented</span>
+      </div>
     </header>
 
     <nav class="module-subnav" aria-label="Module navigation">
@@ -46,43 +50,169 @@
     </nav>
 
     <section class="section">
-      <h2>Sign-in flow</h2>
-      <div class="flow-diagram">
-        <span class="flow-node">1. Client submits credentials</span>
-        <span class="flow-arrow">→</span>
-        <span class="flow-node">2. Validate input</span>
-        <span class="flow-arrow">→</span>
-        <span class="flow-node">3. Verify password</span>
-        <span class="flow-arrow">→</span>
-        <span class="flow-node">4. Issue JWT</span>
-        <span class="flow-arrow">→</span>
-        <span class="flow-node">5. Return tokens</span>
+      <h2>End-to-end OTP onboarding (master flow)</h2>
+      <p>Every new user must verify inbox ownership before receiving a JWT. OTP codes are hashed in the database; only the plain code is emailed.</p>
+      <div class="diagram-canvas">
+        <div class="diagram-canvas__title">Registration → verify → sign-in</div>
+        <svg class="diagram-svg" viewBox="0 0 880 480" data-jk-svg="identity-otp-flow" xmlns="http://www.w3.org/2000/svg"></svg>
+        <div class="diagram-legend" data-jk-legend='[
+          {"role":"client","label":"User / client","shape":"circle"},
+          {"role":"api","label":"Identity endpoint","shape":"rect"},
+          {"role":"module","label":"Domain logic","shape":"rect"},
+          {"role":"external","label":"Email (Resend)","shape":"rect"},
+          {"role":"decision","label":"Branch / error","shape":"diamond"},
+          {"role":"frontend","label":"Success response","shape":"rect"},
+          {"role":"data","label":"User state","shape":"rect"}
+        ]'></div>
       </div>
     </section>
 
     <section class="section">
-      <h2>Flow steps</h2>
+      <h2>Sign-in without verification (403 nuance)</h2>
+      <p>This is the path the frontend must handle explicitly. Valid credentials alone are <strong>not</strong> enough — the API returns a distinct status so the client can route to the OTP screen.</p>
+      <div class="diagram-canvas">
+        <div class="diagram-canvas__title">POST /identity/sessions decision tree</div>
+        <div class="diagram-flow" data-jk-flow='[
+          {"type":"rect","role":"client","label":"Submit email + password"},
+          {"type":"rect","role":"api","label":"Lookup user"},
+          {"type":"diamond","role":"decision","label":"Password valid?"},
+          {"type":"diamond","role":"decision","label":"emailVerified?"},
+          {"type":"rect","role":"frontend","label":"201 Created + JWT"}
+        ]'></div>
+      </div>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Condition</th>
+            <th>HTTP status</th>
+            <th>Frontend action</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Missing / invalid input</td>
+            <td><code>400</code></td>
+            <td>Show validation errors</td>
+          </tr>
+          <tr>
+            <td>Unknown email or wrong password</td>
+            <td><code>400</code></td>
+            <td>Generic “Invalid email or password” (no account enumeration)</td>
+          </tr>
+          <tr>
+            <td>Valid password, <code>emailVerified = false</code></td>
+            <td><code>403</code></td>
+            <td>Read <code>errorCode</code> → route to OTP screen; pre-fill <code>email</code> from response</td>
+          </tr>
+          <tr>
+            <td>Valid password, <code>emailVerified = true</code></td>
+            <td><code>201</code></td>
+            <td>Store <code>accessToken</code>; proceed to app</td>
+          </tr>
+        </tbody>
+      </table>
       <div class="content-block">
-        <h3>1. Credential submission</h3>
-        <p>Client sends POST request with email and password to the sign-in endpoint.</p>
+        <h3>403 response shape (RFC 7807 ProblemDetails)</h3>
+        <pre><code>{
+  "type": "https://juskel.com/problems/email-not-verified",
+  "title": "Email not verified.",
+  "status": 403,
+  "detail": "Email address is not verified. Check your inbox for the verification code.",
+  "errorCode": "EMAIL_NOT_VERIFIED",
+  "email": "user@company.com"
+}</code></pre>
+        <p>Frontend guard:</p>
+        <pre><code>if (response.status === 403 &amp;&amp; body.errorCode === "EMAIL_NOT_VERIFIED") {
+  navigateToOtpScreen({ email: body.email });
+}</code></pre>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>Resend OTP flow</h2>
+      <p>Triggered from the OTP screen when the user did not receive the code or it expired. Always returns the same message to avoid email enumeration.</p>
+      <div class="diagram-canvas">
+        <div class="diagram-canvas__title">POST /identity/verification/resend</div>
+        <div class="diagram-flow" data-jk-flow='[
+          {"type":"rect","role":"frontend","label":"OTP screen","sub":"Resend tapped"},
+          {"type":"rect","role":"api","label":"POST /verification/resend"},
+          {"type":"diamond","role":"decision","label":"Unverified user exists?"},
+          {"type":"rect","role":"module","label":"Issue new OTP hash"},
+          {"type":"rect","role":"external","label":"Send branded email"},
+          {"type":"rect","role":"frontend","label":"202 Accepted","sub":"generic message"}
+        ]'></div>
       </div>
       <div class="content-block">
-        <h3>2. Input validation</h3>
-        <p>Controller validates request format. Returns 400 if email or password is missing or malformed.</p>
+        <h3>Request</h3>
+        <pre><code>{ "email": "user@company.com" }</code></pre>
+        <h3>Response (always)</h3>
+        <pre><code>{
+  "message": "If an unverified account exists for this email, a new verification code has been sent."
+}</code></pre>
+        <p>Internally, a new OTP is only issued when the account exists and <code>emailVerified</code> is <code>false</code>. Previous OTP hashes are replaced; expiry resets to 10 minutes.</p>
       </div>
-      <div class="content-block">
-        <h3>3. Credential verification</h3>
-        <p>Auth service looks up user by email, compares password hash. Returns 401 on invalid credentials.</p>
+    </section>
+
+    <section class="section">
+      <h2>Verify OTP flow</h2>
+      <div class="diagram-canvas">
+        <div class="diagram-canvas__title">POST /identity/verification</div>
+        <div class="diagram-flow" data-jk-flow='[
+          {"type":"rect","role":"frontend","label":"Submit OTP","sub":"482 917 or 482917"},
+          {"type":"rect","role":"api","label":"POST /verification"},
+          {"type":"rect","role":"module","label":"Verify hash + expiry"},
+          {"type":"rect","role":"data","label":"emailVerified = true"},
+          {"type":"rect","role":"api","label":"POST /sessions"},
+          {"type":"rect","role":"frontend","label":"201 + JWT"}
+        ]'></div>
       </div>
-      <div class="content-block">
-        <h3>4. Token issuance</h3>
-        <p>On success, generate access token (short-lived) and refresh token (long-lived).</p>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Verify result</th>
+            <th>HTTP status</th>
+            <th>Detail</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Success</td>
+            <td><code>200</code></td>
+            <td><code>emailVerified: true</code> — client should retry sign-in</td>
+          </tr>
+          <tr>
+            <td>Wrong code</td>
+            <td><code>400</code></td>
+            <td>Invalid verification code (attempt counter incremented, max 5)</td>
+          </tr>
+          <tr>
+            <td>Expired</td>
+            <td><code>400</code></td>
+            <td>Prompt user to tap Resend</td>
+          </tr>
+          <tr>
+            <td>Too many attempts</td>
+            <td><code>400</code></td>
+            <td>Must request a new code via Resend</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="section">
+      <h2>Registration flow</h2>
+      <div class="diagram-canvas">
+        <div class="diagram-canvas__title">POST /identity/users</div>
+        <div class="diagram-flow" data-jk-flow='[
+          {"type":"rect","role":"client","label":"Sign-up form"},
+          {"type":"rect","role":"api","label":"Validate business email"},
+          {"type":"rect","role":"module","label":"Create user + hash password"},
+          {"type":"rect","role":"module","label":"Issue OTP (hashed)"},
+          {"type":"rect","role":"external","label":"Send verification email"},
+          {"type":"rect","role":"frontend","label":"201 Created","sub":"emailVerified: false"}
+        ]'></div>
       </div>
-      <div class="content-block">
-        <h3>5. Response</h3>
-        <p>Return 200 with tokens, user profile summary, and assigned roles.</p>
-      </div>
-      <p class="placeholder-note">Sequence diagrams and error flows will be added during implementation.</p>
+      <p>After registration the frontend should land on the OTP screen immediately — the user cannot sign in until verification succeeds.</p>
     </section>
   </main>
 
@@ -91,5 +221,6 @@
   </footer>
 
   <script src="../../assets/js/main.js" defer></script>
+  <script src="../../assets/js/diagrams.js" defer></script>
 </body>
 </html>

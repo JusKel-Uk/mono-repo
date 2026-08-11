@@ -37,6 +37,17 @@ internal sealed class IdentityDbContext : DbContext
                 .HasMaxLength(512)
                 .IsRequired();
 
+            entity.Property(u => u.EmailVerified)
+                .HasDefaultValue(false)
+                .IsRequired();
+
+            entity.Property(u => u.EmailOtpHash)
+                .HasMaxLength(512);
+
+            entity.Property(u => u.EmailOtpAttempts)
+                .HasDefaultValue(0)
+                .IsRequired();
+
             entity.HasIndex(u => u.Email)
                 .IsUnique();
         });

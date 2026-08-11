@@ -3,6 +3,7 @@ using identity.Core.Entities;
 using identity.Core.Persistence;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using identity.Core.Services;
 
 namespace identity.Core.Features.SignIn;
 
@@ -10,10 +11,12 @@ internal sealed class SignInHandler
 {
     private readonly IdentityDbContext _db;
     private readonly PasswordHasher<User> _passwordHasher = new();
+    private readonly IJwtTokenService _jwtTokenService;
 
-    public SignInHandler(IdentityDbContext db)
+    public SignInHandler(IdentityDbContext db, IJwtTokenService jwtTokenService)
     {
         _db = db;
+        _jwtTokenService = jwtTokenService;
     }
 
     public async Task<SignInResponse> HandleAsync(
@@ -26,7 +29,7 @@ internal sealed class SignInHandler
         if (string.IsNullOrWhiteSpace(command.Password))
             throw new ArgumentException("Password is required.", nameof(command.Password));
 
-        var email = command.Email.Trim();
+        var email = command.Email.Trim().ToLowerInvariant();
 
         var user = await _db.Users
             .FirstOrDefaultAsync(u => u.Email == email && u.DeletedAt == null, ct);
@@ -42,12 +45,16 @@ internal sealed class SignInHandler
         if (result == PasswordVerificationResult.Failed)
             throw new ArgumentException("Invalid email or password.");
 
+        if (!user.EmailVerified)
+            throw new EmailNotVerifiedException(user.Email);
+
         user.LastLoginAt = DateTime.UtcNow;
         await _db.SaveChangesAsync(ct);
+        var accessToken = _jwtTokenService.GenerateAccessToken(user.Id, user.Email);
 
-        // JWT comes in a later session — stub token for now
+        
         return new SignInResponse(
             UserId: user.Id,
-            AccessToken: "stub-access-token");
+            AccessToken: accessToken);
     }
 }

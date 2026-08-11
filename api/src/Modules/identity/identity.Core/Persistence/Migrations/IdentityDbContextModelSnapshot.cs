@@ -40,6 +40,26 @@ namespace identity.Core.Persistence.Migrations
                         .HasMaxLength(256)
                         .HasColumnType("nvarchar(256)");
 
+                    b.Property<int>("EmailOtpAttempts")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(0);
+
+                    b.Property<DateTime?>("EmailOtpExpiresAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("EmailOtpHash")
+                        .HasMaxLength(512)
+                        .HasColumnType("nvarchar(512)");
+
+                    b.Property<bool>("EmailVerified")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
+
+                    b.Property<DateTime?>("EmailVerifiedAt")
+                        .HasColumnType("datetime2");
+
                     b.Property<string>("FirstName")
                         .IsRequired()
                         .HasMaxLength(100)
