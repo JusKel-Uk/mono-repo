@@ -27,3 +27,4 @@ dist/
 # Logs
 *.log
 npm-debug.log*
+client/.env.example

@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation } from '@tanstack/react-query';
@@ -24,6 +25,7 @@ import {
 
 export function LoginForm() {
   const [showPassword, setShowPassword] = useState(false);
+  const router = useRouter();
 
   const form = useForm<LoginInput>({
     resolver: zodResolver(loginSchema),
@@ -31,9 +33,20 @@ export function LoginForm() {
   });
 
   const mutation = useMutation({
-    mutationFn: login,
+    mutationFn: (values: LoginInput) =>
+      login({ email: values.email, password: values.password }),
     onSuccess: () => {
-      // TODO(auth): route by role once the session/redirect flow lands (M1).
+      // TODO(auth): route by role once user roles exist in the backend.
+      router.push(ROUTES.sme.dashboard);
+    },
+    onError: (error) => {
+      // Unverified account → send them to finish email verification.
+      if (error instanceof ApiError && error.code === 'EMAIL_NOT_VERIFIED') {
+        const email = error.email ?? form.getValues('email');
+        router.push(
+          `${ROUTES.auth.verifyEmail}?email=${encodeURIComponent(email)}`,
+        );
+      }
     },
   });
 
@@ -133,14 +146,20 @@ export function LoginForm() {
         </div>
 
         <div className='flex flex-col items-center justify-center gap-6'>
-          {mutation.isError && (
-            <p role='alert' className='text-sm text-destructive'>
-              {mutation.error instanceof ApiError
-                ? mutation.error.message
-                : 'Unable to sign in. Please try again.'}
-            </p>
-          )}
-          <Button type='submit' className='w-full' disabled={mutation.isPending}>
+          <div className='flex items-center justify-start w-full'>
+            {mutation.isError && (
+              <p role='alert' className='text-sm text-destructive'>
+                {mutation.error instanceof ApiError
+                  ? mutation.error.message
+                  : 'Unable to sign in. Please try again.'}
+              </p>
+            )}
+          </div>
+          <Button
+            type='submit'
+            className='w-full'
+            loading={mutation.isPending}
+          >
             {mutation.isPending ? 'Signing in…' : 'Sign in'}
           </Button>
           <div className='flex items-center gap-4 xl:gap-8'>

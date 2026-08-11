@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useForm, type ControllerRenderProps } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation } from '@tanstack/react-query';
@@ -98,6 +99,8 @@ function PasswordRequirements({ value }: { value: string }) {
 }
 
 export function SignupForm() {
+  const router = useRouter();
+
   const form = useForm<SignupInput>({
     resolver: zodResolver(signupSchema),
     defaultValues: {
@@ -111,9 +114,18 @@ export function SignupForm() {
   });
 
   const mutation = useMutation({
-    mutationFn: register,
-    onSuccess: () => {
-      // TODO(auth): route to onboarding/role flow once sessions land (M1).
+    mutationFn: (values: SignupInput) =>
+      register({
+        firstName: values.firstName,
+        lastName: values.lastName,
+        email: values.businessEmail,
+        password: values.password,
+      }),
+    onSuccess: (data) => {
+      // Account created but unverified — go verify the email OTP.
+      router.push(
+        `${ROUTES.auth.verifyEmail}?email=${encodeURIComponent(data.email)}`,
+      );
     },
   });
 
@@ -257,16 +269,18 @@ export function SignupForm() {
 
         {/* Submit + footer */}
         <div className='flex flex-col items-center justify-center gap-6'>
-          {mutation.isError && (
-            <p role='alert' className='text-sm text-destructive'>
-              {mutation.error instanceof ApiError
-                ? mutation.error.message
-                : 'Unable to create your account. Please try again.'}
-            </p>
-          )}
+          <div className='flex items-center justify-start w-full'>
+            {mutation.isError && (
+              <p role='alert' className='text-sm text-destructive'>
+                {mutation.error instanceof ApiError
+                  ? mutation.error.message
+                  : 'Unable to create your account. Please try again.'}
+              </p>
+            )}
+          </div>
           <Button
             type='submit'
-            disabled={mutation.isPending}
+            loading={mutation.isPending}
             className='w-full'
           >
             {mutation.isPending ? 'Creating account…' : 'Create Account'}

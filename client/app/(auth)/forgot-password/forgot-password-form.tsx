@@ -71,16 +71,19 @@ export function ForgotPasswordForm() {
         />
 
         <div className='flex flex-col items-center gap-6'>
-          {mutation.isError && (
-            <p role='alert' className='text-sm text-destructive'>
-              {mutation.error instanceof ApiError
-                ? mutation.error.message
-                : 'Unable to send the reset code. Please try again.'}
-            </p>
-          )}
+          <div className='flex items-center justify-start w-full'>
+            {mutation.isError && (
+              <p role='alert' className='text-sm text-destructive'>
+                {mutation.error instanceof ApiError
+                  ? mutation.error.message
+                  : 'Unable to send the reset code. Please try again.'}
+              </p>
+            )}
+          </div>
+
           <Button
             type='submit'
-            disabled={mutation.isPending}
+            loading={mutation.isPending}
             className='w-full'
           >
             {mutation.isPending ? 'Sending…' : 'Send reset link'}

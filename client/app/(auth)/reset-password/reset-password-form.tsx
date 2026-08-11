@@ -124,14 +124,20 @@ export function ResetPasswordForm({ token }: { token: string }) {
         </div>
 
         <div className='flex flex-col items-center gap-6'>
-          {mutation.isError && (
-            <p role='alert' className='text-sm text-destructive'>
-              {mutation.error instanceof ApiError
-                ? mutation.error.message
-                : 'Unable to update your password. Please try again.'}
-            </p>
-          )}
-          <Button type='submit' disabled={mutation.isPending} className='w-full'>
+          <div className='flex items-center justify-start w-full'>
+            {mutation.isError && (
+              <p role='alert' className='text-sm text-destructive'>
+                {mutation.error instanceof ApiError
+                  ? mutation.error.message
+                  : 'Unable to update your password. Please try again.'}
+              </p>
+            )}
+          </div>
+          <Button
+            type='submit'
+            loading={mutation.isPending}
+            className='w-full'
+          >
             {mutation.isPending ? 'Updating…' : 'Update Password'}
           </Button>
         </div>

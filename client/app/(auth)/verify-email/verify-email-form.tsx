@@ -9,11 +9,7 @@ import { Loader2 } from 'lucide-react';
 
 import { ROUTES } from '@/lib/routes';
 import { verifyCodeSchema, type VerifyCodeInput } from '@/lib/validations/auth';
-import {
-  verifyResetCode,
-  requestPasswordReset,
-  ApiError,
-} from '@/lib/api/auth';
+import { verifyEmail, resendOtp, ApiError } from '@/lib/api/auth';
 import { Button } from '@/components/ui/button';
 import {
   InputOTP,
@@ -31,7 +27,7 @@ import {
 const slotClass =
   'size-11 rounded-md border text-lg font-semibold xl:size-14 xl:text-2xl';
 
-export function VerifyCodeForm({ email }: { email: string }) {
+export function VerifyEmailForm({ email }: { email: string }) {
   const router = useRouter();
 
   const form = useForm<VerifyCodeInput>({
@@ -41,17 +37,14 @@ export function VerifyCodeForm({ email }: { email: string }) {
 
   const mutation = useMutation({
     mutationFn: (values: VerifyCodeInput) =>
-      verifyResetCode({ email, code: values.code }),
-    onSuccess: (data) => {
-      router.push(
-        `${ROUTES.auth.resetPassword}?token=${encodeURIComponent(data.token)}`,
-      );
+      verifyEmail({ email, otpCode: values.code }),
+    onSuccess: () => {
+      // Verified — send them to sign in.
+      router.push(`${ROUTES.auth.login}?verified=1`);
     },
   });
 
-  const resend = useMutation({
-    mutationFn: () => requestPasswordReset({ email }),
-  });
+  const resend = useMutation({ mutationFn: () => resendOtp(email) });
 
   const onSubmit = form.handleSubmit((values) => mutation.mutate(values));
 
@@ -106,7 +99,7 @@ export function VerifyCodeForm({ email }: { email: string }) {
             loading={mutation.isPending}
             className='w-full'
           >
-            {mutation.isPending ? 'Verifying…' : 'Verify Code'}
+            {mutation.isPending ? 'Verifying…' : 'Verify Email'}
           </Button>
           <p className='text-sm text-muted-foreground xl:text-base'>
             Didn&apos;t get any code?{' '}

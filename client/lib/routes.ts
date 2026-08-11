@@ -8,6 +8,7 @@ export const ROUTES = {
   auth: {
     login: '/login',
     signup: '/signup',
+    verifyEmail: '/verify-email',
     forgotPassword: '/forgot-password',
     verifyResetCode: '/forgot-password/verify',
     resetPassword: '/reset-password',
