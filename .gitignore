@@ -45,3 +45,4 @@ api/sandbox/**/secrets.env
 api/sandbox/**/.env
 api/sandbox/**/responses/*
 !api/sandbox/**/responses/.gitkeep
+client/.env.example
