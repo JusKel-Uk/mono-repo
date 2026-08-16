@@ -1,0 +1,10 @@
+{
+  "_note": "GET company profile — not a POST body. Use test.sh or curl below.",
+  "method": "GET",
+  "path": "/company/{company_number}",
+  "example_path": "/company/00000006",
+  "headers": {
+    "Accept": "application/json"
+  },
+  "auth": "Basic — username = API key, password empty"
+}

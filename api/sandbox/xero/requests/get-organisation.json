@@ -1,0 +1,10 @@
+{
+  "_note": "GET organisation — requires Bearer token and xero-tenant-id header.",
+  "method": "GET",
+  "path": "/Organisation",
+  "headers": {
+    "Accept": "application/json",
+    "Authorization": "Bearer {XERO_ACCESS_TOKEN}",
+    "xero-tenant-id": "{XERO_TENANT_ID}"
+  }
+}

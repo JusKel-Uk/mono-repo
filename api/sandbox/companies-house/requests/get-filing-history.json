@@ -1,0 +1,12 @@
+{
+  "_note": "GET filing history — recent accounts/confirmation statements.",
+  "method": "GET",
+  "path": "/company/{company_number}/filing-history",
+  "query": {
+    "items_per_page": 5
+  },
+  "headers": {
+    "Accept": "application/json"
+  },
+  "auth": "Basic — username = API key, password empty"
+}

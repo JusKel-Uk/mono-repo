@@ -5,6 +5,9 @@
   "Jwt": {
     "Secret": "YOUR_DEV_JWT_SECRET_MIN_32_CHARS"
   },
+  "Encryption": {
+    "EmailLookupKey": "YOUR_DEV_EMAIL_LOOKUP_KEY_MIN_32_CHARS"
+  },
   "Email": {
     "Provider": "Resend",
     "DefaultFrom": "juskel <hello@juskel.co.uk>",

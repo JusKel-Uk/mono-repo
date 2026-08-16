@@ -1,12 +1,13 @@
-using juskel.Shared;
-using juskel.Email;
+using identity.Core;
+using identity.Core.Examples;
 using juskel.Api.Infrastructure;
 using juskel.Api.Contracts.Examples;
 using juskel.Api.Contracts.Responses;
+using juskel.Email;
+using juskel.Shared;
+using juskel.Shared.Security;
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Filters;
-using identity.Core;
-using identity.Core.Examples;
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
@@ -14,6 +15,10 @@ using Microsoft.OpenApi;
 
 var builder = WebApplication.CreateBuilder(args);
 
+var dataProtectionKeysPath = Path.GetFullPath(
+    Path.Combine(builder.Environment.ContentRootPath, "..", "..", "..", ".data-protection-keys"));
+
+builder.Services.AddFieldEncryption(builder.Configuration, dataProtectionKeysPath);
 builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection(JwtOptions.SectionName));
 builder.Logging.AddFilter("Microsoft", LogLevel.Warning);
 builder.Logging.AddFilter("System", LogLevel.Warning);
@@ -81,12 +86,33 @@ builder.Services
 
 builder.Services.AddAuthorization();
 
+var corsOptions = builder.Configuration
+    .GetSection(CorsOptions.SectionName)
+    .Get<CorsOptions>()
+    ?? new CorsOptions();
 
+builder.Services.AddCors(options =>
+{
+    options.AddDefaultPolicy(policy =>
+    {
+        if (corsOptions.AllowedOrigins.Length > 0)
+        {
+            policy.WithOrigins(corsOptions.AllowedOrigins)
+                .AllowAnyHeader()
+                .AllowAnyMethod();
+        }
+    });
+});
 
 var app = builder.Build();
+
+EncryptedStringConverter.Initialize(app.Services.GetRequiredService<IFieldEncryptor>());
+
+await app.MigrateAndBackfillPiiAsync();
+
 app.UseExceptionHandler();
 app.UseStaticFiles();
-
+app.UseCors();
 
 app.UseAuthentication();
 app.UseAuthorization();

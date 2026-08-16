@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ISO 27001 — 90-Day Plan — JusKel Technology Documentation</title>
+  <link rel="stylesheet" href="../../assets/css/main.css">
+</head>
+<body data-module="iso-27001" data-page="flow" data-site-section="modules">
+  <header class="site-header">
+    <div class="site-header__inner">
+      <a href="../../index.html" class="site-logo">JusKel Technology Docs</a>
+      <button class="nav-toggle" aria-label="Toggle navigation" aria-expanded="false">
+        <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M4 6h16M4 12h16M4 18h16"/>
+        </svg>
+      </button>
+      <nav class="site-nav">
+        <a href="../../index.html" data-section="home">Home</a>
+        <a href="../index.html" data-section="modules">Modules</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="main-content">
+    <nav class="breadcrumbs" aria-label="Breadcrumb">
+      <a href="../../index.html">Home</a>
+      <span class="breadcrumbs__sep">/</span>
+      <a href="../index.html">Modules</a>
+      <span class="breadcrumbs__sep">/</span>
+      <a href="index.html">ISO 27001</a>
+      <span class="breadcrumbs__sep">/</span>
+      <span>90-Day Plan</span>
+    </nav>
+
+    <header class="page-header">
+      <h1>ISO 27001 — 90-Day Technical Plan</h1>
+      <p>Phased execution sequence for a solo technical lead, aligned to juskel codebase and budget.</p>
+      <div class="page-header__meta">
+        <span class="status-pill status-pill--planned">Aug–Nov 2026</span>
+      </div>
+    </header>
+
+    <nav class="module-subnav" aria-label="Module navigation">
+      <a href="index.html" data-page="overview">Overview</a>
+      <a href="schematics.html" data-page="schematics">Control Map</a>
+      <a href="implementation.html" data-page="implementation">Roadmap</a>
+      <a href="flow.html" data-page="flow">90-Day Plan</a>
+    </nav>
+
+    <section class="section">
+      <h2>Timeline</h2>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Week</th>
+            <th>Workstream</th>
+            <th>Deliverable</th>
+            <th>Verify</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>1</td>
+            <td>Foundation</td>
+            <td>Split prod/nonprod resource groups + resource tags</td>
+            <td>Azure Portal → Resource groups; tags visible</td>
+          </tr>
+          <tr>
+            <td>2–3</td>
+            <td>Foundation</td>
+            <td>GitHub Actions: build on PR; branch protection on <code>main</code></td>
+            <td>Open PR → green check; merge blocked without pass</td>
+          </tr>
+          <tr>
+            <td>4–5</td>
+            <td>Identity &amp; secrets</td>
+            <td>Azure Key Vault; move JWT + Resend keys out of <code>deploy-azure.env</code></td>
+            <td>Container App <code>secretref</code> points to Key Vault</td>
+          </tr>
+          <tr>
+            <td>6–7</td>
+            <td>Identity &amp; secrets</td>
+            <td>SQL Managed Identity; remove SQL password from prod</td>
+            <td>Connection string uses <code>Authentication=Active Directory Managed Identity</code></td>
+          </tr>
+          <tr>
+            <td>6–8</td>
+            <td>Evidence</td>
+            <td>Application Insights + SQL audit logs → Log Analytics</td>
+            <td>KQL query returns app + SQL events</td>
+          </tr>
+          <tr>
+            <td>8</td>
+            <td>Evidence</td>
+            <td>SQL restore drill + written log (RTO/RPO)</td>
+            <td>Dated restore test entry in ISMS evidence folder</td>
+          </tr>
+          <tr>
+            <td>9</td>
+            <td>Evidence</td>
+            <td>Defender for Cloud ISO 27001 dashboard review</td>
+            <td>Screenshot; high-severity items triaged</td>
+          </tr>
+          <tr>
+            <td>10–12</td>
+            <td>ISMS</td>
+            <td>Statement of Applicability + risk register + vendor assessments</td>
+            <td>SoA maps each Annex A control to implemented / planned / N/A</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="section">
+      <h2>Phase summary</h2>
+      <div class="card-grid">
+        <div class="module-card">
+          <h3>Phase A — Foundation (weeks 1–3)</h3>
+          <ul>
+            <li>Resource group separation + tagging</li>
+            <li>GitHub Actions CI</li>
+            <li>Branch protection</li>
+            <li>Activity log export</li>
+          </ul>
+          <span class="status-pill status-pill--in-progress">Start here</span>
+        </div>
+        <div class="module-card">
+          <h3>Phase B — Secrets &amp; identity (weeks 4–7)</h3>
+          <ul>
+            <li>Key Vault (soft-delete + purge protection)</li>
+            <li>SQL Managed Identity</li>
+            <li>OIDC deploy pipeline (no laptop prod deploys)</li>
+          </ul>
+          <span class="status-pill status-pill--planned">Pre-certification</span>
+        </div>
+        <div class="module-card">
+          <h3>Phase C — Evidence (weeks 6–9)</h3>
+          <ul>
+            <li>App Insights + structured app logs</li>
+            <li>SQL audit + restore drill</li>
+            <li>Defender ISO dashboard</li>
+          </ul>
+          <span class="status-pill status-pill--planned">Audit-ready</span>
+        </div>
+        <div class="module-card">
+          <h3>Phase D — ISMS docs (weeks 10–12)</h3>
+          <ul>
+            <li>SoA, risk register, policies</li>
+            <li>Vendor DPIAs</li>
+            <li>Incident response runbook</li>
+          </ul>
+          <span class="status-pill status-pill--planned">Stage 2 prep</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>Pre-audit checklist (juskel edition)</h2>
+      <p>Pull these up in under 30 seconds during Stage 2 screen-share.</p>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Check</th>
+            <th>Where to find it</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>☐ ISMS docs exist (risk assessment, SoA, access control policy)</td>
+            <td>ISMS folder / GRC tool</td>
+          </tr>
+          <tr>
+            <td>☐ MFA on Azure portal + GitHub owner account</td>
+            <td>Entra ID → Users → Authentication methods</td>
+          </tr>
+          <tr>
+            <td>☐ Prod secrets NOT on laptop — Key Vault or GitHub Environments</td>
+            <td>Key Vault secrets list; no <code>deploy-azure.env</code> for prod</td>
+          </tr>
+          <tr>
+            <td>☐ GitHub Actions: build on every PR; deploy only from <code>main</code></td>
+            <td>Repo → Actions → workflow runs</td>
+          </tr>
+          <tr>
+            <td>☐ SQL: TDE on, automated backup, firewall restricted, separate prod DB</td>
+            <td>Azure Portal → SQL → Security + Backups</td>
+          </tr>
+          <tr>
+            <td>☐ Container App: <code>ASPNETCORE_ENVIRONMENT=Production</code>, Swagger off</td>
+            <td>Container App → Environment variables</td>
+          </tr>
+          <tr>
+            <td>☐ Log Analytics: Container App + SQL audit logs flowing</td>
+            <td>Log Analytics → Logs → KQL query</td>
+          </tr>
+          <tr>
+            <td>☐ App auth documented: JWT + OTP flow, Entra ID roadmap dated</td>
+            <td><a href="../signin/index.html">Sign-in module</a> + SoA A.8.5 entry</td>
+          </tr>
+          <tr>
+            <td>☐ Public email blob documented as non-PII static assets</td>
+            <td><a href="schematics.html">Control Map</a> accepted risks table</td>
+          </tr>
+          <tr>
+            <td>☐ Quarterly restore test log for prod SQL</td>
+            <td>ISMS evidence folder (dated entry)</td>
+          </tr>
+          <tr>
+            <td>☐ Sandbox secrets never committed</td>
+            <td><code>.gitignore</code> — <code>api/sandbox/**/secrets.env</code></td>
+          </tr>
+          <tr>
+            <td>☐ Defender for Cloud ISO 27001 score reviewed</td>
+            <td>Defender → Regulatory compliance</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="section">
+      <h2>Enterprise checklist vs juskel</h2>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Enterprise pre-audit item</th>
+            <th>juskel equivalent</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Defender ISO dashboard &gt; 90%</td>
+            <td>Review score; document accepted risks for expensive controls</td>
+          </tr>
+          <tr>
+            <td>PIM: 0 permanent Owner roles</td>
+            <td>MFA + sole-admin policy OR PIM JIT activations logged</td>
+          </tr>
+          <tr>
+            <td>Key Vault soft-delete + purge protection</td>
+            <td>Same — implement in Phase B</td>
+          </tr>
+          <tr>
+            <td>SQL TDE + private endpoint proof</td>
+            <td>TDE yes; private endpoint deferred with documented risk</td>
+          </tr>
+          <tr>
+            <td>PR: 2 approvals + pipeline pass</td>
+            <td>1 approval + pipeline pass if team &lt; 3; document exception</td>
+          </tr>
+          <tr>
+            <td>Backup vault restore drill</td>
+            <td>SQL restore to test DB; log RTO/RPO achieved</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>JusKel Technology Documentation · Proprietary — JusKel UK</p>
+  </footer>
+
+  <script src="../../assets/js/main.js" defer></script>
+</body>
+</html>

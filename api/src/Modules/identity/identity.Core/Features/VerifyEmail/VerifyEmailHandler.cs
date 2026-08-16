@@ -1,6 +1,7 @@
 using identity.Contracts;
 using identity.Core.Persistence;
 using identity.Core.Services;
+using juskel.Shared.Security;
 using Microsoft.EntityFrameworkCore;
 
 namespace identity.Core.Features.VerifyEmail;
@@ -9,11 +10,16 @@ internal sealed class VerifyEmailHandler
 {
     private readonly IdentityDbContext _db;
     private readonly IEmailOtpService _emailOtpService;
+    private readonly IEmailLookupHasher _emailLookupHasher;
 
-    public VerifyEmailHandler(IdentityDbContext db, IEmailOtpService emailOtpService)
+    public VerifyEmailHandler(
+        IdentityDbContext db,
+        IEmailOtpService emailOtpService,
+        IEmailLookupHasher emailLookupHasher)
     {
         _db = db;
         _emailOtpService = emailOtpService;
+        _emailLookupHasher = emailLookupHasher;
     }
 
     public async Task<VerifyEmailResponse> HandleAsync(
@@ -26,10 +32,12 @@ internal sealed class VerifyEmailHandler
         if (string.IsNullOrWhiteSpace(command.OtpCode))
             throw new ArgumentException("Verification code is required.");
 
-        var email = command.Email.Trim().ToLowerInvariant();
+        var emailLookupHash = _emailLookupHasher.ComputeHash(command.Email);
 
         var user = await _db.Users
-            .FirstOrDefaultAsync(u => u.Email == email && u.DeletedAt == null, ct)
+            .FirstOrDefaultAsync(
+                u => u.EmailLookupHash == emailLookupHash && u.DeletedAt == null,
+                ct)
             ?? throw new ArgumentException("Account not found.");
 
         if (user.EmailVerified)

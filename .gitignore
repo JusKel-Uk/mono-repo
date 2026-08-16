@@ -27,3 +27,21 @@ dist/
 # Logs
 *.log
 npm-debug.log*
+# juskel API — local secrets & dev overrides
+**/appsettings.Development.json
+!**/appsettings.Development.json.example
+**/secrets.json
+
+# Docker local data (if you add volume mounts later)
+api/.data/
+api/.data-protection-keys/
+
+# Netlify CLI local link state (site id — safe to commit state.json if team prefers)
+.netlify/
+api/deploy-azure.env
+
+# External API local sandboxes — secrets + live response captures
+api/sandbox/**/secrets.env
+api/sandbox/**/.env
+api/sandbox/**/responses/*
+!api/sandbox/**/responses/.gitkeep
