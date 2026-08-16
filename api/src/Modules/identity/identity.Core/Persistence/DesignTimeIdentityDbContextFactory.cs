@@ -1,8 +1,8 @@
 using juskel.Shared.Security;
-using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 
 namespace identity.Core.Persistence;
 
@@ -11,18 +11,20 @@ internal sealed class DesignTimeIdentityDbContextFactory
 {
     public IdentityDbContext CreateDbContext(string[] args)
     {
-        var dataProtectionKeysPath = Path.GetFullPath(
-            Path.Combine(Directory.GetCurrentDirectory(), "..", "..", "..", "..", ".data-protection-keys"));
-
-        Directory.CreateDirectory(dataProtectionKeysPath);
+        var fieldKey = Environment.GetEnvironmentVariable("Encryption__FieldKey")
+            ?? "local-dev-field-key-min-32-characters!!";
 
         var services = new ServiceCollection();
-        services.AddDataProtection()
-            .PersistKeysToFileSystem(new DirectoryInfo(dataProtectionKeysPath))
-            .SetApplicationName("juskel");
+        services.AddSingleton(Options.Create(new EncryptionOptions
+        {
+            FieldKey = fieldKey,
+            EmailLookupKey = Environment.GetEnvironmentVariable("Encryption__EmailLookupKey")
+                ?? "local-dev-email-lookup-key-32-chars!!",
+        }));
+        services.AddSingleton<IFieldEncryptor, AesFieldEncryptor>();
 
-        var provider = services.BuildServiceProvider().GetRequiredService<IDataProtectionProvider>();
-        EncryptedStringConverter.Initialize(new DataProtectionFieldEncryptor(provider));
+        EncryptedStringConverter.Initialize(
+            services.BuildServiceProvider().GetRequiredService<IFieldEncryptor>());
 
         var options = new DbContextOptionsBuilder<IdentityDbContext>()
             .UseSqlServer(

@@ -15,10 +15,7 @@ using Microsoft.OpenApi;
 
 var builder = WebApplication.CreateBuilder(args);
 
-var dataProtectionKeysPath = Path.GetFullPath(
-    Path.Combine(builder.Environment.ContentRootPath, "..", "..", "..", ".data-protection-keys"));
-
-builder.Services.AddFieldEncryption(builder.Configuration, dataProtectionKeysPath);
+builder.Services.AddFieldEncryption(builder.Configuration);
 builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection(JwtOptions.SectionName));
 builder.Logging.AddFilter("Microsoft", LogLevel.Warning);
 builder.Logging.AddFilter("System", LogLevel.Warning);
@@ -86,22 +83,14 @@ builder.Services
 
 builder.Services.AddAuthorization();
 
-var corsOptions = builder.Configuration
-    .GetSection(CorsOptions.SectionName)
-    .Get<CorsOptions>()
-    ?? new CorsOptions();
-
 builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(policy =>
-    {
-        if (corsOptions.AllowedOrigins.Length > 0)
-        {
-            policy.WithOrigins(corsOptions.AllowedOrigins)
-                .AllowAnyHeader()
-                .AllowAnyMethod();
-        }
-    });
+        policy.WithOrigins(
+                "http://localhost:3000",
+                "https://mono-repo-n96q.vercel.app")
+            .AllowAnyHeader()
+            .AllowAnyMethod());
 });
 
 var app = builder.Build();

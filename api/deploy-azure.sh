@@ -72,6 +72,8 @@ require_secrets() {
   local missing=()
   [[ -n "${CONNECTIONSTRINGS__IDENTITY:-}" ]] || missing+=("CONNECTIONSTRINGS__IDENTITY")
   [[ -n "${JWT__SECRET:-}" ]] || missing+=("JWT__SECRET")
+  [[ -n "${ENCRYPTION__FIELDKEY:-}" ]] || missing+=("ENCRYPTION__FIELDKEY")
+  [[ -n "${ENCRYPTION__EMAILLOOKUPKEY:-}" ]] || missing+=("ENCRYPTION__EMAILLOOKUPKEY")
   [[ -n "${EMAIL__RESEND__APIKEY:-}" ]] || missing+=("EMAIL__RESEND__APIKEY")
 
   if ((${#missing[@]} > 0)); then
@@ -173,6 +175,10 @@ deploy_app() {
     "Email__Provider=${EMAIL__PROVIDER:-Resend}"
     "Email__DefaultFrom=${EMAIL__DEFAULTFROM:-juskel <hello@juskel.co.uk>}"
     "Email__AssetsBaseUrl=${EMAIL__ASSETSBASEURL:-https://cdn.juskel.com/email}"
+    "Cors__AllowedOrigins__0=http://localhost:3000"
+    "Cors__AllowedOrigins__1=https://mono-repo-n96q.vercel.app"
+    "Encryption__FieldKey=secretref:field-encryption-key"
+    "Encryption__EmailLookupKey=secretref:email-lookup-key"
     "ConnectionStrings__Identity=secretref:sql-connection-string"
     "Jwt__Secret=secretref:jwt-secret"
     "Email__Resend__ApiKey=secretref:resend-api-key"
@@ -186,6 +192,8 @@ deploy_app() {
       --secrets \
         "sql-connection-string=${CONNECTIONSTRINGS__IDENTITY}" \
         "jwt-secret=${JWT__SECRET}" \
+        "field-encryption-key=${ENCRYPTION__FIELDKEY}" \
+        "email-lookup-key=${ENCRYPTION__EMAILLOOKUPKEY}" \
         "resend-api-key=${EMAIL__RESEND__APIKEY}" \
       -o none
 
@@ -193,8 +201,8 @@ deploy_app() {
       --name "$AZURE_CONTAINER_APP" \
       --resource-group "$AZURE_RESOURCE_GROUP" \
       --image "$image" \
-      --replace-env-vars \
-      --set-env-vars "${env_vars[@]}" \
+      --revision-suffix "${AZURE_REVISION_SUFFIX:-$(date +%Y%m%d%H%M%S)}" \
+      --replace-env-vars "${env_vars[@]}" \
       -o none
   else
     echo "Creating container app $AZURE_CONTAINER_APP..."
@@ -215,6 +223,8 @@ deploy_app() {
       --secrets \
         "sql-connection-string=${CONNECTIONSTRINGS__IDENTITY}" \
         "jwt-secret=${JWT__SECRET}" \
+        "field-encryption-key=${ENCRYPTION__FIELDKEY}" \
+        "email-lookup-key=${ENCRYPTION__EMAILLOOKUPKEY}" \
         "resend-api-key=${EMAIL__RESEND__APIKEY}" \
       --env-vars "${env_vars[@]}" \
       -o none

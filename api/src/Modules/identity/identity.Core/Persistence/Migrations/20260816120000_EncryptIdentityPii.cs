@@ -60,7 +60,7 @@ namespace identity.Core.Persistence.Migrations
             migrationBuilder.Sql(
                 """
                 CREATE UNIQUE INDEX IX_Users_EmailLookupHash
-                ON identity.Users (EmailLookupHash)
+                ON [identity].[Users] (EmailLookupHash)
                 WHERE EmailLookupHash IS NOT NULL AND EmailLookupHash <> ''
                 """);
         }
@@ -69,7 +69,7 @@ namespace identity.Core.Persistence.Migrations
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.Sql(
-                "DROP INDEX IX_Users_EmailLookupHash ON identity.Users;");
+                "DROP INDEX IX_Users_EmailLookupHash ON [identity].[Users];");
 
             migrationBuilder.DropColumn(
                 name: "EmailLookupHash",

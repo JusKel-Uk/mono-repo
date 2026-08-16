@@ -14,25 +14,9 @@ public sealed class EncryptedStringConverter : ValueConverter<string, string>
     public EncryptedStringConverter(string purpose)
         : base(
             plaintext => GetEncryptor().Encrypt(plaintext, purpose),
-            ciphertext => DecryptWithLegacyFallback(ciphertext, purpose))
+            ciphertext => GetEncryptor().Decrypt(ciphertext, purpose))
     {
         ArgumentException.ThrowIfNullOrEmpty(purpose);
-    }
-
-    private static string DecryptWithLegacyFallback(string ciphertext, string purpose)
-    {
-        var encryptor = GetEncryptor();
-
-        try
-        {
-            return encryptor.Decrypt(ciphertext, purpose);
-        }
-        catch (Exception ex) when (ex is System.Security.Cryptography.CryptographicException
-                                   or FormatException
-                                   or InvalidOperationException)
-        {
-            return ciphertext;
-        }
     }
 
     private static IFieldEncryptor GetEncryptor()

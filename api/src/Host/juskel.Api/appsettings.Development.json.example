@@ -6,6 +6,7 @@
     "Secret": "YOUR_DEV_JWT_SECRET_MIN_32_CHARS"
   },
   "Encryption": {
+    "FieldKey": "YOUR_DEV_FIELD_ENCRYPTION_KEY_MIN_32_CHARS",
     "EmailLookupKey": "YOUR_DEV_EMAIL_LOOKUP_KEY_MIN_32_CHARS"
   },
   "Email": {

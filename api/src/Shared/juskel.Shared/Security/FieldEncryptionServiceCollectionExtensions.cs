@@ -1,4 +1,3 @@
-using Microsoft.AspNetCore.DataProtection;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -8,21 +7,10 @@ public static class FieldEncryptionServiceCollectionExtensions
 {
     public static IServiceCollection AddFieldEncryption(
         this IServiceCollection services,
-        IConfiguration configuration,
-        string? dataProtectionKeysPath = null)
+        IConfiguration configuration)
     {
         services.Configure<EncryptionOptions>(configuration.GetSection(EncryptionOptions.SectionName));
-
-        var dataProtection = services.AddDataProtection()
-            .SetApplicationName("juskel");
-
-        if (!string.IsNullOrWhiteSpace(dataProtectionKeysPath))
-        {
-            Directory.CreateDirectory(dataProtectionKeysPath);
-            dataProtection.PersistKeysToFileSystem(new DirectoryInfo(dataProtectionKeysPath));
-        }
-
-        services.AddSingleton<IFieldEncryptor, DataProtectionFieldEncryptor>();
+        services.AddSingleton<IFieldEncryptor, AesFieldEncryptor>();
         services.AddSingleton<IEmailLookupHasher, EmailLookupHasher>();
 
         return services;
