@@ -1,0 +1,10 @@
+{
+  "_note": "GET chart of accounts.",
+  "method": "GET",
+  "path": "/Accounts",
+  "headers": {
+    "Accept": "application/json",
+    "Authorization": "Bearer {XERO_ACCESS_TOKEN}",
+    "xero-tenant-id": "{XERO_TENANT_ID}"
+  }
+}

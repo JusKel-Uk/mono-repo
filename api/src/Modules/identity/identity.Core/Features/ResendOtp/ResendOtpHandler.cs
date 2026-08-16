@@ -1,6 +1,7 @@
 using identity.Contracts;
 using identity.Core.Persistence;
 using identity.Core.Services;
+using juskel.Shared.Security;
 using Microsoft.EntityFrameworkCore;
 
 namespace identity.Core.Features.ResendOtp;
@@ -13,15 +14,18 @@ internal sealed class ResendOtpHandler
     private readonly IdentityDbContext _db;
     private readonly IEmailOtpService _emailOtpService;
     private readonly IEmailVerificationNotifier _emailVerificationNotifier;
+    private readonly IEmailLookupHasher _emailLookupHasher;
 
     public ResendOtpHandler(
         IdentityDbContext db,
         IEmailOtpService emailOtpService,
-        IEmailVerificationNotifier emailVerificationNotifier)
+        IEmailVerificationNotifier emailVerificationNotifier,
+        IEmailLookupHasher emailLookupHasher)
     {
         _db = db;
         _emailOtpService = emailOtpService;
         _emailVerificationNotifier = emailVerificationNotifier;
+        _emailLookupHasher = emailLookupHasher;
     }
 
     public async Task<ResendOtpResponse> HandleAsync(
@@ -31,10 +35,12 @@ internal sealed class ResendOtpHandler
         if (string.IsNullOrWhiteSpace(command.Email))
             throw new ArgumentException("Email is required.");
 
-        var email = command.Email.Trim().ToLowerInvariant();
+        var emailLookupHash = _emailLookupHasher.ComputeHash(command.Email);
 
         var user = await _db.Users
-            .FirstOrDefaultAsync(u => u.Email == email && u.DeletedAt == null, ct);
+            .FirstOrDefaultAsync(
+                u => u.EmailLookupHash == emailLookupHash && u.DeletedAt == null,
+                ct);
 
         if (user is not null && !user.EmailVerified)
         {

@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ISO 27001 — JusKel Technology Documentation</title>
+  <link rel="stylesheet" href="../../assets/css/main.css">
+</head>
+<body data-module="iso-27001" data-page="overview" data-site-section="modules">
+  <header class="site-header">
+    <div class="site-header__inner">
+      <a href="../../index.html" class="site-logo">JusKel Technology Docs</a>
+      <button class="nav-toggle" aria-label="Toggle navigation" aria-expanded="false">
+        <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M4 6h16M4 12h16M4 18h16"/>
+        </svg>
+      </button>
+      <nav class="site-nav">
+        <a href="../../index.html" data-section="home">Home</a>
+        <a href="../index.html" data-section="modules">Modules</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="main-content">
+    <nav class="breadcrumbs" aria-label="Breadcrumb">
+      <a href="../../index.html">Home</a>
+      <span class="breadcrumbs__sep">/</span>
+      <a href="../index.html">Modules</a>
+      <span class="breadcrumbs__sep">/</span>
+      <span>ISO 27001</span>
+    </nav>
+
+    <header class="page-header">
+      <h1>ISO 27001 — Azure Technical Roadmap</h1>
+      <p>Technical Lead execution plan for ISO/IEC 27001:2022 certification, re-engineered for juskel's lean Azure MVP — Container Apps, custom JWT identity, bash deploy scripts, and $5–15/mo budget constraints.</p>
+      <div class="page-header__meta">
+        <span class="status-pill status-pill--in-progress">In Progress</span>
+        <span class="status-pill status-pill--planned">Updated Aug 2026</span>
+      </div>
+    </header>
+
+    <nav class="module-subnav" aria-label="Module navigation">
+      <a href="index.html" data-page="overview">Overview</a>
+      <a href="schematics.html" data-page="schematics">Control Map</a>
+      <a href="implementation.html" data-page="implementation">Roadmap</a>
+      <a href="flow.html" data-page="flow">90-Day Plan</a>
+    </nav>
+
+    <div class="pm-callout">
+      <h2>Purpose</h2>
+      <p>This module translates enterprise Azure ISO 27001 guidance into actions that fit juskel's actual codebase: <code>deploy-azure.sh</code>, the <code>identity</code> module, Log Analytics at bootstrap, and no CI/CD yet. Auditors weight <strong>proportionality</strong> — documented risks with a credible remediation plan beat expensive controls nobody maintains.</p>
+    </div>
+
+    <section class="section">
+      <h2>Current baseline</h2>
+      <p>What exists in the repo today and how it maps to ISO Annex A technical controls.</p>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Area</th>
+            <th>juskel reality</th>
+            <th>ISO relevance</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Deploy</td>
+            <td><code>deploy-azure.sh</code> + <code>provision-storage.sh</code></td>
+            <td>A.8.28 Change management</td>
+            <td><span class="status-pill status-pill--in-progress">Manual</span></td>
+          </tr>
+          <tr>
+            <td>Compute</td>
+            <td>Azure Container Apps (scale-to-zero, public ingress)</td>
+            <td>A.8.20 Network security</td>
+            <td><span class="status-pill status-pill--implemented">Live</span></td>
+          </tr>
+          <tr>
+            <td>App identity</td>
+            <td>Custom JWT + email OTP (<code>identity</code> module)</td>
+            <td>A.8.5 Authentication</td>
+            <td><span class="status-pill status-pill--implemented">MVP</span></td>
+          </tr>
+          <tr>
+            <td>Azure identity</td>
+            <td>System-assigned MI for ACR pull only</td>
+            <td>A.8.2 Privileged access</td>
+            <td><span class="status-pill status-pill--in-progress">Partial</span></td>
+          </tr>
+          <tr>
+            <td>Secrets</td>
+            <td><code>deploy-azure.env</code> → Container App secrets</td>
+            <td>A.8.12 Data leakage</td>
+            <td><span class="status-pill status-pill--planned">Key Vault next</span></td>
+          </tr>
+          <tr>
+            <td>Database</td>
+            <td>Azure SQL via connection string + password</td>
+            <td>A.8.24 Cryptography</td>
+            <td><span class="status-pill status-pill--in-progress">TDE on; MI pending</span></td>
+          </tr>
+          <tr>
+            <td>Logging</td>
+            <td>Log Analytics workspace at bootstrap</td>
+            <td>A.8.15 / A.8.16 Logging &amp; monitoring</td>
+            <td><span class="status-pill status-pill--in-progress">Foundation</span></td>
+          </tr>
+          <tr>
+            <td>Storage</td>
+            <td>Public blob container for email PNGs</td>
+            <td>A.8.11 Data masking</td>
+            <td><span class="status-pill status-pill--implemented">Non-PII assets</span></td>
+          </tr>
+          <tr>
+            <td>CI/CD</td>
+            <td>None — deploy from laptop</td>
+            <td>A.8.25 / A.8.28 Secure coding &amp; change</td>
+            <td><span class="status-pill status-pill--planned">Highest priority</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="section">
+      <h2>Six pillars (juskel-adjusted)</h2>
+      <div class="card-grid">
+        <a href="implementation.html#pillar-1" class="module-card">
+          <div class="module-card__icon">
+            <svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 15a4.5 4.5 0 004.5 4.5H18a3.75 3.75 0 001.332-7.257 3 3 0 00-3.758-3.848 5.25 5.25 0 00-10.233 2.33A4.502 4.502 0 002.25 15z"/>
+            </svg>
+          </div>
+          <h3>1. Isolation &amp; IaC</h3>
+          <p>Resource groups first, Bicep later. No multi-subscription overhead yet.</p>
+        </a>
+        <a href="implementation.html#pillar-2" class="module-card">
+          <div class="module-card__icon">
+            <svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"/>
+            </svg>
+          </div>
+          <h3>2. Zero-trust identity</h3>
+          <p>MFA on Azure admins; document custom JWT for app users; SQL Managed Identity.</p>
+        </a>
+        <a href="implementation.html#pillar-3" class="module-card">
+          <div class="module-card__icon">
+            <svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M17.25 6.75L22.5 12l-5.25 5.25m-10.5 0L1.5 12l5.25-5.25m7.5-3l-4.5 16.5"/>
+            </svg>
+          </div>
+          <h3>3. DevOps &amp; pipelines</h3>
+          <p>GitHub Actions + OIDC. Biggest gap — fix before audit.</p>
+        </a>
+        <a href="implementation.html#pillar-4" class="module-card">
+          <div class="module-card__icon">
+            <svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z"/>
+            </svg>
+          </div>
+          <h3>4. Encryption &amp; backup</h3>
+          <p>TDE (default), Key Vault for secrets, quarterly SQL restore drill.</p>
+        </a>
+        <a href="implementation.html#pillar-5" class="module-card">
+          <div class="module-card__icon">
+            <svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z"/>
+            </svg>
+          </div>
+          <h3>5. Logging &amp; monitoring</h3>
+          <p>Build on existing Log Analytics. App Insights, not Sentinel yet.</p>
+        </a>
+        <a href="implementation.html#pillar-6" class="module-card">
+          <div class="module-card__icon">
+            <svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+          </div>
+          <h3>6. Audit prep</h3>
+          <p>Defender for Cloud ISO dashboard, Stage 2 screen-share script.</p>
+        </a>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>Top five priorities</h2>
+      <ol>
+        <li><strong>GitHub Actions CI/CD</strong> — audit trail for every deploy</li>
+        <li><strong>Key Vault</strong> — stop laptop-deploying prod secrets</li>
+        <li><strong>SQL Managed Identity</strong> — remove DB password from connection strings</li>
+        <li><strong>Application Insights + SQL audit logs</strong> → Log Analytics</li>
+        <li><strong>ISMS + Statement of Applicability</strong> — map actual architecture to Annex A</li>
+      </ol>
+    </section>
+
+    <section class="section">
+      <h2>Further reading</h2>
+      <ul>
+        <li><a href="schematics.html">Control Map</a> — Annex A clause → juskel artifact → evidence</li>
+        <li><a href="implementation.html">Roadmap</a> — full six-pillar adjusted plan with defer list</li>
+        <li><a href="flow.html">90-Day Plan</a> — phased sequence and pre-audit checklist</li>
+        <li><a href="../platform/index.html">Platform module</a> — Azure infrastructure context</li>
+        <li><a href="../signin/index.html">Sign-in module</a> — custom JWT + OTP implementation</li>
+      </ul>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>JusKel Technology Documentation · Proprietary — JusKel UK</p>
+  </footer>
+
+  <script src="../../assets/js/main.js" defer></script>
+</body>
+</html>

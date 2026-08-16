@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Payment autofill test — juskel sandbox</title>
+  <style>
+    :root {
+      --ink: #1e3a5f;
+      --ink-muted: #4a6278;
+      --surface: #f4f7fb;
+      --card: #ffffff;
+      --accent: #1e5a8a;
+      --accent-soft: #e8f1f8;
+      --border: #d6e0ea;
+      --success: #0f6b3f;
+      --success-soft: #e8f5ee;
+      --radius: 12px;
+      --shadow: 0 8px 24px rgba(30, 58, 95, 0.08);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: linear-gradient(160deg, var(--surface) 0%, #eef2f7 100%);
+      color: var(--ink);
+      line-height: 1.5;
+    }
+
+    .page {
+      max-width: 520px;
+      margin: 0 auto;
+      padding: 2.5rem 1.25rem 3rem;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.35rem 0.75rem;
+      border-radius: 999px;
+      background: var(--accent-soft);
+      color: var(--accent);
+      font-size: 0.8rem;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+    }
+
+    .badge svg { width: 14px; height: 14px; fill: currentColor; }
+
+    header { margin-bottom: 1.5rem; }
+
+    h1 {
+      margin: 0.75rem 0 0.5rem;
+      font-size: 1.65rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    .subtitle {
+      margin: 0;
+      color: var(--ink-muted);
+      font-size: 0.95rem;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 1.5rem;
+    }
+
+    .notice {
+      margin-bottom: 1.25rem;
+      padding: 0.85rem 1rem;
+      border-radius: 8px;
+      background: var(--success-soft);
+      color: var(--success);
+      font-size: 0.875rem;
+    }
+
+    form { display: grid; gap: 1rem; }
+
+    .field label {
+      display: block;
+      margin-bottom: 0.35rem;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--ink);
+    }
+
+    .field input {
+      width: 100%;
+      padding: 0.7rem 0.85rem;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 1rem;
+      color: var(--ink);
+      background: #fff;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+
+    .field input:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(30, 90, 138, 0.15);
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.75rem;
+    }
+
+    .section-title {
+      margin: 0.5rem 0 0;
+      padding-top: 0.5rem;
+      border-top: 1px solid var(--border);
+      font-size: 0.8rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--ink-muted);
+    }
+
+    button[type="submit"] {
+      margin-top: 0.25rem;
+      padding: 0.85rem 1rem;
+      border: none;
+      border-radius: 8px;
+      background: var(--accent);
+      color: #fff;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    button[type="submit"]:hover { background: #174a72; }
+
+    .hint {
+      margin-top: 1.25rem;
+      font-size: 0.8rem;
+      color: var(--ink-muted);
+    }
+
+    .hint code {
+      font-size: 0.78rem;
+      background: var(--accent-soft);
+      color: var(--accent);
+      padding: 0.1rem 0.35rem;
+      border-radius: 4px;
+    }
+
+    #result {
+      margin-top: 1rem;
+      padding: 0.85rem 1rem;
+      border-radius: 8px;
+      background: var(--surface);
+      border: 1px dashed var(--border);
+      font-size: 0.85rem;
+      white-space: pre-wrap;
+      display: none;
+    }
+
+    #result.visible { display: block; }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header>
+      <span class="badge" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><path d="M20 4H4c-1.11 0-2 .89-2 2v12c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6c0-1.11-.89-2-2-2zm0 14H4V8h16v10z"/></svg>
+        Local sandbox only
+      </span>
+      <h1>Payment autofill test</h1>
+      <p class="subtitle">Dummy checkout form — nothing is submitted. Use it to trigger Chrome saved cards.</p>
+    </header>
+
+    <div class="card">
+      <p class="notice">No network requests. Submit only shows field values in the box below.</p>
+
+      <!--
+        Chrome looks for autocomplete tokens + a recognizable checkout form.
+        Click the card number field first — autofill often appears there.
+      -->
+      <form id="payment-form" method="post" action="#" autocomplete="on">
+        <div class="field">
+          <label for="cc-name">Name on card</label>
+          <input
+            id="cc-name"
+            name="cc-name"
+            type="text"
+            autocomplete="cc-name"
+            placeholder="Jane Doe"
+            required
+          >
+        </div>
+
+        <div class="field">
+          <label for="cc-number">Card number</label>
+          <input
+            id="cc-number"
+            name="cc-number"
+            type="text"
+            inputmode="numeric"
+            autocomplete="cc-number"
+            placeholder="4111 1111 1111 1111"
+            maxlength="19"
+            required
+          >
+        </div>
+
+        <div class="row">
+          <div class="field">
+            <label for="cc-exp">Expiry</label>
+            <input
+              id="cc-exp"
+              name="cc-exp"
+              type="text"
+              inputmode="numeric"
+              autocomplete="cc-exp"
+              placeholder="MM / YY"
+              maxlength="7"
+              required
+            >
+          </div>
+          <div class="field">
+            <label for="cc-csc">Security code</label>
+            <input
+              id="cc-csc"
+              name="cc-csc"
+              type="text"
+              inputmode="numeric"
+              autocomplete="cc-csc"
+              placeholder="123"
+              maxlength="4"
+              required
+            >
+          </div>
+        </div>
+
+        <p class="section-title">Billing address</p>
+
+        <div class="field">
+          <label for="billing-line1">Address line 1</label>
+          <input
+            id="billing-line1"
+            name="billing-line1"
+            type="text"
+            autocomplete="billing address-line1"
+            placeholder="10 Downing Street"
+          >
+        </div>
+
+        <div class="field">
+          <label for="billing-city">City</label>
+          <input
+            id="billing-city"
+            name="billing-city"
+            type="text"
+            autocomplete="billing address-level2"
+            placeholder="London"
+          >
+        </div>
+
+        <div class="row">
+          <div class="field">
+            <label for="billing-postal">Postcode</label>
+            <input
+              id="billing-postal"
+              name="billing-postal"
+              type="text"
+              autocomplete="billing postal-code"
+              placeholder="SW1A 2AA"
+            >
+          </div>
+          <div class="field">
+            <label for="billing-country">Country</label>
+            <input
+              id="billing-country"
+              name="billing-country"
+              type="text"
+              autocomplete="billing country"
+              placeholder="GB"
+            >
+          </div>
+        </div>
+
+        <button type="submit">Review payment (dummy)</button>
+      </form>
+
+      <div id="result" role="status" aria-live="polite"></div>
+
+      <p class="hint">
+        Tip: click <strong>Card number</strong> and wait for Chrome’s autofill dropdown.
+        Run <code>./serve.sh</code>, then in another terminal <code>ngrok http 8765</code>,
+        and open the <strong>https</strong> ngrok URL in Chrome.
+      </p>
+    </div>
+  </div>
+
+  <script>
+    const form = document.getElementById("payment-form");
+    const result = document.getElementById("result");
+
+    form.addEventListener("submit", (event) => {
+      event.preventDefault();
+
+      const data = new FormData(form);
+      const lines = [];
+      for (const [key, value] of data.entries()) {
+        const masked = key === "cc-number" && value.length > 4
+          ? "•••• •••• •••• " + value.replace(/\s/g, "").slice(-4)
+          : key === "cc-csc"
+            ? "•••"
+            : value;
+        lines.push(`${key}: ${masked}`);
+      }
+
+      result.textContent = "Captured locally (not sent anywhere):\n\n" + lines.join("\n");
+      result.classList.add("visible");
+    });
+  </script>
+</body>
+</html>

@@ -1,6 +1,7 @@
 using identity.Contracts;
 using identity.Core.Entities;
 using identity.Core.Persistence;
+using juskel.Shared.Security;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using identity.Core.Services;
@@ -12,11 +13,16 @@ internal sealed class SignInHandler
     private readonly IdentityDbContext _db;
     private readonly PasswordHasher<User> _passwordHasher = new();
     private readonly IJwtTokenService _jwtTokenService;
+    private readonly IEmailLookupHasher _emailLookupHasher;
 
-    public SignInHandler(IdentityDbContext db, IJwtTokenService jwtTokenService)
+    public SignInHandler(
+        IdentityDbContext db,
+        IJwtTokenService jwtTokenService,
+        IEmailLookupHasher emailLookupHasher)
     {
         _db = db;
         _jwtTokenService = jwtTokenService;
+        _emailLookupHasher = emailLookupHasher;
     }
 
     public async Task<SignInResponse> HandleAsync(
@@ -29,10 +35,12 @@ internal sealed class SignInHandler
         if (string.IsNullOrWhiteSpace(command.Password))
             throw new ArgumentException("Password is required.", nameof(command.Password));
 
-        var email = command.Email.Trim().ToLowerInvariant();
+        var emailLookupHash = _emailLookupHasher.ComputeHash(command.Email);
 
         var user = await _db.Users
-            .FirstOrDefaultAsync(u => u.Email == email && u.DeletedAt == null, ct);
+            .FirstOrDefaultAsync(
+                u => u.EmailLookupHash == emailLookupHash && u.DeletedAt == null,
+                ct);
 
         if (user is null)
             throw new ArgumentException("Invalid email or password.");

@@ -1,6 +1,7 @@
 using identity.Contracts;
 using identity.Core.Entities;
 using identity.Core.Persistence;
+using juskel.Shared.Security;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using identity.Core.Validation;
@@ -14,15 +15,18 @@ internal sealed class RegisterUserHandler
     private readonly PasswordHasher<User> _passwordHasher = new();
     private readonly IEmailOtpService _emailOtpService;
     private readonly IEmailVerificationNotifier _emailVerificationNotifier;
+    private readonly IEmailLookupHasher _emailLookupHasher;
 
     public RegisterUserHandler(
         IdentityDbContext db,
         IEmailOtpService emailOtpService,
-        IEmailVerificationNotifier emailVerificationNotifier)
+        IEmailVerificationNotifier emailVerificationNotifier,
+        IEmailLookupHasher emailLookupHasher)
     {
         _db = db;
         _emailOtpService = emailOtpService;
         _emailVerificationNotifier = emailVerificationNotifier;
+        _emailLookupHasher = emailLookupHasher;
     }
 
     public async Task<RegisterUserResponse> HandleAsync(
@@ -46,10 +50,11 @@ internal sealed class RegisterUserHandler
         if (string.IsNullOrWhiteSpace(command.Password))
             throw new ArgumentException("Password is required.");
 
-        var email = command.Email.Trim().ToLowerInvariant();
+        var email = _emailLookupHasher.NormalizeEmail(command.Email);
+        var emailLookupHash = _emailLookupHasher.ComputeHash(email);
 
         var emailExists = await _db.Users
-            .AnyAsync(u => u.Email == email && u.DeletedAt == null, ct);
+            .AnyAsync(u => u.EmailLookupHash == emailLookupHash && u.DeletedAt == null, ct);
 
         if (emailExists)
             throw new ArgumentException("Email is already registered.");
@@ -62,6 +67,7 @@ internal sealed class RegisterUserHandler
             FirstName = command.FirstName.Trim(),
             LastName = command.LastName.Trim(),
             Email = email,
+            EmailLookupHash = emailLookupHash,
             CreatedAt = now,
             UpdatedAt = now,
             LastPasswordChangeAt = now

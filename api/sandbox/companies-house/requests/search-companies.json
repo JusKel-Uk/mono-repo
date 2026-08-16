@@ -1,0 +1,13 @@
+{
+  "_note": "GET search — query string, not a JSON body.",
+  "method": "GET",
+  "path": "/search/companies",
+  "query": {
+    "q": "juskel",
+    "items_per_page": 5
+  },
+  "headers": {
+    "Accept": "application/json"
+  },
+  "auth": "Basic — username = API key, password empty"
+}

@@ -15,41 +15,6 @@ internal sealed class IdentityDbContext : DbContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.HasDefaultSchema("identity");
-
-        modelBuilder.Entity<User>(entity =>
-        {
-            entity.ToTable("Users");
-            entity.HasKey(u => u.Id);
-
-            entity.Property(u => u.Email)
-                .HasMaxLength(256)
-                .IsRequired();
-
-            entity.Property(u => u.FirstName)
-                .HasMaxLength(100)
-                .IsRequired();
-
-            entity.Property(u => u.LastName)
-                .HasMaxLength(100)
-                .IsRequired();
-
-            entity.Property(u => u.PasswordHash)
-                .HasMaxLength(512)
-                .IsRequired();
-
-            entity.Property(u => u.EmailVerified)
-                .HasDefaultValue(false)
-                .IsRequired();
-
-            entity.Property(u => u.EmailOtpHash)
-                .HasMaxLength(512);
-
-            entity.Property(u => u.EmailOtpAttempts)
-                .HasDefaultValue(0)
-                .IsRequired();
-
-            entity.HasIndex(u => u.Email)
-                .IsUnique();
-        });
+        modelBuilder.ApplyConfiguration(new UserEntityConfiguration());
     }
 }

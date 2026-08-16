@@ -1,0 +1,10 @@
+{
+  "_note": "GET accounts after you have an access token.",
+  "method": "GET",
+  "path": "/accounts",
+  "headers": {
+    "Accept": "application/json",
+    "Authorization": "Bearer {OPEN_BANKING_ACCESS_TOKEN}",
+    "x-fapi-financial-id": "{OPEN_BANKING_FINANCIAL_ID}"
+  }
+}

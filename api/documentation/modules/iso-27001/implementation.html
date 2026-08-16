@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ISO 27001 — Roadmap — JusKel Technology Documentation</title>
+  <link rel="stylesheet" href="../../assets/css/main.css">
+</head>
+<body data-module="iso-27001" data-page="implementation" data-site-section="modules">
+  <header class="site-header">
+    <div class="site-header__inner">
+      <a href="../../index.html" class="site-logo">JusKel Technology Docs</a>
+      <button class="nav-toggle" aria-label="Toggle navigation" aria-expanded="false">
+        <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M4 6h16M4 12h16M4 18h16"/>
+        </svg>
+      </button>
+      <nav class="site-nav">
+        <a href="../../index.html" data-section="home">Home</a>
+        <a href="../index.html" data-section="modules">Modules</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="main-content">
+    <nav class="breadcrumbs" aria-label="Breadcrumb">
+      <a href="../../index.html">Home</a>
+      <span class="breadcrumbs__sep">/</span>
+      <a href="../index.html">Modules</a>
+      <span class="breadcrumbs__sep">/</span>
+      <a href="index.html">ISO 27001</a>
+      <span class="breadcrumbs__sep">/</span>
+      <span>Roadmap</span>
+    </nav>
+
+    <header class="page-header">
+      <h1>ISO 27001 — Technical Roadmap</h1>
+      <p>Six pillars adjusted for juskel's lean Azure MVP. Enterprise patterns scaled down, not skipped.</p>
+      <div class="page-header__meta">
+        <span class="status-pill status-pill--in-progress">In Progress</span>
+      </div>
+    </header>
+
+    <nav class="module-subnav" aria-label="Module navigation">
+      <a href="index.html" data-page="overview">Overview</a>
+      <a href="schematics.html" data-page="schematics">Control Map</a>
+      <a href="implementation.html" data-page="implementation">Roadmap</a>
+      <a href="flow.html" data-page="flow">90-Day Plan</a>
+    </nav>
+
+    <section class="section" id="pillar-1">
+      <h2>1. Subscription isolation &amp; IaC</h2>
+      <div class="verdict-callout">
+        <strong>juskel adjustment:</strong> Keep one subscription. Split resource groups. Treat <code>deploy-azure.sh</code> as version-controlled imperative IaC until Bicep is ready.
+      </div>
+      <h3>Phase A — now (free)</h3>
+      <ul>
+        <li>Create <code>rg-juskel-nonprod</code> (current <code>DevTest</code>) and <code>rg-juskel-prod</code> when going live</li>
+        <li>Tag resources: <code>Environment</code>, <code>Owner</code>, <code>DataClassification</code></li>
+        <li>Export Azure Activity Logs to existing Log Analytics workspace</li>
+        <li>Document environment boundaries in ISMS risk register</li>
+      </ul>
+      <h3>Phase B — pre-certification</h3>
+      <ul>
+        <li>Extract <code>deploy-azure.sh</code> into Bicep modules incrementally (Log Analytics → Container Apps env → app → storage)</li>
+        <li>No AKS, VNets, or NSGs required for MVP — Container Apps + HTTPS is proportionate</li>
+      </ul>
+      <h3>Defer</h3>
+      <ul>
+        <li>Private endpoints for Azure SQL (~$7+/endpoint/month)</li>
+        <li>Azure Policy "deny manual creation" until Bicep is sole deploy path</li>
+        <li>Multi-subscription management groups</li>
+      </ul>
+    </section>
+
+    <section class="section" id="pillar-2">
+      <h2>2. Zero-trust identity</h2>
+      <div class="verdict-callout">
+        <strong>Two layers:</strong> Azure admin identity (your <code>az login</code>) and app user identity (custom JWT — not Entra ID yet).
+      </div>
+      <h3>Azure admin — do now</h3>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Control</th>
+            <th>juskel action</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>MFA on <code>az login</code></td>
+            <td>Mandatory on Microsoft account / Entra user owning subscription</td>
+          </tr>
+          <tr>
+            <td>PIM</td>
+            <td>JIT Owner activation if on Entra P1/P2; else document sole-admin + MFA policy</td>
+          </tr>
+          <tr>
+            <td>SQL logins</td>
+            <td>Separate logins per environment; rotate; replace with Managed Identity</td>
+          </tr>
+        </tbody>
+      </table>
+      <h3>App users — document, don't rip out</h3>
+      <p>SoA entry: "A.8.5 — application-layer JWT (issuer/audience validation, 60-min expiry, HTTPS only). Entra ID SSO planned."</p>
+      <p>Evidence: <code>SignInHandler</code>, OTP verification, JWT config in Container App secrets (not git), Swagger disabled in Production (<code>Program.cs</code>).</p>
+      <h3>Managed identities — high-impact next step</h3>
+      <ol>
+        <li><strong>SQL:</strong> <code>Authentication=Active Directory Managed Identity</code> — remove password from prod connection string</li>
+        <li><strong>Key Vault (~£3/mo):</strong> Store <code>Jwt__Secret</code>, Resend API key; Container App reads via MI + <code>secretref</code></li>
+      </ol>
+      <p>System-assigned MI for ACR pull already exists in <code>deploy-azure.sh</code> — extend the same pattern.</p>
+    </section>
+
+    <section class="section" id="pillar-3">
+      <h2>3. DevOps &amp; deployment pipelines</h2>
+      <div class="verdict-callout">
+        <strong>Biggest gap.</strong> No GitHub Actions today; prod deploys from laptop via <code>deploy-azure.env</code>. Fix before audit.
+      </div>
+      <h3>Minimum viable pipeline</h3>
+      <ul>
+        <li><strong>On PR:</strong> <code>dotnet build</code> + tests + secret scan (gitleaks)</li>
+        <li><strong>On merge to main:</strong> OIDC federation to Azure → <code>deploy-azure.sh deploy</code></li>
+        <li><strong>Branch protection:</strong> require status check, no force push, PR required</li>
+      </ul>
+      <h3>Enterprise vs juskel MVP</h3>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Enterprise</th>
+            <th>juskel MVP</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>2 reviewers</td>
+            <td>1 reviewer + CODEOWNERS if team &lt; 3; document in ISMS</td>
+          </tr>
+          <tr>
+            <td>Defender for DevOps</td>
+            <td>gitleaks + <code>dotnet list package --vulnerable</code></td>
+          </tr>
+          <tr>
+            <td>Azure DevOps work items</td>
+            <td>Link PR to GitHub Issue</td>
+          </tr>
+          <tr>
+            <td>Long-lived <code>AZURE_CREDENTIALS</code></td>
+            <td>Workload Identity Federation (OIDC) — no stored secrets</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="section" id="pillar-4">
+      <h2>4. Encryption &amp; backup</h2>
+      <h3>Already in place</h3>
+      <ul>
+        <li><strong>Azure SQL TDE</strong> — enabled by default (Microsoft-managed keys)</li>
+        <li><strong>TLS 1.2+</strong> — Container Apps and <code>database.windows.net</code></li>
+        <li><strong>Non-root container</strong> — <code>USER app</code> in <code>Dockerfile</code></li>
+      </ul>
+      <h3>Actions required</h3>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Item</th>
+            <th>juskel action</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Customer-managed keys</td>
+            <td>Defer — document Microsoft-managed TDE; revisit for regulated lender data</td>
+          </tr>
+          <tr>
+            <td>Public email blob storage</td>
+            <td>Document: static marketing images only, no PII in container</td>
+          </tr>
+          <tr>
+            <td>SQL backup</td>
+            <td>Enable automated backup on prod; retention ≥ 7 days</td>
+          </tr>
+          <tr>
+            <td>Restore drill</td>
+            <td>Quarterly: restore to <code>juskel-restore-test</code> DB; log RTO/RPO</td>
+          </tr>
+          <tr>
+            <td>JWT rotation</td>
+            <td>Document procedure: generate → dual-sign window → revoke old</td>
+          </tr>
+        </tbody>
+      </table>
+      <p><strong>Target RTO/RPO (prod SQL):</strong> RTO 4h / RPO 1h. Email PNGs re-uploadable from <code>juskel.Email/Templates/assets</code>.</p>
+    </section>
+
+    <section class="section" id="pillar-5">
+      <h2>5. Logging &amp; monitoring</h2>
+      <p><code>deploy-azure.sh</code> already creates <code>juskel-dev-logs</code> Log Analytics and wires Container Apps environment.</p>
+      <h3>Now (budget-safe)</h3>
+      <ul>
+        <li>Add <strong>Application Insights</strong> (free tier ~5 GB/mo — matches logging filters in <code>Program.cs</code>)</li>
+        <li>Diagnostic settings: Container App + SQL audit logs → same workspace</li>
+        <li>Export Entra sign-in logs for Azure portal access</li>
+        <li>One alert: Container App restart loop or HTTP 5xx spike</li>
+      </ul>
+      <h3>App-level logging (before audit)</h3>
+      <ul>
+        <li>Structured events: <code>user.registered</code>, <code>user.signin.success|failure</code>, <code>otp.sent</code>, <code>otp.verified</code></li>
+        <li>Correlation ID middleware in <code>juskel.Api</code></li>
+        <li>Never log connection strings, JWT secrets, or Resend keys</li>
+      </ul>
+      <h3>Health check (document for auditors)</h3>
+      <p><code>/health</code> is in-memory only — intentional. Continuous DB pings prevent SQL Serverless auto-pause and exhaust Basic DTU. See <code>.cursor/rules/dotnet-budget-constraints.mdc</code>.</p>
+      <h3>Defer (cost)</h3>
+      <ul>
+        <li>Microsoft Sentinel (~$2/GB ingestion)</li>
+        <li>WORM immutable blob log archive — start with Log Analytics 90-day retention</li>
+      </ul>
+    </section>
+
+    <section class="section" id="pillar-6">
+      <h2>6. Compliance dashboard &amp; audit prep</h2>
+      <h3>Defender for Cloud</h3>
+      <ul>
+        <li>Enable free Secure Score on subscription</li>
+        <li>Assign ISO/IEC 27001:2022 regulatory compliance initiative</li>
+        <li>Expect &lt; 90% initially — fix high-severity first; document accepted risks</li>
+      </ul>
+      <h3>GRC tooling</h3>
+      <p>Vanta/Drata/Sprinto worth it if ISO is a sales requirement. Otherwise: spreadsheet ISMS + this module; migrate 3–6 months before Stage 2.</p>
+      <h3>Stage 2 screen-share tabs</h3>
+      <ol>
+        <li>Defender for Cloud → Regulatory compliance → ISO 27001</li>
+        <li>Entra ID → your user → MFA status</li>
+        <li>Container App → Secrets (<code>secretref</code>, not values) + system-assigned identity</li>
+        <li>SQL → TDE on, firewall, audit enabled</li>
+        <li>Log Analytics → failed sign-in query</li>
+        <li>GitHub → PR with green CI + review</li>
+        <li>Backup restore drill log (dated)</li>
+      </ol>
+    </section>
+
+    <section class="section">
+      <h2>Do not do yet</h2>
+      <div class="content-block">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Enterprise recommendation</th>
+              <th>Why defer for juskel</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Replace custom auth with Entra ID</td>
+              <td>Product validation first — document roadmap</td>
+            </tr>
+            <tr>
+              <td>Private endpoints on SQL + Container Apps</td>
+              <td>Doubles infra cost; accept as documented risk</td>
+            </tr>
+            <tr>
+              <td>Multi-subscription management groups</td>
+              <td>No benefit at team size 1–3</td>
+            </tr>
+            <tr>
+              <td>Sentinel + WORM log archive</td>
+              <td>Defer until log volume justifies cost</td>
+            </tr>
+            <tr>
+              <td>Customer-managed encryption keys</td>
+              <td>Microsoft-managed TDE is audit-acceptable for MVP fintech</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>Non-technical ISMS (ISO is ~50% policies)</h2>
+      <ul>
+        <li>Information Security Policy, Risk Treatment Plan, Asset Register</li>
+        <li>Vendor assessments (Resend, Netlify, Companies House, future Xero)</li>
+        <li>GDPR lawful basis for processing (UK fintech — overlaps A.8.10/A.8.11)</li>
+        <li>Incident response runbook (even one page)</li>
+      </ul>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>JusKel Technology Documentation · Proprietary — JusKel UK</p>
+  </footer>
+
+  <script src="../../assets/js/main.js" defer></script>
+</body>
+</html>

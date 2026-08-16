@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Companies House Explorer</title>
+  <link rel="stylesheet" href="/assets/styles.css">
+</head>
+<body>
+  <div class="layout">
+    <header class="site-header">
+      <div>
+        <h1>Companies House Explorer</h1>
+        <p>Search a company, open its profile, then explore every public data endpoint from one place.</p>
+      </div>
+      <span id="env-badge" class="badge">loading…</span>
+    </header>
+
+    <div id="view-home" class="view">
+      <section class="card search-hero">
+        <h2>Find a company</h2>
+        <div class="search-wrap">
+          <div class="inline-field search-inline">
+            <input id="home-search" type="search" placeholder="Type a company name…" autocomplete="off" aria-label="Company name search">
+            <button type="button" class="btn-primary btn-sm run-search-btn" data-ch-endpoint="search-companies">Search</button>
+          </div>
+          <ul id="suggestions" class="suggestions hidden" role="listbox"></ul>
+        </div>
+        <p class="hint">Browser calls <code>/api/suggest</code> on this server (localhost). Companies House is queried at the search URL below.</p>
+        <p id="search-upstream-hint" class="hint hint--mono"></p>
+      </section>
+
+      <section class="card">
+        <h2>Other searches</h2>
+        <div class="search-tools grid-tools">
+          <div class="field">
+            <label for="tool-search-all">Search all (companies + officers)</label>
+            <div class="inline-field">
+              <input id="tool-search-all" type="text" placeholder="Query">
+              <button type="button" class="btn-primary btn-sm run-search-btn" data-ch-endpoint="search-all">Run</button>
+            </div>
+          </div>
+          <div class="field">
+            <label for="tool-search-officers">Search officers</label>
+            <div class="inline-field">
+              <input id="tool-search-officers" type="text" placeholder="Officer name">
+              <button type="button" class="btn-primary btn-sm run-search-btn" data-ch-endpoint="search-officers">Run</button>
+            </div>
+          </div>
+          <div class="field">
+            <label for="tool-alpha">Alphabetical (starts with)</label>
+            <div class="inline-field">
+              <input id="tool-alpha" type="text" maxlength="1" placeholder="A">
+              <button type="button" class="btn-primary btn-sm run-search-btn" data-ch-endpoint="alphabetical-search">Run</button>
+            </div>
+          </div>
+          <div class="field">
+            <label for="tool-advanced-name">Advanced search (name includes)</label>
+            <div class="inline-field">
+              <input id="tool-advanced-name" type="text" placeholder="Company name">
+              <button type="button" class="btn-primary btn-sm run-search-btn" data-ch-endpoint="advanced-search-companies">Run</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="card hidden" id="home-results-section">
+        <h2>Results</h2>
+        <div id="home-status" class="status-bar"></div>
+        <div id="home-response" class="response-panel"></div>
+      </section>
+    </div>
+
+    <div id="view-company" class="view hidden">
+      <button type="button" id="back-btn" class="back-btn">← Back to search</button>
+
+      <section class="card company-hero" id="company-hero">
+        <div class="company-hero__loading">Loading company…</div>
+      </section>
+
+      <div class="company-layout">
+        <aside class="card endpoint-sidebar">
+          <h2>Explore data</h2>
+          <div id="endpoint-groups"></div>
+        </aside>
+
+        <section class="card endpoint-main">
+          <div class="endpoint-main__head">
+            <h2 id="active-endpoint-label">Response</h2>
+            <button type="button" id="copy-btn" class="btn-ghost btn-sm" disabled>Copy JSON</button>
+          </div>
+          <div class="status-bar">
+            <span id="status-pill" class="status-pill status-pill--idle">Ready</span>
+            <span id="status-detail" class="status-detail"></span>
+          </div>
+          <div id="request-url" class="request-url">Pick an endpoint from the left.</div>
+          <div id="response-body" class="response-panel empty-state">Choose what to look up for this company.</div>
+        </section>
+      </div>
+    </div>
+  </div>
+  <script src="/assets/app.js?v=5"></script>
+</body>
+</html>

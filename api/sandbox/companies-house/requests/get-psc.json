@@ -1,0 +1,9 @@
+{
+  "_note": "GET persons with significant control (PSCs).",
+  "method": "GET",
+  "path": "/company/{company_number}/persons-with-significant-control",
+  "headers": {
+    "Accept": "application/json"
+  },
+  "auth": "Basic — username = API key, password empty"
+}
