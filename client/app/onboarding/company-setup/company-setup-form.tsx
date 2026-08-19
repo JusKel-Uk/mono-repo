@@ -129,7 +129,7 @@ export function CompanySetupForm() {
                     <Button
                       type='button'
                       onClick={handleVerify}
-                      className='min-w-19.5 shrink-0 gap-3 rounded-[12px] px-5 cursor-pointer'
+                      className='h-14 shrink-0 gap-3 rounded-xl border border-gray-300 px-5 text-base font-medium cursor-pointer'
                     >
                       <Search className='size-5' />
                       Verify

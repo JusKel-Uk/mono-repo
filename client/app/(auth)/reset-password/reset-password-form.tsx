@@ -24,7 +24,7 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 
-const labelClass = 'text-sm xl:text-lg text-carbon-black';
+const labelClass = 'text-sm font-semibold xl:text-lg text-carbon-black';
 
 type ResetField = ControllerRenderProps<
   ResetPasswordInput,
@@ -66,6 +66,8 @@ export function ResetPasswordForm({ token }: { token: string }) {
 
   const form = useForm<ResetPasswordInput>({
     resolver: zodResolver(resetPasswordSchema),
+    // onChange so the submit button's isValid gate updates as the user types.
+    mode: 'onChange',
     defaultValues: { password: '', confirmPassword: '' },
   });
 
@@ -136,7 +138,8 @@ export function ResetPasswordForm({ token }: { token: string }) {
           <Button
             type='submit'
             loading={mutation.isPending}
-            className='w-full'
+            disabled={mutation.isPending || !form.formState.isValid}
+            className='h-14 w-full rounded-lg text-base font-semibold cursor-pointer'
           >
             {mutation.isPending ? 'Updating…' : 'Update Password'}
           </Button>

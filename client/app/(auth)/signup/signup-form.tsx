@@ -25,7 +25,7 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 
-const labelClass = 'text-sm xl:text-lg text-carbon-black';
+const labelClass = 'text-sm font-semibold xl:text-lg text-carbon-black';
 
 type SignupField = ControllerRenderProps<
   SignupInput,
@@ -104,6 +104,9 @@ export function SignupForm() {
 
   const form = useForm<SignupInput>({
     resolver: zodResolver(signupSchema),
+    // onChange so formState.isValid updates as the user types (the submit
+    // button is gated on it).
+    mode: 'onChange',
     defaultValues: {
       firstName: '',
       lastName: '',
@@ -287,7 +290,12 @@ export function SignupForm() {
               </p>
             )}
           </div>
-          <Button type='submit' loading={mutation.isPending} className='w-full'>
+          <Button
+            type='submit'
+            loading={mutation.isPending}
+            disabled={mutation.isPending || !form.formState.isValid}
+            className='h-14 w-full rounded-lg text-base font-semibold'
+          >
             {mutation.isPending ? 'Creating account…' : 'Create Account'}
           </Button>
           <div className='flex items-center gap-4 text-center xl:gap-8'>

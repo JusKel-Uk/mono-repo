@@ -30,6 +30,9 @@ export function LoginForm({ next }: { next?: string }) {
 
   const form = useForm<LoginInput>({
     resolver: zodResolver(loginSchema),
+    // onChange so formState.isValid updates as the user types (the submit
+    // button is gated on it).
+    mode: 'onChange',
     defaultValues: { email: '', password: '', rememberMe: false },
   });
 
@@ -69,7 +72,7 @@ export function LoginForm({ next }: { next?: string }) {
               name='email'
               render={({ field }) => (
                 <FormItem className='flex flex-col gap-2 xl:gap-4'>
-                  <FormLabel className='text-sm xl:text-lg text-carbon-black'>
+                  <FormLabel className='text-sm font-semibold xl:text-lg text-carbon-black'>
                     Email
                   </FormLabel>
                   <FormControl>
@@ -90,7 +93,7 @@ export function LoginForm({ next }: { next?: string }) {
               name='password'
               render={({ field }) => (
                 <FormItem className='flex flex-col gap-2 xl:gap-4'>
-                  <FormLabel className='text-sm xl:text-lg text-carbon-black'>
+                  <FormLabel className='text-sm font-semibold xl:text-lg text-carbon-black'>
                     Password
                   </FormLabel>
                   <FormControl>
@@ -162,7 +165,12 @@ export function LoginForm({ next }: { next?: string }) {
               </p>
             )}
           </div>
-          <Button type='submit' className='w-full' loading={mutation.isPending}>
+          <Button
+            type='submit'
+            loading={mutation.isPending}
+            disabled={mutation.isPending || !form.formState.isValid}
+            className='h-14 w-full rounded-lg text-base font-semibold cursor-pointer'
+          >
             {mutation.isPending ? 'Signing in…' : 'Sign in'}
           </Button>
           <div className='flex items-center gap-4 xl:gap-8'>

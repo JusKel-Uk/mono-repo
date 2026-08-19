@@ -28,6 +28,8 @@ export function ForgotPasswordForm() {
 
   const form = useForm<ForgotPasswordInput>({
     resolver: zodResolver(forgotPasswordSchema),
+    // onChange so the submit button's isValid gate updates as the user types.
+    mode: 'onChange',
     defaultValues: { email: '' },
   });
 
@@ -54,7 +56,7 @@ export function ForgotPasswordForm() {
           name='email'
           render={({ field }) => (
             <FormItem className='flex flex-col gap-2 xl:gap-4'>
-              <FormLabel className='text-sm xl:text-lg text-carbon-black'>
+              <FormLabel className='text-sm font-semibold xl:text-lg text-carbon-black'>
                 Email
               </FormLabel>
               <FormControl>
@@ -84,7 +86,8 @@ export function ForgotPasswordForm() {
           <Button
             type='submit'
             loading={mutation.isPending}
-            className='w-full'
+            disabled={mutation.isPending || !form.formState.isValid}
+            className='h-14 w-full rounded-lg text-base font-semibold cursor-pointer'
           >
             {mutation.isPending ? 'Sending…' : 'Send reset link'}
           </Button>

@@ -167,10 +167,10 @@ export function SustainabilityProfileForm() {
                 )}
               >
                 <div className='flex flex-col gap-1'>
-                  <h3 className='text-base font-semibold text-carbon-black'>
+                  <h3 className='text-base font-medium text-carbon-black'>
                     {section.pillar}
                   </h3>
-                  <p className='text-sm text-muted-foreground'>
+                  <p className='text-xs text-muted-foreground'>
                     {section.desc}
                   </p>
                 </div>
@@ -208,22 +208,22 @@ function RadioQuestion({
       control={control}
       name={name}
       render={({ field }) => (
-        <FormItem className='flex flex-col gap-3'>
-          <FormLabel className='text-[15px] font-semibold text-carbon-black'>
+        <FormItem className='flex flex-col gap-2'>
+          <FormLabel className='text-base font-medium text-carbon-black'>
             {label}
           </FormLabel>
           <FormControl>
             <RadioGroup
               onValueChange={field.onChange}
               value={field.value}
-              className='flex flex-wrap gap-x-6 gap-y-2'
+              className='flex flex-wrap gap-x-5 gap-y-2'
             >
               {options.map((opt) => (
                 <label
                   key={opt}
-                  className='flex cursor-pointer items-center gap-2 text-sm text-carbon-black'
+                  className='flex cursor-pointer items-center gap-2 text-base text-carbon-black'
                 >
-                  <RadioGroupItem value={opt} />
+                  <RadioGroupItem value={opt} className='border-carbon-black' />
                   {opt}
                 </label>
               ))}

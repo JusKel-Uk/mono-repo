@@ -226,24 +226,24 @@ export function FinancialProfileForm() {
               </section>
 
               {/* Confidence banner */}
-              <div className='flex flex-col gap-4 rounded-xl bg-abyssal p-5 text-mineral-white lg:p-6'>
+              <div className='flex flex-col gap-4 rounded-2xl border border-gray-200 bg-abyssal p-6 text-mineral-white'>
                 <div className='flex flex-col gap-1'>
-                  <p className='text-base font-semibold'>
+                  <p className='text-base font-medium'>
                     Why connect your data sources?
                   </p>
-                  <p className='text-sm text-mineral-white/70'>
+                  <p className='text-xs text-gray-400'>
                     Connecting verified data sources improves the accuracy of
                     your Sustainability Finance Score and increases confidence
                     in your funding assessment.
                   </p>
                 </div>
-                <div className='grid grid-cols-2 gap-x-6 gap-y-2 text-sm'>
-                  <span className='font-semibold'>Option</span>
-                  <span className='font-semibold'>Confidence Level</span>
+                <div className='grid grid-cols-2 gap-x-6 gap-y-1.5'>
+                  <span className='text-sm font-medium'>Option</span>
+                  <span className='text-sm font-medium'>Confidence Level</span>
                   {CONFIDENCE_ROWS.map(([option, level]) => (
                     <div key={option} className='contents'>
-                      <span className='text-mineral-white/80'>{option}</span>
-                      <span className='text-mineral-white/80'>{level}</span>
+                      <span className='text-xs text-gray-400'>{option}</span>
+                      <span className='text-xs text-gray-400'>{level}</span>
                     </div>
                   ))}
                 </div>
@@ -318,7 +318,7 @@ function VerifiedBand({
         <span>{value}</span>
         <ChevronDown className='size-4 text-muted-foreground' />
       </div>
-      <p className='flex items-center gap-1.5 text-sm text-data-teal'>
+      <p className='flex items-center gap-1.5 text-sm text-success-600'>
         <CheckCircle2 className='size-4' />
         Verified via {provider}
       </p>

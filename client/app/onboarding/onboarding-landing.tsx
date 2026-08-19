@@ -2,7 +2,7 @@
 
 import { useSyncExternalStore } from 'react';
 import Link from 'next/link';
-import { ArrowRight, Circle, CircleCheck } from 'lucide-react';
+import { ArrowRight, Circle, CircleCheck, Send } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 import { ONBOARDING_STEPS, stepRoute } from '@/lib/onboarding/steps';
@@ -28,6 +28,7 @@ export function OnboardingLanding() {
   const doneCount = ONBOARDING_STEPS.filter((s) => completed[s.slug]).length;
   const pct = Math.round((doneCount / total) * 100);
   const stepsLeft = total - doneCount;
+  const allComplete = doneCount === total;
   const firstIncomplete =
     ONBOARDING_STEPS.find((s) => !completed[s.slug]) ?? ONBOARDING_STEPS[0];
 
@@ -50,11 +51,15 @@ export function OnboardingLanding() {
             <p className='text-xs font-medium uppercase tracking-wide text-muted-foreground'>
               Assessment status
             </p>
-            <p className='text-base font-medium text-carbon-black'>
-              {stepsLeft === 0
-                ? 'All steps complete — submit for review.'
-                : `${stepsLeft} step${stepsLeft === 1 ? '' : 's'} left to generate your Sustainability Finance Score.`}
-            </p>
+            {allComplete ? (
+              <p className='text-base font-medium text-success-600'>
+                Ready to submit
+              </p>
+            ) : (
+              <p className='text-base font-medium text-carbon-black'>
+                {`${stepsLeft} step${stepsLeft === 1 ? '' : 's'} left to generate your Sustainability Finance Score.`}
+              </p>
+            )}
           </div>
         </div>
         <div className='h-2 w-full overflow-hidden rounded-full bg-gray-300'>
@@ -63,6 +68,34 @@ export function OnboardingLanding() {
             style={{ width: `${pct}%` }}
           />
         </div>
+
+        {/* Ready-to-submit card — shown once every step is complete */}
+        {allComplete && (
+          <div className='flex flex-col gap-6 rounded-2xl border border-primary/50 bg-primary p-6 text-mineral-white'>
+            <div className='flex items-start gap-3'>
+              <CircleCheck className='size-6 shrink-0' />
+              <div className='flex flex-col gap-1'>
+                <p className='text-lg font-semibold'>
+                  You&apos;re ready to submit
+                </p>
+                <p className='text-base'>
+                  A JusKel Assessment Specialist will review your submission and
+                  your evidence. Expect feedback in 5 working days. You&apos;ll
+                  be notified when they begin, if they need clarification, and
+                  when your score is published.
+                </p>
+              </div>
+            </div>
+            <button
+              type='button'
+              // TODO(onboarding): submit the assessment for review.
+              className='inline-flex h-14 w-fit cursor-pointer items-center justify-center gap-2 rounded-lg bg-white px-5 text-base font-semibold text-primary shadow-xs transition-opacity hover:opacity-90'
+            >
+              Submit for review
+              <Send className='size-5' />
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Timeline */}

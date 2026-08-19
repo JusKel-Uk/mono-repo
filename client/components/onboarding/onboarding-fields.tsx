@@ -26,7 +26,7 @@ import {
  * brand border, no ring. Filled value text is dark (the browser default).
  */
 export const CONTROL =
-  'h-14 rounded-xl border-gray-300 px-4 text-base placeholder:text-gray-400 focus-visible:border-primary focus-visible:ring-0';
+  'h-14 rounded-xl border border-gray-300 px-4 text-base placeholder:text-gray-400 focus-visible:border-primary focus-visible:ring-0';
 const LABEL = 'text-base font-medium text-carbon-black';
 
 /** White bordered card, with an optional icon + label header. */
@@ -50,8 +50,8 @@ export function FieldCard({
     >
       {label && (
         <div className='flex items-center gap-2'>
-          {Icon && <Icon className='size-4.5 text-muted-foreground' />}
-          <span className='text-sm font-medium text-muted-foreground'>
+          {Icon && <Icon className='size-4.5 text-foreground-secondary' />}
+          <span className='text-sm font-medium text-foreground-secondary'>
             {label}
           </span>
         </div>
