@@ -8,9 +8,10 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation } from '@tanstack/react-query';
 import { Eye, EyeOff } from 'lucide-react';
 
-import { ROUTES } from '@/lib/routes';
+import { ROUTES, safeInternalPath } from '@/lib/routes';
 import { loginSchema, type LoginInput } from '@/lib/validations/auth';
 import { login, ApiError } from '@/lib/api/auth';
+import { useAuthStore } from '@/stores/authStore';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -23,7 +24,7 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 
-export function LoginForm() {
+export function LoginForm({ next }: { next?: string }) {
   const [showPassword, setShowPassword] = useState(false);
   const router = useRouter();
 
@@ -35,9 +36,15 @@ export function LoginForm() {
   const mutation = useMutation({
     mutationFn: (values: LoginInput) =>
       login({ email: values.email, password: values.password }),
-    onSuccess: () => {
+    onSuccess: (data, variables) => {
+      // Merge keeps any name captured at signup on this device.
+
+      useAuthStore
+        .getState()
+        .setUser({ id: data.userId, email: variables.email });
+      // Return to the page they were bounced from (validated), else the app.
       // TODO(auth): route by role once user roles exist in the backend.
-      router.push(ROUTES.sme.dashboard);
+      router.push(safeInternalPath(next));
     },
     onError: (error) => {
       // Unverified account → send them to finish email verification.
@@ -155,11 +162,7 @@ export function LoginForm() {
               </p>
             )}
           </div>
-          <Button
-            type='submit'
-            className='w-full'
-            loading={mutation.isPending}
-          >
+          <Button type='submit' className='w-full' loading={mutation.isPending}>
             {mutation.isPending ? 'Signing in…' : 'Sign in'}
           </Button>
           <div className='flex items-center gap-4 xl:gap-8'>

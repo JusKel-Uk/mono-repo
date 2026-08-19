@@ -12,6 +12,7 @@ import { cn } from '@/lib/utils';
 import { ROUTES } from '@/lib/routes';
 import { signupSchema, type SignupInput } from '@/lib/validations/auth';
 import { register, ApiError } from '@/lib/api/auth';
+import { useAuthStore } from '@/stores/authStore';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -121,7 +122,15 @@ export function SignupForm() {
         email: values.businessEmail,
         password: values.password,
       }),
-    onSuccess: (data) => {
+    onSuccess: (data, variables) => {
+      // Remember the profile through verification → login (login only returns
+      // id + email, so this is where we capture the name).
+      useAuthStore.getState().setUser({
+        id: data.userId,
+        firstName: variables.firstName,
+        lastName: variables.lastName,
+        email: data.email,
+      });
       // Account created but unverified — go verify the email OTP.
       router.push(
         `${ROUTES.auth.verifyEmail}?email=${encodeURIComponent(data.email)}`,
@@ -278,11 +287,7 @@ export function SignupForm() {
               </p>
             )}
           </div>
-          <Button
-            type='submit'
-            loading={mutation.isPending}
-            className='w-full'
-          >
+          <Button type='submit' loading={mutation.isPending} className='w-full'>
             {mutation.isPending ? 'Creating account…' : 'Create Account'}
           </Button>
           <div className='flex items-center gap-4 text-center xl:gap-8'>

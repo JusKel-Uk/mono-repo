@@ -27,17 +27,29 @@ export class ApiError extends Error {
   }
 }
 
-/* ---- Token store ---- */
+/* ---- Token store ----
+ * The JWT lives in a cookie (not localStorage) so the server-side route guard
+ * in `proxy.ts` can read it. It is NOT httpOnly — the api client below reads it
+ * to set the Bearer header — so it stays XSS-readable; the CSP is what limits
+ * exfiltration. The cookie is scoped to our origin only (never sent to the
+ * external API). Keep the cookie name in sync with `proxy.ts`.
+ */
+
+const TOKEN_MAX_AGE = 60 * 60 * 24 * 7; // 7 days
 
 export function getToken(): string | null {
-  if (typeof window === 'undefined') return null;
-  return window.localStorage.getItem(TOKEN_KEY);
+  if (typeof document === 'undefined') return null;
+  const match = document.cookie.match(
+    new RegExp('(?:^|; )' + TOKEN_KEY + '=([^;]*)'),
+  );
+  return match ? decodeURIComponent(match[1]) : null;
 }
 function setToken(token: string): void {
-  window.localStorage.setItem(TOKEN_KEY, token);
+  const secure = process.env.NODE_ENV === 'production' ? '; Secure' : '';
+  document.cookie = `${TOKEN_KEY}=${encodeURIComponent(token)}; Path=/; Max-Age=${TOKEN_MAX_AGE}; SameSite=Lax${secure}`;
 }
 function clearToken(): void {
-  window.localStorage.removeItem(TOKEN_KEY);
+  document.cookie = `${TOKEN_KEY}=; Path=/; Max-Age=0; SameSite=Lax`;
 }
 
 /* ---- Core request ---- */
