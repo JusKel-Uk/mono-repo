@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Onboarding — Flow — JusKel Technology Documentation</title>
+  <link rel="stylesheet" href="../../assets/css/main.css">
+  <link rel="stylesheet" href="../../assets/css/diagrams.css">
+</head>
+<body data-module="onboarding" data-page="flow" data-site-section="modules">
+  <header class="site-header">
+    <div class="site-header__inner">
+      <a href="../../index.html" class="site-logo">JusKel Technology Docs</a>
+      <button class="nav-toggle" aria-label="Toggle navigation" aria-expanded="false">
+        <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M4 6h16M4 12h16M4 18h16"/>
+        </svg>
+      </button>
+      <nav class="site-nav">
+        <a href="../../index.html" data-section="home">Home</a>
+        <a href="../index.html" data-section="modules">Modules</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="main-content">
+    <nav class="breadcrumbs" aria-label="Breadcrumb">
+      <a href="../../index.html">Home</a>
+      <span class="breadcrumbs__sep">/</span>
+      <a href="../index.html">Modules</a>
+      <span class="breadcrumbs__sep">/</span>
+      <a href="index.html">Onboarding</a>
+      <span class="breadcrumbs__sep">/</span>
+      <span>Flow</span>
+    </nav>
+
+    <header class="page-header">
+      <h1>Onboarding — Flow</h1>
+      <p>Step sequence and OAuth integration flows for the SME assessment wizard.</p>
+    </header>
+
+    <nav class="module-subnav" aria-label="Module navigation">
+      <a href="index.html" data-page="overview">Overview</a>
+      <a href="schematics.html" data-page="schematics">Schematics</a>
+      <a href="flow.html" data-page="flow">Flow</a>
+      <a href="implementation.html" data-page="implementation">Spec</a>
+    </nav>
+
+    <section class="section">
+      <h2>Assessment step sequence</h2>
+      <div class="diagram-flow" data-jk-flow='[
+        {"type":"circle","role":"client","label":"SME User","sub":"JWT"},
+        {"type":"rect","role":"api","label":"POST /onboarding/applications"},
+        {"type":"rect","role":"module","label":"Company Setup","sub":"CH verify"},
+        {"type":"rect","role":"module","label":"Business Profile"},
+        {"type":"rect","role":"module","label":"Financial Profile","sub":"OB / Xero / QB"},
+        {"type":"rect","role":"module","label":"Sustainability","sub":"9 ESG Qs"},
+        {"type":"rect","role":"module","label":"Funding Profile"},
+        {"type":"rect","role":"api","label":"POST submit","sub":"5/5 complete"}
+      ]'></div>
+    </section>
+
+    <section class="section">
+      <h2>Open Banking OAuth sequence</h2>
+      <div class="diagram-flow" data-jk-flow='[
+        {"type":"circle","role":"client","label":"Client","sub":"Bearer JWT"},
+        {"type":"rect","role":"api","label":"POST authorize","sub":"Returns auth URL"},
+        {"type":"rect","role":"external","label":"TrueLayer","sub":"User consents"},
+        {"type":"rect","role":"api","label":"GET callback","sub":"Exchange code"},
+        {"type":"rect","role":"storage","label":"Encrypt tokens","sub":"integration-tokens"},
+        {"type":"rect","role":"module","label":"Map bands","sub":"Read-only fields"}
+      ]'></div>
+    </section>
+
+    <section class="section">
+      <h2>Progress states</h2>
+      <table class="data-table">
+        <thead><tr><th>Step status</th><th>Meaning</th></tr></thead>
+        <tbody>
+          <tr><td><code>not_started</code></td><td>No data saved for this step</td></tr>
+          <tr><td><code>in_progress</code></td><td>Partial data saved</td></tr>
+          <tr><td><code>complete</code></td><td>All validation passed</td></tr>
+        </tbody>
+      </table>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>JusKel Technology Documentation · Proprietary — JusKel UK</p>
+  </footer>
+
+  <script src="../../assets/js/diagrams.js" defer></script>
+  <script src="../../assets/js/main.js" defer></script>
+</body>
+</html>

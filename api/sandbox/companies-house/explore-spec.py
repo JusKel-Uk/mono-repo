@@ -80,15 +80,17 @@ def resolve_base_url(api_key: str, preferred: str | None) -> str:
         if url not in candidates:
             candidates.append(url)
 
+    statuses: dict[str, int] = {}
     for base in candidates:
         label = "sandbox" if "sandbox" in base else "live"
         ok, status = probe_auth(base, api_key)
         if ok:
             print(f"Auth OK against {label} API ({base})")
             return base
+        statuses[label] = status or 0
         print(f"HTTP {status} on {label} API ({base})")
 
-    print_auth_help()
+    print_auth_help(statuses)
     sys.exit(1)
 
 
@@ -123,17 +125,26 @@ def fetch_search(
     ), primary_term
 
 
-def print_auth_help() -> None:
-        print(
-        "\nCompanies House rejected the API key on BOTH live and sandbox URLs.\n"
-        "Check:\n"
+def print_auth_help(statuses: dict[str, int] | None = None) -> None:
+    print("\nCompanies House auth failed.")
+    if statuses:
+        for label, code in statuses.items():
+            print(f"  {label}: HTTP {code}")
+            if code == 401:
+                print("    → Wrong key for this environment, or invalid/revoked API key.")
+            elif code == 403:
+                print("    → Key may be valid but blocked (IP allowlist, or key not permitted here).")
+    print(
+        "\nCheck:\n"
         "  1. Developer portal → your app → copy the API key (UUID), not client ID\n"
-        "  2. Do NOT paste the key alone in the terminal — only in secrets.env as:\n"
-        "       COMPANIES_HOUSE_API_KEY=your-key-here\n"
-        "  3. Live keys → COMPANIES_HOUSE_BASE_URL=" + LIVE_BASE_URL + "\n"
-        "  4. Sandbox keys → COMPANIES_HOUSE_BASE_URL=" + SANDBOX_BASE_URL + "\n"
-        "  5. IP restrictions: allow your public IP (curl https://api.ipify.org)\n"
-        "  6. Regenerate the key if unsure\n"
+        "  2. Live keys need:\n"
+        f"       COMPANIES_HOUSE_BASE_URL={LIVE_BASE_URL}\n"
+        "  3. Sandbox keys need:\n"
+        f"       COMPANIES_HOUSE_BASE_URL={SANDBOX_BASE_URL}\n"
+        "     (Live and sandbox keys are NOT interchangeable — 401 on sandbox is normal with a live key.)\n"
+        "  4. IP restrictions: run curl https://api.ipify.org and add that IP in the developer portal.\n"
+        "     Mobile/home ISP IPs change often (e.g. 102.89.82.x → 102.89.84.x).\n"
+        "  5. Regenerate the key if unsure\n"
     )
 
 

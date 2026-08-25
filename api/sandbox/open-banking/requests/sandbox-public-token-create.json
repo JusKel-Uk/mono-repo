@@ -1,0 +1,11 @@
+{
+  "_note": "Create sandbox Item — no Link UI required.",
+  "method": "POST",
+  "url": "{PLAID_API_BASE_URL}/sandbox/public_token/create",
+  "body": {
+    "client_id": "{PLAID_CLIENT_ID}",
+    "secret": "{PLAID_SECRET}",
+    "institution_id": "{PLAID_SANDBOX_INSTITUTION_ID}",
+    "initial_products": ["transactions", "auth"]
+  }
+}

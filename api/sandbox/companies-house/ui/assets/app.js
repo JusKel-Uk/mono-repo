@@ -84,6 +84,55 @@ function lastPathSegment(path) {
   return parts[parts.length - 1] || null;
 }
 
+function documentIdFromLink(link) {
+  if (!link) return null;
+  const match = String(link).match(/\/document\/([^/?#]+)/);
+  return match ? match[1] : null;
+}
+
+function documentContentUrl(documentId, accept = "application/pdf") {
+  return `/api/documents/${encodeURIComponent(documentId)}/content?accept=${encodeURIComponent(accept)}`;
+}
+
+function addDocumentActions(documentId, container) {
+  const actions = document.createElement("div");
+  actions.className = "summary-list-item__actions";
+
+  const metaBtn = document.createElement("button");
+  metaBtn.type = "button";
+  metaBtn.className = "drill-btn";
+  metaBtn.textContent = "Metadata →";
+  metaBtn.addEventListener("click", () =>
+    runEndpoint("document-metadata", { document_id: documentId })
+  );
+
+  const pdfLink = document.createElement("a");
+  pdfLink.className = "drill-btn drill-btn--link";
+  pdfLink.href = documentContentUrl(documentId);
+  pdfLink.target = "_blank";
+  pdfLink.rel = "noopener noreferrer";
+  pdfLink.textContent = "Open PDF ↗";
+
+  actions.appendChild(metaBtn);
+  actions.appendChild(pdfLink);
+  container.appendChild(actions);
+}
+
+function buildDocumentIndexList(items, container) {
+  items.forEach((item) => {
+    const el = document.createElement("div");
+    el.className = "summary-list-item";
+    const title = item.description || item.type || "Filing document";
+    const metaLine = [item.date, item.type, item.document_id].filter(Boolean).join(" · ");
+    el.innerHTML = `
+      <div class="summary-list-item__title">${escapeHtml(title)}</div>
+      <div class="summary-list-item__meta">${escapeHtml(metaLine)}</div>
+    `;
+    if (item.document_id) addDocumentActions(item.document_id, el);
+    container.appendChild(el);
+  });
+}
+
 function setStatus(kind, label, detail = "") {
   statusPill.className = `status-pill status-pill--${kind}`;
   statusPill.textContent = label;
@@ -158,6 +207,9 @@ async function loadMeta() {
   if (searchUpstreamHint && meta.searchBaseUrl) {
     const searchEnv = meta.searchEnvironment || "live";
     searchUpstreamHint.textContent = `Autocomplete search → ${searchEnv.toUpperCase()}: ${meta.searchBaseUrl}/search/companies?q=…`;
+    if (meta.documentApiBaseUrl) {
+      searchUpstreamHint.textContent += ` · Documents → ${meta.documentApiBaseUrl}`;
+    }
   }
 }
 
@@ -321,6 +373,14 @@ function buildListItems(data, endpointId, container) {
       });
     }
 
+    const docId = documentIdFromLink(item.links?.document_metadata);
+    if (
+      docId &&
+      (endpointId === "filing-history" || endpointId === "filing-history-item")
+    ) {
+      addDocumentActions(docId, el);
+    }
+
     container.appendChild(el);
   });
 }
@@ -336,6 +396,68 @@ function buildFriendlySummary(data, endpointId) {
     body.appendChild(row("Incorporated", data.date_of_creation || "—"));
     body.appendChild(row("Registered address", formatAddress(data.registered_office_address)));
     body.appendChild(row("SIC codes", (data.sic_codes || []).join(", ") || "—"));
+    wrap.appendChild(card);
+    return wrap;
+  }
+
+  if (endpointId === "filing-documents-index") {
+    const { card, body } = buildSummaryCard(
+      "All filing documents",
+      `${data.documents_found ?? 0} downloadable · ${data.total_filings ?? 0} filings scanned`
+    );
+    if (!data.items?.length) {
+      body.appendChild(row("Documents", "No downloadable documents in filing history."));
+    } else {
+      buildDocumentIndexList(data.items, body);
+    }
+    wrap.appendChild(card);
+    return wrap;
+  }
+
+  if (endpointId === "document-metadata") {
+    const docId =
+      data.document_id ||
+      documentIdFromLink(data.links?.document) ||
+      documentIdFromLink(data.links?.self);
+    const { card, body } = buildSummaryCard("Document metadata", docId || "Document");
+    if (data.company_number) body.appendChild(row("Company", data.company_number));
+    if (data.barcode) body.appendChild(row("Barcode", data.barcode));
+    if (data.significant_date) body.appendChild(row("Significant date", data.significant_date));
+    if (data.category) body.appendChild(row("Category", data.category));
+
+    const resources = data.resources || {};
+    const types = Object.keys(resources);
+    if (types.length && docId) {
+      const formatRow = document.createElement("div");
+      formatRow.className = "summary-row summary-row--formats";
+      formatRow.innerHTML = `<span class="summary-label">Open as</span><span class="summary-value"></span>`;
+      const value = formatRow.querySelector(".summary-value");
+      types.forEach((ctype, idx) => {
+        const link = document.createElement("a");
+        link.className = "format-link";
+        link.href = documentContentUrl(docId, ctype);
+        link.target = "_blank";
+        link.rel = "noopener noreferrer";
+        link.textContent = ctype.replace("application/", "");
+        value.appendChild(link);
+        if (idx < types.length - 1) value.appendChild(document.createTextNode(" · "));
+      });
+      body.appendChild(formatRow);
+    } else if (docId) {
+      const dlRow = document.createElement("div");
+      dlRow.className = "summary-row";
+      dlRow.innerHTML = `<span class="summary-label">Download</span><span class="summary-value"></span>`;
+      const dlVal = dlRow.querySelector(".summary-value");
+      const link = document.createElement("a");
+      link.className = "format-link";
+      link.href = documentContentUrl(docId);
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+      link.textContent = "Open PDF ↗";
+      dlVal.appendChild(link);
+      body.appendChild(dlRow);
+    }
+
     wrap.appendChild(card);
     return wrap;
   }
@@ -476,7 +598,8 @@ function renderIntoPanel(panel, body, httpOk, endpointId) {
 function getResponseTarget(endpointId) {
   const ep = endpointById(endpointId);
   const onCompanyView = !viewCompany.classList.contains("hidden");
-  if (!onCompanyView || ep?.scope !== "company") {
+  const companyPanelScopes = ["company", "document"];
+  if (!onCompanyView || !companyPanelScopes.includes(ep?.scope)) {
     homeResultsSection.classList.remove("hidden");
     return { panel: homeResponse, isHome: true };
   }

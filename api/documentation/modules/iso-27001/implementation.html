@@ -157,6 +157,8 @@
       <h3>Already in place</h3>
       <ul>
         <li><strong>Azure SQL TDE</strong> — enabled by default (Microsoft-managed keys)</li>
+        <li><strong>Application-layer PII encryption</strong> — <code>Email</code>, <code>FirstName</code>, <code>LastName</code> encrypted with AES-256-GCM (<code>AesFieldEncryptor</code>); keys in Container App <code>secretref</code> (<code>field-encryption-key</code>, <code>email-lookup-key</code>)</li>
+        <li><strong>Deterministic email lookup</strong> — HMAC-SHA256 on normalised email (<code>EmailLookupHash</code>); separate key from field encryption</li>
         <li><strong>TLS 1.2+</strong> — Container Apps and <code>database.windows.net</code></li>
         <li><strong>Non-root container</strong> — <code>USER app</code> in <code>Dockerfile</code></li>
       </ul>
@@ -188,6 +190,14 @@
           <tr>
             <td>JWT rotation</td>
             <td>Document procedure: generate → dual-sign window → revoke old</td>
+          </tr>
+          <tr>
+            <td>Field encryption key rotation</td>
+            <td>Manual: update <code>ENCRYPTION__FIELDKEY</code> → run PII re-encrypt backfill before cutover; never rotate on deploy without plan</td>
+          </tr>
+          <tr>
+            <td>Email lookup key rotation</td>
+            <td>Manual: update <code>ENCRYPTION__EMAILLOOKUPKEY</code> → recompute all <code>EmailLookupHash</code> values</td>
           </tr>
         </tbody>
       </table>
@@ -233,7 +243,7 @@
       <ol>
         <li>Defender for Cloud → Regulatory compliance → ISO 27001</li>
         <li>Entra ID → your user → MFA status</li>
-        <li>Container App → Secrets (<code>secretref</code>, not values) + system-assigned identity</li>
+        <li>Container App → Secrets (<code>secretref</code>: jwt, sql, field-encryption-key, email-lookup-key, resend — values not shown) + system-assigned identity</li>
         <li>SQL → TDE on, firewall, audit enabled</li>
         <li>Log Analytics → failed sign-in query</li>
         <li>GitHub → PR with green CI + review</li>

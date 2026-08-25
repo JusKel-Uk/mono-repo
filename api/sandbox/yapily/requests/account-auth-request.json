@@ -1,0 +1,5 @@
+{
+  "applicationUserId": "juskel-sandbox-user",
+  "institutionId": "modelo-sandbox",
+  "callback": "http://127.0.0.1:8768/callback"
+}

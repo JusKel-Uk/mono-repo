@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TrueLayer Explorer</title>
+  <link rel="stylesheet" href="/assets/styles.css">
+</head>
+<body>
+  <div class="layout">
+    <header class="site-header">
+      <div>
+        <h1>TrueLayer Data Explorer</h1>
+        <p>Sandbox Mock Bank → accounts, balances, transactions for juskel scoring probes.</p>
+      </div>
+      <span id="env-badge" class="badge badge--sandbox">sandbox</span>
+    </header>
+
+    <div id="token-banner" class="card token-banner hidden">
+      <p><strong>No access token yet.</strong> Whitelist the redirect URI below in Console, then <em>Get auth link</em> → Mock Bank (<code>john / doe</code>). You should return to this app and auto-connect.</p>
+      <p class="hint">Whitelist redirect URI in Console (exact match): <code id="redirect-hint">http://127.0.0.1:8767/callback</code></p>
+      <div class="inline-field" style="margin-top:12px">
+        <input id="auth-code" type="text" placeholder="Or paste code here if not using auto-callback" aria-label="Authorization code">
+        <button type="button" id="exchange-btn" class="btn-primary btn-sm">Exchange</button>
+      </div>
+    </div>
+
+    <div class="company-layout">
+      <aside class="card endpoint-sidebar">
+        <h2>Endpoints</h2>
+        <div id="endpoint-groups"></div>
+      </aside>
+
+      <section class="card endpoint-main">
+        <div class="endpoint-main__head">
+          <h2 id="active-endpoint-label">Response</h2>
+          <button type="button" id="copy-btn" class="btn-ghost btn-sm" disabled>Copy JSON</button>
+        </div>
+        <div class="status-bar">
+          <span id="status-pill" class="status-pill status-pill--idle">Ready</span>
+          <span id="status-detail" class="status-detail"></span>
+        </div>
+        <div id="request-url" class="request-url">Pick an endpoint from the left.</div>
+        <div id="response-body" class="response-panel empty-state">Connect Mock Bank or fetch data.</div>
+      </section>
+    </div>
+  </div>
+  <script src="/assets/app.js?v=3"></script>
+</body>
+</html>

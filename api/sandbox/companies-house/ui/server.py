@@ -20,6 +20,11 @@ UI_ROOT = Path(__file__).resolve().parent
 SANDBOX_ROOT = UI_ROOT.parent
 PORT = int(__import__("os").environ.get("COMPANIES_HOUSE_UI_PORT", "8765"))
 
+_doc_spec = importlib.util.spec_from_file_location("ch_document", SANDBOX_ROOT / "document_api.py")
+ch_document = importlib.util.module_from_spec(_doc_spec)
+assert _doc_spec.loader is not None
+_doc_spec.loader.exec_module(ch_document)
+
 _spec = importlib.util.spec_from_file_location("ch_explore", SANDBOX_ROOT / "explore-spec.py")
 ch_explore = importlib.util.module_from_spec(_spec)
 assert _spec.loader is not None
@@ -31,6 +36,12 @@ ch_get = ch_explore.ch_get
 load_secrets = ch_explore.load_secrets
 resolve_base_url = ch_explore.resolve_base_url
 probe_auth = ch_explore.probe_auth
+
+DOCUMENT_API_BASE_URL = ch_document.DOCUMENT_API_BASE_URL
+collect_filing_documents = ch_document.collect_filing_documents
+document_id_from_link = ch_document.document_id_from_link
+fetch_document_content = ch_document.fetch_document_content
+fetch_document_metadata = ch_document.fetch_document_metadata
 
 PATH_PARAM_RE = re.compile(r"\{(\w+)\}")
 
@@ -50,6 +61,7 @@ def serialize_endpoint(key: str, meta: dict[str, Any]) -> dict[str, Any]:
         "drill": meta.get("drill"),
         "optional404": bool(meta.get("optional_404")),
         "description": meta.get("description"),
+        "synthetic": meta.get("synthetic"),
     }
 
 
@@ -106,10 +118,20 @@ def serve_static(handler: BaseHTTPRequestHandler, rel_path: str) -> None:
     handler.wfile.write(content)
 
 
+def binary_response(handler: BaseHTTPRequestHandler, status: int, body: bytes, content_type: str) -> None:
+    handler.send_response(status)
+    handler.send_header("Content-Type", content_type)
+    handler.send_header("Content-Length", str(len(body)))
+    handler.send_header("Cache-Control", "private, max-age=300")
+    handler.end_headers()
+    handler.wfile.write(body)
+
+
 class Handler(BaseHTTPRequestHandler):
     secrets: dict[str, str] = {}
     base_url: str = LIVE_BASE_URL
     search_base_url: str = LIVE_BASE_URL
+    document_base_url: str = DOCUMENT_API_BASE_URL
     api_key: str = ""
 
     def log_message(self, fmt: str, *args: Any) -> None:
@@ -136,6 +158,7 @@ class Handler(BaseHTTPRequestHandler):
                 {
                     "baseUrl": self.base_url,
                     "searchBaseUrl": self.search_base_url,
+                    "documentApiBaseUrl": self.document_base_url,
                     "environment": env_label,
                     "searchEnvironment": search_label,
                     "localProxy": f"http://127.0.0.1:{PORT}",
@@ -197,6 +220,49 @@ class Handler(BaseHTTPRequestHandler):
                 )
             return
 
+        doc_content_match = re.match(r"^/api/documents/([^/]+)/content$", route)
+        if doc_content_match:
+            document_id = urllib.parse.unquote(doc_content_match.group(1))
+            query = urllib.parse.parse_qs(parsed.query)
+            accept = query.get("accept", ["application/pdf"])[0].strip() or "application/pdf"
+            display_url = (
+                self.document_base_url.rstrip("/")
+                + f"/document/{document_id}/content"
+            )
+            try:
+                body_bytes, content_type = fetch_document_content(
+                    self.api_key,
+                    document_id,
+                    content_type=accept,
+                    base_url=self.document_base_url,
+                )
+                if content_type == "application/pdf":
+                    self.send_response(200)
+                    self.send_header("Content-Type", content_type)
+                    self.send_header("Content-Length", str(len(body_bytes)))
+                    self.send_header("Cache-Control", "private, max-age=300")
+                    self.send_header("Content-Disposition", "inline")
+                    self.end_headers()
+                    self.wfile.write(body_bytes)
+                else:
+                    binary_response(self, 200, body_bytes, content_type)
+            except urllib.error.HTTPError as exc:
+                err_body = getattr(exc, "body", None) or b""
+                if isinstance(err_body, bytes):
+                    err_text = err_body.decode(errors="replace")
+                else:
+                    err_text = str(err_body)
+                json_response(
+                    self,
+                    exc.code,
+                    {
+                        "ok": False,
+                        "error": err_text or f"HTTP {exc.code} from Document API",
+                        "request": {"method": "GET", "url": display_url, "accept": accept},
+                    },
+                )
+            return
+
         self.send_error(404)
 
     def do_POST(self) -> None:
@@ -237,15 +303,69 @@ class Handler(BaseHTTPRequestHandler):
             json_response(self, 400, {"error": "company_number is required"})
             return
 
+        if meta.get("scope") == "document" and not str_params.get("document_id"):
+            json_response(self, 400, {"error": "document_id is required"})
+            return
+
+        if meta.get("synthetic") == "filing-documents-index":
+            company_number = str_params["company_number"]
+            display_url = (
+                self.base_url.rstrip("/")
+                + f"/company/{company_number}/filing-history (all pages)"
+            )
+            try:
+                data = collect_filing_documents(self.base_url, self.api_key, company_number)
+                json_response(
+                    self,
+                    200,
+                    {
+                        "ok": True,
+                        "endpointId": endpoint_id,
+                        "request": {
+                            "method": "GET",
+                            "url": display_url,
+                            "auth": "Basic (API key as username, blank password)",
+                        },
+                        "data": data,
+                    },
+                )
+            except urllib.error.HTTPError as exc:
+                err_body = getattr(exc, "body", None) or exc.read().decode(errors="replace")
+                json_response(
+                    self,
+                    exc.code,
+                    {
+                        "ok": False,
+                        "endpointId": endpoint_id,
+                        "request": {"method": "GET", "url": display_url},
+                        "error": err_body or f"HTTP {exc.code} from Companies House",
+                        "status": exc.code,
+                    },
+                )
+            return
+
         try:
-            upstream = self.search_base_url if meta.get("scope") == "search" else self.base_url
+            if meta.get("scope") == "search":
+                upstream = self.search_base_url
+            elif meta.get("scope") == "document":
+                upstream = self.document_base_url
+            else:
+                upstream = self.base_url
             path, query, display_url = build_request(endpoint_id, str_params, upstream)
         except ValueError as exc:
             json_response(self, 400, {"error": str(exc)})
             return
 
         try:
-            data = ch_get(upstream, self.api_key, path, query)
+            if meta.get("scope") == "document":
+                document_id = str_params["document_id"]
+                data = fetch_document_metadata(
+                    self.api_key,
+                    document_id,
+                    base_url=self.document_base_url,
+                )
+            else:
+                data = ch_get(upstream, self.api_key, path, query)
             json_response(
                 self,
                 200,
@@ -323,13 +443,22 @@ def main() -> None:
 
     preferred = secrets.get("COMPANIES_HOUSE_BASE_URL")
     print("Checking Companies House auth…")
-    base_url = resolve_base_url(api_key, preferred)
+    try:
+        base_url = resolve_base_url(api_key, preferred)
+    except SystemExit:
+        base_url = (preferred or LIVE_BASE_URL).rstrip("/")
+        print(f"\nWarning: auth preflight failed — starting UI anyway with {base_url}")
+        print("Fix secrets.env or IP allowlist in the CH developer portal if requests fail.\n")
     search_base_url = resolve_search_base_url(api_key, base_url)
 
     Handler.secrets = secrets
     Handler.api_key = api_key
     Handler.base_url = base_url
     Handler.search_base_url = search_base_url
+    Handler.document_base_url = (
+        secrets.get("COMPANIES_HOUSE_DOCUMENT_API_BASE_URL", "").strip()
+        or DOCUMENT_API_BASE_URL
+    )
 
     server = ThreadingHTTPServer(("127.0.0.1", PORT), Handler)
     print(f"Companies House tester UI → http://127.0.0.1:{PORT}")

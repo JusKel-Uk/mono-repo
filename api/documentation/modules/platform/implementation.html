@@ -121,9 +121,89 @@
         <h3>Monorepo layout</h3>
         <ul>
           <li><code>api/</code> — .NET 10 backend</li>
-          <li><code>client/</code> — Next.js frontend</li>
+          <li><code>client/</code> — Next.js frontend (Vercel root directory)</li>
           <li><code>api/documentation/</code> — this documentation site</li>
         </ul>
+        <p>No root <code>package.json</code> — deploy API and client independently.</p>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>Deployment &amp; environments</h2>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Component</th>
+            <th>Platform</th>
+            <th>Live URL / command</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>API</td>
+            <td>Azure Container Apps (scale-to-zero)</td>
+            <td><code>https://juskel-api.livelydune-575d8971.uksouth.azurecontainerapps.io</code></td>
+          </tr>
+          <tr>
+            <td>Frontend</td>
+            <td>Vercel (<code>client/</code> as root)</td>
+            <td><code>https://mono-repo-n96q.vercel.app</code></td>
+          </tr>
+          <tr>
+            <td>Database</td>
+            <td>Azure SQL</td>
+            <td>Schema-isolated modules (e.g. <code>identity.*</code>)</td>
+          </tr>
+          <tr>
+            <td>Deploy</td>
+            <td>Local → ACR → Container App</td>
+            <td><code>cd api && ./deploy-azure.sh deploy</code></td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="content-block">
+        <h3>Required secrets (<code>deploy-azure.env</code>)</h3>
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Local env var</th>
+              <th>Container App secret</th>
+              <th>App setting</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>CONNECTIONSTRINGS__IDENTITY</code></td>
+              <td><code>sql-connection-string</code></td>
+              <td><code>ConnectionStrings__Identity</code></td>
+            </tr>
+            <tr>
+              <td><code>JWT__SECRET</code></td>
+              <td><code>jwt-secret</code></td>
+              <td><code>Jwt__Secret</code></td>
+            </tr>
+            <tr>
+              <td><code>ENCRYPTION__FIELDKEY</code></td>
+              <td><code>field-encryption-key</code></td>
+              <td><code>Encryption__FieldKey</code></td>
+            </tr>
+            <tr>
+              <td><code>ENCRYPTION__EMAILLOOKUPKEY</code></td>
+              <td><code>email-lookup-key</code></td>
+              <td><code>Encryption__EmailLookupKey</code></td>
+            </tr>
+            <tr>
+              <td><code>EMAIL__RESEND__APIKEY</code></td>
+              <td><code>resend-api-key</code></td>
+              <td><code>Email__Resend__ApiKey</code></td>
+            </tr>
+          </tbody>
+        </table>
+        <p>Copy <code>deploy-azure.env.example</code> → <code>deploy-azure.env</code> (gitignored). CORS allows <code>http://localhost:3000</code> and the Vercel origin.</p>
+      </div>
+      <div class="verdict-callout">
+        <strong>Health checks</strong>
+        <code>/health</code> is in-memory only — no database ping. Keeps Azure SQL Serverless eligible for auto-pause and avoids burning Basic DTU on probe traffic.
       </div>
     </section>
 

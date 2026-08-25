@@ -5,11 +5,24 @@
   </Folder>
   <Folder Name="/src/Infrastructure/">
     <Project Path="src/Infrastructure/juskel.Email/juskel.Email.csproj" />
+    <Project Path="src/Infrastructure/juskel.Integrations/juskel.Integrations.csproj" />
   </Folder>
   <Folder Name="/src/Modules/" />
+  <Folder Name="/src/Modules/funding/">
+    <Project Path="src/Modules/funding/funding.Contracts/funding.Contracts.csproj" />
+    <Project Path="src/Modules/funding/funding.Core/funding.Core.csproj" />
+  </Folder>
   <Folder Name="/src/Modules/identity/">
     <Project Path="src/Modules/identity/identity.Contracts/identity.Contracts.csproj" />
     <Project Path="src/Modules/identity/identity.Core/identity.Core.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/onboarding/">
+    <Project Path="src/Modules/onboarding/onboarding.Contracts/onboarding.Contracts.csproj" />
+    <Project Path="src/Modules/onboarding/onboarding.Core/onboarding.Core.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/scoring/">
+    <Project Path="src/Modules/scoring/scoring.Contracts/scoring.Contracts.csproj" />
+    <Project Path="src/Modules/scoring/scoring.Core/scoring.Core.csproj" />
   </Folder>
   <Folder Name="/src/Shared/">
     <Project Path="src/Shared/juskel.Shared/juskel.Shared.csproj" />

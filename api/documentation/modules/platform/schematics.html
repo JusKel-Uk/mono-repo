@@ -98,15 +98,17 @@
       <div class="diagram-canvas">
         <div class="diagram-canvas__title">Cloud layout</div>
         <div data-jk-group='{
-          "label": "Microsoft Azure",
+          "label": "Production layout (Aug 2026)",
           "nodes": [
-            {"type":"square","role":"frontend","label":"Static Web Apps","sub":"Frontend"},
-            {"type":"rect","role":"api","label":"App Service","sub":".NET API"},
-            {"type":"cylinder","role":"storage","label":"SQL Server","sub":"Data"},
-            {"type":"rect","role":"data","label":"Blob Storage","sub":"Documents"},
-            {"type":"square","role":"external","label":"Key Vault","sub":"Secrets"}
+            {"type":"square","role":"frontend","label":"Vercel","sub":"Next.js (client/)"},
+            {"type":"rect","role":"api","label":"Container Apps","sub":"juskel-api"},
+            {"type":"cylinder","role":"storage","label":"Azure SQL","sub":"identity schema"},
+            {"type":"rect","role":"data","label":"ACR","sub":"Container images"},
+            {"type":"rect","role":"module","label":"Log Analytics","sub":"Diagnostics"},
+            {"type":"square","role":"external","label":"Resend","sub":"Email OTP"}
           ]
         }'></div>
+        <p class="source-note">Frontend on Vercel; API secrets via Container App <code>secretref</code> (JWT, SQL, encryption keys, Resend). Key Vault optional pre-certification.</p>
       </div>
     </section>
 

@@ -1,0 +1,4 @@
+# TrueLayer auth link is built from query params — see truelayer_client.build_auth_link()
+# Example scopes (space-separated in URL): info accounts balance transactions offline_access
+# Sandbox provider: uk-cs-mock (Mock Bank)
+# Mock login: john / doe

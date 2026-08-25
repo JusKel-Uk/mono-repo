@@ -19,9 +19,16 @@
 
   <ItemGroup>
   <ProjectReference Include="..\..\Infrastructure\juskel.Email\juskel.Email.csproj" />
+    <ProjectReference Include="..\..\Infrastructure\juskel.Integrations\juskel.Integrations.csproj" />
     <ProjectReference Include="..\..\Shared\juskel.Shared\juskel.Shared.csproj" />
     <ProjectReference Include="..\..\Modules\identity\identity.Contracts\identity.Contracts.csproj" />
     <ProjectReference Include="..\..\Modules\identity\identity.Core\identity.Core.csproj" />
+    <ProjectReference Include="..\..\Modules\funding\funding.Contracts\funding.Contracts.csproj" />
+    <ProjectReference Include="..\..\Modules\funding\funding.Core\funding.Core.csproj" />
+    <ProjectReference Include="..\..\Modules\onboarding\onboarding.Core\onboarding.Core.csproj" />
+    <ProjectReference Include="..\..\Modules\onboarding\onboarding.Contracts\onboarding.Contracts.csproj" />
+    <ProjectReference Include="..\..\Modules\scoring\scoring.Contracts\scoring.Contracts.csproj" />
+    <ProjectReference Include="..\..\Modules\scoring\scoring.Core\scoring.Core.csproj" />
   </ItemGroup>
 
 </Project>

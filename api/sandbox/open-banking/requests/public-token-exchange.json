@@ -1,0 +1,10 @@
+{
+  "_note": "Exchange public_token from setup or Plaid Link.",
+  "method": "POST",
+  "url": "{PLAID_API_BASE_URL}/item/public_token/exchange",
+  "body": {
+    "client_id": "{PLAID_CLIENT_ID}",
+    "secret": "{PLAID_SECRET}",
+    "public_token": "{PLAID_PUBLIC_TOKEN}"
+  }
+}

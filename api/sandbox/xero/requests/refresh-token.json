@@ -1,0 +1,11 @@
+{
+  "_note": "Refresh access token.",
+  "method": "POST",
+  "url": "https://identity.xero.com/connect/token",
+  "headers": {
+    "Accept": "application/json",
+    "Authorization": "Basic {BASE64_CLIENT_ID_COLON_SECRET}",
+    "Content-Type": "application/x-www-form-urlencoded"
+  },
+  "body": "grant_type=refresh_token&refresh_token={XERO_REFRESH_TOKEN}"
+}

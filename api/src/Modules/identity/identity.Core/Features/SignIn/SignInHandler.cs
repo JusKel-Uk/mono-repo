@@ -63,6 +63,8 @@ internal sealed class SignInHandler
         
         return new SignInResponse(
             UserId: user.Id,
-            AccessToken: accessToken);
+            AccessToken: accessToken,
+            FirstName: user.FirstName,
+            LastName: user.LastName);
     }
 }

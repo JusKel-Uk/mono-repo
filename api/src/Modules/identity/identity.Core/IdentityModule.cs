@@ -23,7 +23,7 @@ internal sealed class IdentityModule : IIdentityModule
         return await _db.Users
             .AsNoTracking()
             .Where(u => u.Id == id && u.DeletedAt == null)
-            .Select(u => new UserSummaryDto(u.Id, u.Email))
+            .Select(u => new UserSummaryDto(u.Id, u.Email, u.FirstName, u.LastName))
             .FirstOrDefaultAsync(ct);
     }
 }

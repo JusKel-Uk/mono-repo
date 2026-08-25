@@ -352,6 +352,29 @@ button {
   opacity: 0.45;
 }
 
+.drill-btn--link {
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+}
+
+.format-link {
+  color: #1a4f9c;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.format-link:hover {
+  text-decoration: underline;
+}
+
+.summary-row--formats .summary-value {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: center;
+}
+
 .tech-section {
   margin-top: 16px;
   border: 1px solid var(--border);
