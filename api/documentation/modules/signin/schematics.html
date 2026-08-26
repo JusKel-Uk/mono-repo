@@ -121,6 +121,21 @@
     </section>
 
     <section class="section">
+      <h2>PII encryption flow</h2>
+      <p>Write path: plaintext in handler → EF value converter → <code>AesFieldEncryptor</code> → SQL. Login uses <code>EmailLookupHash</code> (HMAC), not decrypted email scan.</p>
+      <div class="diagram-canvas">
+        <div class="diagram-canvas__title">At-rest protection</div>
+        <div class="diagram-flow" data-jk-flow='[
+          {"type":"rect","role":"api","label":"RegisterUser","sub":"normalised email"},
+          {"type":"rect","role":"module","label":"EmailLookupHasher","sub":"HMAC → EmailLookupHash"},
+          {"type":"rect","role":"module","label":"AesFieldEncryptor","sub":"Email, FirstName, LastName"},
+          {"type":"cylinder","role":"storage","label":"identity.Users","sub":"j1: ciphertext"},
+          {"type":"rect","role":"external","label":"Encryption__FieldKey","sub":"Container App secretref"}
+        ]'></div>
+      </div>
+    </section>
+
+    <section class="section">
       <h2>Role model</h2>
       <div class="diagram-canvas">
         <div class="diagram-canvas__title">User personas &amp; access</div>

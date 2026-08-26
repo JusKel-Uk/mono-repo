@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Plaid Open Banking Explorer</title>
+  <link rel="stylesheet" href="/assets/styles.css">
+</head>
+<body>
+  <div class="layout">
+    <header class="site-header">
+      <div>
+        <h1>Plaid Open Banking Explorer</h1>
+        <p>Connect a sandbox bank item, then browse accounts, balances, and transactions from one place.</p>
+      </div>
+      <span id="env-badge" class="badge badge--sandbox">sandbox</span>
+    </header>
+
+    <div id="token-banner" class="card token-banner hidden">
+      <p><strong>No access token yet.</strong> Click <em>Connect sandbox (simple)</em> in the sidebar — it saves <code>PLAID_ACCESS_TOKEN</code> to your local <code>secrets.env</code>.</p>
+    </div>
+
+    <div class="company-layout">
+      <aside class="card endpoint-sidebar">
+        <h2>Endpoints</h2>
+        <div id="endpoint-groups"></div>
+      </aside>
+
+      <section class="card endpoint-main">
+        <div class="endpoint-main__head">
+          <h2 id="active-endpoint-label">Response</h2>
+          <button type="button" id="copy-btn" class="btn-ghost btn-sm" disabled>Copy JSON</button>
+        </div>
+        <div class="status-bar">
+          <span id="status-pill" class="status-pill status-pill--idle">Ready</span>
+          <span id="status-detail" class="status-detail"></span>
+        </div>
+        <div id="request-url" class="request-url">Pick an endpoint from the left.</div>
+        <div id="response-body" class="response-panel empty-state">Choose what to fetch from Plaid sandbox.</div>
+      </section>
+    </div>
+  </div>
+  <script src="/assets/app.js?v=1"></script>
+</body>
+</html>

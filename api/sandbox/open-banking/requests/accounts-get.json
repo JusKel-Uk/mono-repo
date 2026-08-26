@@ -1,0 +1,10 @@
+{
+  "_note": "Linked bank accounts.",
+  "method": "POST",
+  "url": "{PLAID_API_BASE_URL}/accounts/get",
+  "body": {
+    "client_id": "{PLAID_CLIENT_ID}",
+    "secret": "{PLAID_SECRET}",
+    "access_token": "{PLAID_ACCESS_TOKEN}"
+  }
+}

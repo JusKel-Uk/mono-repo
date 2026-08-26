@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Onboarding — Implementation — JusKel Technology Documentation</title>
+  <link rel="stylesheet" href="../../assets/css/main.css">
+</head>
+<body data-module="onboarding" data-page="implementation" data-site-section="modules">
+  <header class="site-header">
+    <div class="site-header__inner">
+      <a href="../../index.html" class="site-logo">JusKel Technology Docs</a>
+      <button class="nav-toggle" aria-label="Toggle navigation" aria-expanded="false">
+        <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M4 6h16M4 12h16M4 18h16"/>
+        </svg>
+      </button>
+      <nav class="site-nav">
+        <a href="../../index.html" data-section="home">Home</a>
+        <a href="../index.html" data-section="modules">Modules</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="main-content">
+    <nav class="breadcrumbs" aria-label="Breadcrumb">
+      <a href="../../index.html">Home</a>
+      <span class="breadcrumbs__sep">/</span>
+      <a href="../index.html">Modules</a>
+      <span class="breadcrumbs__sep">/</span>
+      <a href="index.html">Onboarding</a>
+      <span class="breadcrumbs__sep">/</span>
+      <span>Implementation</span>
+    </nav>
+
+    <header class="page-header">
+      <h1>Onboarding — Spec</h1>
+      <p>Endpoints, DTOs, and validation rules. <strong>Reference only</strong> — implement via BUILD SESSION milestones.</p>
+      <div class="page-header__meta">
+        <span class="status-pill status-pill--planned">Planned</span>
+      </div>
+    </header>
+
+    <nav class="module-subnav" aria-label="Module navigation">
+      <a href="index.html" data-page="overview">Overview</a>
+      <a href="schematics.html" data-page="schematics">Schematics</a>
+      <a href="flow.html" data-page="flow">Flow</a>
+      <a href="implementation.html" data-page="implementation">Spec</a>
+    </nav>
+
+    <section class="section">
+      <h2>Authentication</h2>
+      <p>All endpoints require <code>Authorization: Bearer &lt;accessToken&gt;</code> from <code>POST /identity/sessions</code>.</p>
+    </section>
+
+    <section class="section">
+      <h2>Onboarding module (<code>onboarding</code> tag)</h2>
+      <table class="data-table">
+        <thead><tr><th>Method</th><th>Path</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td>POST</td><td><code>/onboarding/applications</code></td><td>Create draft application (idempotent)</td></tr>
+          <tr><td>GET</td><td><code>/onboarding/applications/current</code></td><td>Progress: completedCount, totalSteps (5), canSubmit, per-step status</td></tr>
+          <tr><td>GET/PUT</td><td><code>/onboarding/applications/current/company-setup</code></td><td>Step 1 — company identity + CH verify</td></tr>
+          <tr><td>POST</td><td><code>/onboarding/applications/current/company-setup/verify-companies-house</code></td><td>CH lookup (rate-limited 5/min)</td></tr>
+          <tr><td>GET/PUT</td><td><code>/onboarding/applications/current/business-profile</code></td><td>Step 2 — sector, region, bands, description</td></tr>
+          <tr><td>POST</td><td><code>/onboarding/applications/current/submit</code></td><td>Submit when all 5 steps complete</td></tr>
+        </tbody>
+      </table>
+      <p>Application-scoped variants also exist: <code>/onboarding/applications/{applicationId}/...</code></p>
+    </section>
+
+    <section class="section">
+      <h2>Funding module (<code>funding</code> tag)</h2>
+      <table class="data-table">
+        <thead><tr><th>Method</th><th>Path</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td>GET/PUT</td><td><code>/funding/applications/current/financial-profile</code></td><td>Step 3 — bands, integrations, evidence</td></tr>
+          <tr><td>GET/PUT</td><td><code>/funding/applications/current/funding-profile</code></td><td>Step 5 — amount (<code>decimal</code>), purpose, term, urgency</td></tr>
+          <tr><td>POST</td><td><code>/funding/integrations/open-banking/authorize</code></td><td>OAuth authorization URL</td></tr>
+          <tr><td>GET</td><td><code>/funding/integrations/open-banking/callback</code></td><td>OAuth callback</td></tr>
+          <tr><td>DELETE</td><td><code>/funding/integrations/open-banking</code></td><td>Disconnect</td></tr>
+          <tr><td>POST/GET/DELETE</td><td><code>/funding/integrations/xero/*</code></td><td>Xero OAuth flow</td></tr>
+          <tr><td>POST/GET/DELETE</td><td><code>/funding/integrations/quickbooks/*</code></td><td>QuickBooks OAuth flow</td></tr>
+          <tr><td>POST/DELETE</td><td><code>/funding/evidence</code></td><td>Multipart upload (max 10 MB, PDF/DOC/PNG/JPG)</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="section">
+      <h2>Scoring module (<code>scoring</code> tag)</h2>
+      <table class="data-table">
+        <thead><tr><th>Method</th><th>Path</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td>GET/PUT</td><td><code>/scoring/applications/current/sustainability-profile</code></td><td>Step 4 — 9 ESG questions</td></tr>
+          <tr><td>POST/DELETE</td><td><code>/scoring/evidence</code></td><td>Certificate uploads per question</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="section">
+      <h2>Step order</h2>
+      <ol>
+        <li>Company setup</li>
+        <li>Business profile</li>
+        <li>Financial profile</li>
+        <li>Sustainability profile</li>
+        <li>Funding profile</li>
+      </ol>
+    </section>
+
+    <section class="section">
+      <h2>Configuration (<code>appsettings.json</code>)</h2>
+      <ul>
+        <li><code>ConnectionStrings:Onboarding</code>, <code>Funding</code>, <code>Scoring</code></li>
+        <li><code>Integrations:CompaniesHouse:ApiKey</code></li>
+        <li><code>Integrations:BlobStorage</code> — Provider <code>Local</code> or <code>Azure</code></li>
+        <li><code>Integrations:OpenBanking</code> — TrueLayer sandbox defaults</li>
+        <li><code>Integrations:Xero</code>, <code>Integrations:QuickBooks</code></li>
+      </ul>
+    </section>
+
+    <section class="section">
+      <h2>Database schemas</h2>
+      <ul>
+        <li><code>onboarding</code> — Applications, StepProgress, CompanySetup, BusinessProfile</li>
+        <li><code>funding</code> — FinancialProfile, FinancialEvidence, IntegrationConnections, FundingProfile</li>
+        <li><code>scoring</code> — SustainabilityProfile, SustainabilityEvidence</li>
+      </ul>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>JusKel Technology Documentation · Proprietary — JusKel UK</p>
+  </footer>
+
+  <script src="../../assets/js/main.js" defer></script>
+</body>
+</html>

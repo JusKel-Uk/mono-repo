@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Onboarding — JusKel Technology Documentation</title>
+  <link rel="stylesheet" href="../../assets/css/main.css">
+</head>
+<body data-module="onboarding" data-page="overview" data-site-section="modules">
+  <header class="site-header">
+    <div class="site-header__inner">
+      <a href="../../index.html" class="site-logo">JusKel Technology Docs</a>
+      <button class="nav-toggle" aria-label="Toggle navigation" aria-expanded="false">
+        <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M4 6h16M4 12h16M4 18h16"/>
+        </svg>
+      </button>
+      <nav class="site-nav">
+        <a href="../../index.html" data-section="home">Home</a>
+        <a href="../index.html" data-section="modules">Modules</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="main-content">
+    <nav class="breadcrumbs" aria-label="Breadcrumb">
+      <a href="../../index.html">Home</a>
+      <span class="breadcrumbs__sep">/</span>
+      <a href="../index.html">Modules</a>
+      <span class="breadcrumbs__sep">/</span>
+      <span>Onboarding</span>
+    </nav>
+
+    <header class="page-header">
+      <h1>SME Onboarding (Plan)</h1>
+      <p>Agent-friendly specification for the five-step assessment API. <strong>Not yet implemented</strong> — build manually via <a href="../../../BUILD_SESSION_ONBOARDING.md">BUILD_SESSION_ONBOARDING.md</a>.</p>
+      <div class="page-header__meta">
+        <span class="status-pill status-pill--planned">Planned</span>
+      </div>
+    </header>
+
+    <nav class="module-subnav" aria-label="Module navigation">
+      <a href="index.html" data-page="overview">Overview</a>
+      <a href="schematics.html" data-page="schematics">Schematics</a>
+      <a href="flow.html" data-page="flow">Flow</a>
+      <a href="implementation.html" data-page="implementation">Spec</a>
+    </nav>
+
+    <section class="section">
+      <h2>Purpose</h2>
+      <p>This module documents the SME onboarding wizard API derived from Figma flows in <code>discovery/figma_images/onboarding-flows/</code>. Use this spec during BUILD SESSIONs — you should not need to open the images again.</p>
+    </section>
+
+    <section class="section">
+      <h2>How to build (learning workflow)</h2>
+      <ol>
+        <li>Open <a href="../../../BUILD_SESSION_ONBOARDING.md">api/BUILD_SESSION_ONBOARDING.md</a></li>
+        <li>Start at <strong>M1</strong> (M0 docs are already here)</li>
+        <li>One milestone per session; agent instructs, you type code</li>
+        <li>Say <strong>"I'm done"</strong> for verify + score</li>
+      </ol>
+    </section>
+
+    <section class="section">
+      <h2>Milestones</h2>
+      <table class="data-table">
+        <thead><tr><th>#</th><th>Milestone</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr><td>M0</td><td>Documentation spec (this module)</td><td><span class="status-pill status-pill--implemented">Done</span></td></tr>
+          <tr><td>M1</td><td>onboarding module skeleton + progress API</td><td><span class="status-pill status-pill--planned">Planned</span></td></tr>
+          <tr><td>M2</td><td>Company setup + Companies House</td><td><span class="status-pill status-pill--planned">Planned</span></td></tr>
+          <tr><td>M3</td><td>Business profile</td><td><span class="status-pill status-pill--planned">Planned</span></td></tr>
+          <tr><td>M4</td><td>funding module + Blob evidence</td><td><span class="status-pill status-pill--planned">Planned</span></td></tr>
+          <tr><td>M5</td><td>Open Banking OAuth</td><td><span class="status-pill status-pill--planned">Planned</span></td></tr>
+          <tr><td>M6</td><td>Xero + QuickBooks OAuth</td><td><span class="status-pill status-pill--planned">Planned</span></td></tr>
+          <tr><td>M7</td><td>scoring module — sustainability ESG</td><td><span class="status-pill status-pill--planned">Planned</span></td></tr>
+          <tr><td>M8</td><td>Funding profile + submit</td><td><span class="status-pill status-pill--planned">Planned</span></td></tr>
+          <tr><td>M9</td><td>Hardening + integration tests</td><td><span class="status-pill status-pill--planned">Planned</span></td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="section">
+      <h2>Pages</h2>
+      <ul>
+        <li><a href="flow.html">Flow</a> — step sequence and OAuth diagrams</li>
+        <li><a href="implementation.html">Spec</a> — endpoints, DTOs, validation (source of truth)</li>
+        <li><a href="schematics.html">Schematics</a> — module boundaries</li>
+      </ul>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>JusKel Technology Documentation · Proprietary — JusKel UK</p>
+  </footer>
+
+  <script src="../../assets/js/main.js" defer></script>
+</body>
+</html>

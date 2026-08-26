@@ -1,0 +1,12 @@
+{
+  "_note": "Transactions for cash-flow analysis.",
+  "method": "POST",
+  "url": "{PLAID_API_BASE_URL}/transactions/get",
+  "body": {
+    "client_id": "{PLAID_CLIENT_ID}",
+    "secret": "{PLAID_SECRET}",
+    "access_token": "{PLAID_ACCESS_TOKEN}",
+    "start_date": "2024-01-01",
+    "end_date": "2024-12-31"
+  }
+}

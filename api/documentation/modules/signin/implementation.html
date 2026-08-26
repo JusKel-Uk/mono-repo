@@ -49,8 +49,37 @@
     </nav>
 
     <section class="section">
+      <h2>Environments &amp; base URLs</h2>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Environment</th>
+            <th>API</th>
+            <th>Frontend</th>
+            <th>Swagger</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Local dev</td>
+            <td><code>http://localhost:5242</code></td>
+            <td><code>http://localhost:3000</code></td>
+            <td><code>/swagger</code></td>
+          </tr>
+          <tr>
+            <td>Azure (Container Apps)</td>
+            <td><code>https://juskel-api.livelydune-575d8971.uksouth.azurecontainerapps.io</code></td>
+            <td><code>https://mono-repo-n96q.vercel.app</code> (Vercel)</td>
+            <td><code>/swagger</code> (Development env only)</td>
+          </tr>
+        </tbody>
+      </table>
+      <p>Frontend env: <code>NEXT_PUBLIC_API_URL</code> must point at the API base URL (no trailing slash). CORS on the API allows <code>http://localhost:3000</code> and the Vercel preview origin.</p>
+    </section>
+
+    <section class="section">
       <h2>Endpoints</h2>
-      <p>Base URL (development): <code>http://localhost:5242</code> · Swagger: <code>/swagger</code></p>
+      <p>Swagger (development): <code>/swagger</code></p>
       <table class="data-table">
         <thead>
           <tr>
@@ -88,7 +117,7 @@
           <tr>
             <td>GET</td>
             <td><code>/identity/me</code></td>
-            <td>Current user (Bearer JWT required)</td>
+            <td>Current user — returns <code>id</code> + decrypted <code>email</code> (Bearer JWT)</td>
             <td><span class="status-pill status-pill--implemented">Live</span></td>
           </tr>
           <tr>
@@ -180,6 +209,54 @@
     </section>
 
     <section class="section">
+      <h2>PII encryption at rest</h2>
+      <p>Identity user fields are encrypted in SQL Server using <strong>static AES-256-GCM keys</strong> from configuration — not ephemeral container key rings. Keys are operator-controlled via <code>deploy-azure.env</code> and injected as Container App <code>secretref</code> values.</p>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Column / field</th>
+            <th>Storage treatment</th>
+            <th>Notes</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>Email</code>, <code>FirstName</code>, <code>LastName</code></td>
+            <td>AES-256-GCM (<code>j1:</code> prefix in DB)</td>
+            <td><code>AesFieldEncryptor</code> in <code>juskel.Shared</code>; decrypted on EF read</td>
+          </tr>
+          <tr>
+            <td><code>EmailLookupHash</code></td>
+            <td>HMAC-SHA256 (plain hex)</td>
+            <td>Deterministic lookup for login — not encrypted</td>
+          </tr>
+          <tr>
+            <td><code>PasswordHash</code></td>
+            <td>ASP.NET <code>PasswordHasher</code></td>
+            <td>One-way hash — never encrypted</td>
+          </tr>
+          <tr>
+            <td><code>EmailOtpHash</code></td>
+            <td>ASP.NET <code>PasswordHasher</code></td>
+            <td>OTP stored hashed; plain code only in email</td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="content-block">
+        <h3>Configuration keys (<code>deploy-azure.env</code>)</h3>
+        <ul>
+          <li><code>ENCRYPTION__FIELDKEY</code> → Container App secret <code>field-encryption-key</code> → <code>Encryption__FieldKey</code></li>
+          <li><code>ENCRYPTION__EMAILLOOKUPKEY</code> → secret <code>email-lookup-key</code> → <code>Encryption__EmailLookupKey</code></li>
+        </ul>
+        <p>Local dev: set both under <code>Encryption</code> in <code>appsettings.Development.json</code> (see <code>appsettings.Development.json.example</code>). Minimum 32 characters each.</p>
+      </div>
+      <div class="verdict-callout">
+        <strong>Manual rotation</strong>
+        Changing <code>ENCRYPTION__FIELDKEY</code> or <code>ENCRYPTION__EMAILLOOKUPKEY</code> without a re-encrypt / hash backfill breaks existing rows. Schedule rotation deliberately; never rotate casually on deploy.
+      </div>
+    </section>
+
+    <section class="section">
       <h2>Email &amp; OTP internals</h2>
       <table class="data-table">
         <thead>
@@ -208,7 +285,7 @@
           <tr>
             <td><code>identity.Users</code> columns</td>
             <td>SQL Server</td>
-            <td><code>EmailVerified</code>, <code>EmailOtpHash</code>, <code>EmailOtpExpiresAt</code>, <code>EmailOtpAttempts</code></td>
+            <td><code>EmailVerified</code>, <code>EmailOtpHash</code>, <code>EmailOtpExpiresAt</code>, <code>EmailOtpAttempts</code>, <code>EmailLookupHash</code></td>
           </tr>
         </tbody>
       </table>

@@ -79,13 +79,14 @@
         <div class="roadmap-item roadmap-item--current">
           <div class="roadmap-item__period">Aug – Sep 2026 · Current</div>
           <h3>API scaffolding &amp; platform core</h3>
-          <p>I'm now moving into hands-on engineering — project setup, authentication, and the database foundation.</p>
+          <p>Hands-on engineering — live Azure API, Vercel frontend, and identity module with field-level encryption.</p>
           <ul>
-            <li>.NET 10 API project scaffold (modular monolith structure)</li>
-            <li>SQL Server schema — users, roles, audit logs</li>
-            <li>Sign-in / auth module implementation</li>
-            <li>CI pipeline and Azure environment setup</li>
-            <li>API contract alignment with Next.js client</li>
+            <li><strong>Done:</strong> .NET 10 API scaffold, <code>/health</code>, Swagger conventions</li>
+            <li><strong>Done:</strong> Azure Container Apps deploy (<code>deploy-azure.sh</code>)</li>
+            <li><strong>Done:</strong> Vercel frontend + CORS to API</li>
+            <li><strong>Done:</strong> Identity sign-in, JWT, email OTP (Resend)</li>
+            <li><strong>Done:</strong> PII encryption (AES-256-GCM) + email lookup HMAC</li>
+            <li>Next: CI pipeline, SME onboarding API, Companies House integration</li>
           </ul>
         </div>
 
@@ -160,13 +161,19 @@
             <td>P0</td>
             <td>.NET API scaffold + SQL Server setup</td>
             <td>Aug 2026</td>
-            <td>Azure provisioning</td>
+            <td><span class="status-pill status-pill--implemented">Shipped</span></td>
           </tr>
           <tr>
             <td>P0</td>
-            <td>Auth module (sign-in, roles, JWT)</td>
+            <td>Azure Container Apps + Vercel deploy</td>
+            <td>Aug 2026</td>
+            <td><span class="status-pill status-pill--implemented">Shipped</span></td>
+          </tr>
+          <tr>
+            <td>P0</td>
+            <td>Auth module (sign-in, roles, JWT, PII encryption)</td>
             <td>Aug – Sep 2026</td>
-            <td>API scaffold</td>
+            <td><span class="status-pill status-pill--implemented">Core shipped</span></td>
           </tr>
           <tr>
             <td>P1</td>

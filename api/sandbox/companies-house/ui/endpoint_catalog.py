@@ -140,6 +140,23 @@ ENDPOINTS: dict[str, dict[str, Any]] = {
         "path": "/company/{company_number}/charges/{charge_id}",
         "pathParams": ["charge_id"],
     },
+    # —— Documents (Document API) ——
+    "filing-documents-index": {
+        "label": "All filing documents",
+        "group": "documents",
+        "scope": "company",
+        "path": "",
+        "synthetic": "filing-documents-index",
+        "description": "Scans filing history and lists every item with a downloadable document.",
+    },
+    "document-metadata": {
+        "label": "Document metadata",
+        "group": "documents",
+        "scope": "document",
+        "path": "/document/{document_id}",
+        "pathParams": ["document_id"],
+        "description": "Document API — types, sizes, and available content formats.",
+    },
     # —— Search ——
     "search-companies": {
         "label": "Search companies",
@@ -218,6 +235,7 @@ GROUPS: list[dict[str, str]] = [
     {"id": "officers", "label": "Officers"},
     {"id": "psc", "label": "PSC"},
     {"id": "filings", "label": "Filings & charges"},
+    {"id": "documents", "label": "Documents"},
     {"id": "search", "label": "Search"},
     {"id": "disqualification", "label": "Disqualifications"},
 ]

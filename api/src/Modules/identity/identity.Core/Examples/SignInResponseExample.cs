@@ -7,5 +7,7 @@ public sealed class SignInResponseExample : IExamplesProvider<SignInResponse>
 {
     public SignInResponse GetExamples() => new(
         UserId: Guid.Parse("11111111-1111-1111-1111-111111111111"),
-        AccessToken: "stub-access-token");
+        AccessToken: "stub-access-token",
+        FirstName: "Ada",
+        LastName: "Lovelace");
 }

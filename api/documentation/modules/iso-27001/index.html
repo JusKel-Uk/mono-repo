@@ -91,15 +91,15 @@
           </tr>
           <tr>
             <td>Secrets</td>
-            <td><code>deploy-azure.env</code> → Container App secrets</td>
+            <td><code>deploy-azure.env</code> → Container App <code>secretref</code> (JWT, SQL, encryption keys, Resend)</td>
             <td>A.8.12 Data leakage</td>
-            <td><span class="status-pill status-pill--planned">Key Vault next</span></td>
+            <td><span class="status-pill status-pill--implemented">Live (Key Vault optional)</span></td>
           </tr>
           <tr>
             <td>Database</td>
-            <td>Azure SQL via connection string + password</td>
+            <td>Azure SQL (TDE) + application-layer PII encryption (AES-256-GCM)</td>
             <td>A.8.24 Cryptography</td>
-            <td><span class="status-pill status-pill--in-progress">TDE on; MI pending</span></td>
+            <td><span class="status-pill status-pill--implemented">TDE + field encrypt</span></td>
           </tr>
           <tr>
             <td>Logging</td>

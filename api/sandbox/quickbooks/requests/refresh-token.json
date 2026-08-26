@@ -1,0 +1,11 @@
+{
+  "_note": "Refresh access token when playground token expires (~1 hour).",
+  "method": "POST",
+  "url": "https://oauth.platform.intuit.com/oauth2/v1/tokens/bearer",
+  "headers": {
+    "Accept": "application/json",
+    "Authorization": "Basic {BASE64_CLIENT_ID_COLON_SECRET}",
+    "Content-Type": "application/x-www-form-urlencoded"
+  },
+  "body": "grant_type=refresh_token&refresh_token={QUICKBOOKS_REFRESH_TOKEN}"
+}

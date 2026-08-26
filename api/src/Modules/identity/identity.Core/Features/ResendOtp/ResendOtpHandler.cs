@@ -46,6 +46,7 @@ internal sealed class ResendOtpHandler
         {
             var otp = _emailOtpService.IssueOtp(user);
             await _db.SaveChangesAsync(ct);
+            E2eOtpBridge.LogOtpIfDevelopment(user.Email, otp.PlainCode);
             await _emailVerificationNotifier.SendVerificationOtpAsync(user, otp.DisplayCode, ct);
         }
 

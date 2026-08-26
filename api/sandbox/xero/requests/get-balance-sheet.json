@@ -1,0 +1,10 @@
+{
+  "_note": "Balance sheet as of date.",
+  "method": "GET",
+  "url": "{XERO_API_BASE_URL}/Reports/BalanceSheet?date={XERO_BALANCE_SHEET_DATE}",
+  "headers": {
+    "Accept": "application/json",
+    "Authorization": "Bearer {XERO_ACCESS_TOKEN}",
+    "xero-tenant-id": "{XERO_TENANT_ID}"
+  }
+}

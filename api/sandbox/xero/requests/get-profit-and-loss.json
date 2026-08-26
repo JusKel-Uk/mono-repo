@@ -1,0 +1,10 @@
+{
+  "_note": "Profit & Loss report.",
+  "method": "GET",
+  "url": "{XERO_API_BASE_URL}/Reports/ProfitAndLoss?fromDate={XERO_REPORT_FROM_DATE}&toDate={XERO_REPORT_TO_DATE}",
+  "headers": {
+    "Accept": "application/json",
+    "Authorization": "Bearer {XERO_ACCESS_TOKEN}",
+    "xero-tenant-id": "{XERO_TENANT_ID}"
+  }
+}

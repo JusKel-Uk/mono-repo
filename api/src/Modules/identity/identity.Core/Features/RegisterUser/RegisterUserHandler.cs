@@ -81,6 +81,7 @@ internal sealed class RegisterUserHandler
 
         await _db.SaveChangesAsync(ct);
 
+        E2eOtpBridge.LogOtpIfDevelopment(user.Email, otp.PlainCode);
         await _emailVerificationNotifier.SendVerificationOtpAsync(user, otp.DisplayCode, ct);
 
         return new RegisterUserResponse(user.Id, user.Email, user.EmailVerified);

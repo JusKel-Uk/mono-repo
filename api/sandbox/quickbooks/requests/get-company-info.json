@@ -1,0 +1,10 @@
+{
+  "_note": "GET company profile — sandbox only.",
+  "method": "GET",
+  "url": "{QUICKBOOKS_API_BASE_URL}/{QUICKBOOKS_REALM_ID}/companyinfo/{QUICKBOOKS_REALM_ID}?minorversion={QUICKBOOKS_MINOR_VERSION}",
+  "headers": {
+    "Accept": "application/json",
+    "Authorization": "Bearer {QUICKBOOKS_ACCESS_TOKEN}",
+    "Content-Type": "application/json"
+  }
+}

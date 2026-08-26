@@ -68,5 +68,6 @@ cd ui
 - List results have **View details →** to drill into child endpoints
 - Home page: officer search, alphabetical search, advanced search
 - Plain-language summary + collapsed JSON
+- **Documents** sidebar: scan all filing history for downloadable PDFs/XBRL; open metadata and files via Document API
 
-Does not include Document API, Streaming API, or OAuth Filing APIs (separate products).
+Includes Public Data API + **Document API** (metadata + content download). Does not include Streaming API or OAuth Filing APIs.

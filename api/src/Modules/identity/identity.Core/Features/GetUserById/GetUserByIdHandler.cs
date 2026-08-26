@@ -20,7 +20,7 @@ internal sealed class GetUserByIdHandler
         return await _db.Users
             .AsNoTracking()
             .Where(u => u.Id == query.UserId && u.DeletedAt == null)
-            .Select(u => new UserSummaryDto(u.Id, u.Email))
+            .Select(u => new UserSummaryDto(u.Id, u.Email, u.FirstName, u.LastName))
             .FirstOrDefaultAsync(ct);
     }
 }

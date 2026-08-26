@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Onboarding — Schematics — JusKel Technology Documentation</title>
+  <link rel="stylesheet" href="../../assets/css/main.css">
+  <link rel="stylesheet" href="../../assets/css/diagrams.css">
+</head>
+<body data-module="onboarding" data-page="schematics" data-site-section="modules">
+  <header class="site-header">
+    <div class="site-header__inner">
+      <a href="../../index.html" class="site-logo">JusKel Technology Docs</a>
+      <button class="nav-toggle" aria-label="Toggle navigation" aria-expanded="false">
+        <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M4 6h16M4 12h16M4 18h16"/>
+        </svg>
+      </button>
+      <nav class="site-nav">
+        <a href="../../index.html" data-section="home">Home</a>
+        <a href="../index.html" data-section="modules">Modules</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="main-content">
+    <nav class="breadcrumbs" aria-label="Breadcrumb">
+      <a href="../../index.html">Home</a>
+      <span class="breadcrumbs__sep">/</span>
+      <a href="../index.html">Modules</a>
+      <span class="breadcrumbs__sep">/</span>
+      <a href="index.html">Onboarding</a>
+      <span class="breadcrumbs__sep">/</span>
+      <span>Schematics</span>
+    </nav>
+
+    <header class="page-header">
+      <h1>Onboarding — Schematics</h1>
+      <p>Module boundaries and infrastructure dependencies.</p>
+    </header>
+
+    <nav class="module-subnav" aria-label="Module navigation">
+      <a href="index.html" data-page="overview">Overview</a>
+      <a href="schematics.html" data-page="schematics">Schematics</a>
+      <a href="flow.html" data-page="flow">Flow</a>
+      <a href="implementation.html" data-page="implementation">Spec</a>
+    </nav>
+
+    <section class="section">
+      <h2>Module boundary diagram</h2>
+      <div class="diagram-flow" data-jk-flow='[
+        {"type":"rect","role":"client","label":"juskel.Api","sub":"Host"},
+        {"type":"rect","role":"module","label":"onboarding.Core","sub":"Wizard state"},
+        {"type":"rect","role":"module","label":"funding.Core","sub":"Financial + funding"},
+        {"type":"rect","role":"module","label":"scoring.Core","sub":"Sustainability ESG"},
+        {"type":"rect","role":"platform","label":"juskel.Integrations","sub":"CH, OB, Xero, QB, Blob"},
+        {"type":"cylinder","role":"storage","label":"SQL Server","sub":"3 schemas"},
+        {"type":"cylinder","role":"storage","label":"Azure Blob","sub":"Evidence files"}
+      ]'></div>
+      <div class="diagram-legend" data-jk-legend='["client","module","platform","storage"]'></div>
+    </section>
+
+    <section class="section">
+      <h2>Cross-module communication</h2>
+      <ul>
+        <li><code>onboarding.Core</code> calls <code>IFundingModule</code> and <code>IScoringModule</code> for step completion checks on submit</li>
+        <li><code>funding.Core</code> and <code>scoring.Core</code> call <code>IOnboardingModule.GetApplicationIdForUserAsync</code> for <code>/current</code> routes</li>
+        <li>No cross-module <code>DbContext</code> access — contracts only</li>
+      </ul>
+    </section>
+
+    <section class="section">
+      <h2>Projects</h2>
+      <table class="data-table">
+        <thead><tr><th>Project</th><th>Schema</th><th>Responsibility</th></tr></thead>
+        <tbody>
+          <tr><td><code>onboarding.Contracts</code></td><td>—</td><td>DTOs, enums, <code>IOnboardingModule</code></td></tr>
+          <tr><td><code>onboarding.Core</code></td><td><code>onboarding</code></td><td>Application aggregate, company + business steps</td></tr>
+          <tr><td><code>funding.Contracts</code></td><td>—</td><td>Financial/funding DTOs, <code>IFundingModule</code></td></tr>
+          <tr><td><code>funding.Core</code></td><td><code>funding</code></td><td>Financial profile, OAuth, evidence, funding profile</td></tr>
+          <tr><td><code>scoring.Contracts</code></td><td>—</td><td>Sustainability DTOs, <code>IScoringModule</code></td></tr>
+          <tr><td><code>scoring.Core</code></td><td><code>scoring</code></td><td>9 ESG questions + cert uploads</td></tr>
+          <tr><td><code>juskel.Integrations</code></td><td>—</td><td>External API adapters (no business rules)</td></tr>
+        </tbody>
+      </table>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>JusKel Technology Documentation · Proprietary — JusKel UK</p>
+  </footer>
+
+  <script src="../../assets/js/diagrams.js" defer></script>
+  <script src="../../assets/js/main.js" defer></script>
+</body>
+</html>
