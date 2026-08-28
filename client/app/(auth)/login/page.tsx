@@ -3,7 +3,13 @@ import { LoginForm } from './login-form';
 
 export const metadata: Metadata = { title: 'Log in' };
 
-export default function LoginPage() {
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ next?: string }>;
+}) {
+  const { next } = await searchParams;
+
   return (
     <section className='flex flex-col gap-14 w-full'>
       <div className='flex flex-col items-center justify-center gap-2'>
@@ -15,7 +21,7 @@ export default function LoginPage() {
         </p>
       </div>
 
-      <LoginForm />
+      <LoginForm next={next} />
     </section>
   );
 }

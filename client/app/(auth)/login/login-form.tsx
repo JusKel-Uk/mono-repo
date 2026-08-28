@@ -8,9 +8,10 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation } from '@tanstack/react-query';
 import { Eye, EyeOff } from 'lucide-react';
 
-import { ROUTES } from '@/lib/routes';
+import { ROUTES, safeInternalPath } from '@/lib/routes';
 import { loginSchema, type LoginInput } from '@/lib/validations/auth';
 import { login, ApiError } from '@/lib/api/auth';
+import { useAuthStore } from '@/stores/authStore';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -23,21 +24,32 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 
-export function LoginForm() {
+export function LoginForm({ next }: { next?: string }) {
   const [showPassword, setShowPassword] = useState(false);
   const router = useRouter();
 
   const form = useForm<LoginInput>({
     resolver: zodResolver(loginSchema),
+    // onChange so formState.isValid updates as the user types (the submit
+    // button is gated on it).
+    mode: 'onChange',
     defaultValues: { email: '', password: '', rememberMe: false },
   });
 
   const mutation = useMutation({
     mutationFn: (values: LoginInput) =>
       login({ email: values.email, password: values.password }),
-    onSuccess: () => {
+    onSuccess: (data, variables) => {
+      // Merge keeps any name captured at signup on this device.
+      useAuthStore.getState().setUser({
+        id: data.userId,
+        email: variables.email,
+        firstName: data.firstName,
+        lastName: data.lastName,
+      });
+      // Return to the page they were bounced from (validated), else the app.
       // TODO(auth): route by role once user roles exist in the backend.
-      router.push(ROUTES.sme.dashboard);
+      router.push(safeInternalPath(next));
     },
     onError: (error) => {
       // Unverified account → send them to finish email verification.
@@ -62,7 +74,7 @@ export function LoginForm() {
               name='email'
               render={({ field }) => (
                 <FormItem className='flex flex-col gap-2 xl:gap-4'>
-                  <FormLabel className='text-sm xl:text-lg text-carbon-black'>
+                  <FormLabel className='text-sm font-semibold xl:text-lg text-carbon-black'>
                     Email
                   </FormLabel>
                   <FormControl>
@@ -83,7 +95,7 @@ export function LoginForm() {
               name='password'
               render={({ field }) => (
                 <FormItem className='flex flex-col gap-2 xl:gap-4'>
-                  <FormLabel className='text-sm xl:text-lg text-carbon-black'>
+                  <FormLabel className='text-sm font-semibold xl:text-lg text-carbon-black'>
                     Password
                   </FormLabel>
                   <FormControl>
@@ -157,8 +169,9 @@ export function LoginForm() {
           </div>
           <Button
             type='submit'
-            className='w-full'
             loading={mutation.isPending}
+            disabled={mutation.isPending || !form.formState.isValid}
+            className='h-14 w-full rounded-lg text-base font-semibold cursor-pointer'
           >
             {mutation.isPending ? 'Signing in…' : 'Sign in'}
           </Button>
