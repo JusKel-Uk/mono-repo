@@ -47,6 +47,16 @@ export function optionalText(max = 200) {
     .pipe(z.string().max(max, `Keep this under ${max} characters`));
 }
 
+/** Required multi-line text (keeps line breaks), length-capped. */
+export function requiredMultiline(message: string, max = 2000) {
+  return z
+    .string()
+    .transform(cleanMultiline)
+    .pipe(
+      z.string().min(1, message).max(max, `Keep this under ${max} characters`),
+    );
+}
+
 /** Optional multi-line text (keeps line breaks), length-capped. */
 export function optionalMultiline(max = 2000) {
   return z
@@ -65,4 +75,28 @@ export function optionalOneOf(options: readonly string[]) {
   return z
     .string()
     .refine((v) => v === '' || options.includes(v), 'Choose a valid option');
+}
+
+/**
+ * Enum select — the field value is the string form of a valid enum integer
+ * (e.g. "2"). Kept as a string in the form (selects are string-valued); map to
+ * a number at the API boundary. See `@/lib/onboarding/enums`.
+ */
+export function enumSelect(
+  options: readonly { value: number }[],
+  message: string,
+) {
+  return z
+    .string()
+    .refine((v) => options.some((o) => String(o.value) === v), message);
+}
+
+/** Optional enum select: empty or the string form of a valid enum integer. */
+export function optionalEnumSelect(options: readonly { value: number }[]) {
+  return z
+    .string()
+    .refine(
+      (v) => v === '' || options.some((o) => String(o.value) === v),
+      'Choose a valid option',
+    );
 }

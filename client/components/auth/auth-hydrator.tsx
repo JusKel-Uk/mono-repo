@@ -22,7 +22,12 @@ export function AuthHydrator() {
       if (useAuthStore.getState().user) return; // already known
       getMe()
         .then((me) =>
-          useAuthStore.getState().setUser({ id: me.id, email: me.email }),
+          useAuthStore.getState().setUser({
+            id: me.id,
+            email: me.email,
+            firstName: me.firstName,
+            lastName: me.lastName,
+          }),
         )
         .catch(() => {
           /* invalid/expired token or API unreachable — leave store empty */

@@ -1,41 +1,58 @@
 'use client';
 
-import { useSyncExternalStore } from 'react';
 import Link from 'next/link';
-import { ArrowRight, Circle, CircleCheck, Send } from 'lucide-react';
+import { ArrowRight, Circle, CircleCheck, Loader2, Send } from 'lucide-react';
+import { toast } from 'sonner';
 
 import { cn } from '@/lib/utils';
 import { ONBOARDING_STEPS, stepRoute } from '@/lib/onboarding/steps';
-import { useOnboardingStore } from '@/stores/onboardingStore';
+import {
+  useApplication,
+  useSubmitApplication,
+  stepStatusOf,
+} from '@/lib/hooks/use-onboarding';
+import { ApiError } from '@/lib/api/client';
+import { useAuthStore, displayName } from '@/stores/authStore';
+import { useMounted } from '@/lib/hooks/use-mounted';
 import { OnboardingShell } from '@/components/onboarding/onboarding-shell';
 
-const EMPTY: Record<string, boolean> = {};
-
-/** False during SSR + the first client (hydration) render, true thereafter. */
-function useMounted() {
-  return useSyncExternalStore(
-    () => () => {},
-    () => true,
-    () => false,
-  );
-}
-
 export function OnboardingLanding() {
-  const storeCompleted = useOnboardingStore((s) => s.completed);
+  const { data: app } = useApplication();
+  const submit = useSubmitApplication();
+  const user = useAuthStore((s) => s.user);
   const mounted = useMounted();
-  const completed = mounted ? storeCompleted : EMPTY;
-  const total = ONBOARDING_STEPS.length;
-  const doneCount = ONBOARDING_STEPS.filter((s) => completed[s.slug]).length;
-  const pct = Math.round((doneCount / total) * 100);
+
+  const total = app?.totalSteps ?? ONBOARDING_STEPS.length;
+  const doneCount = app?.completedCount ?? 0;
+  const pct = total ? Math.round((doneCount / total) * 100) : 0;
   const stepsLeft = total - doneCount;
-  const allComplete = doneCount === total;
+  const canSubmit = Boolean(app?.canSubmit);
+  const submitted = app?.status === 1;
   const firstIncomplete =
-    ONBOARDING_STEPS.find((s) => !completed[s.slug]) ?? ONBOARDING_STEPS[0];
+    ONBOARDING_STEPS.find((s) => stepStatusOf(app, s.slug) !== 2) ??
+    ONBOARDING_STEPS[0];
+
+  const greeting =
+    mounted && user
+      ? `Welcome, ${user.firstName || displayName(user)}`
+      : 'Welcome';
+
+  const onSubmit = () => {
+    submit.mutate(undefined, {
+      onSuccess: () => toast.success('Application submitted for review'),
+      onError: (err) =>
+        toast.error(
+          err instanceof ApiError && err.status === 409
+            ? 'Please complete every step before submitting.'
+            : 'Unable to submit right now. Please try again.',
+        ),
+    });
+  };
 
   return (
     <OnboardingShell
       currentStepTitle={firstIncomplete.title}
-      title='Welcome, Flourish'
+      title={greeting}
       subtitle='Complete every section and then submit for an Assessment Specialist review to unlock your Sustainability Finance score.'
     >
       {/* Progress card */}
@@ -51,7 +68,11 @@ export function OnboardingLanding() {
             <p className='text-xs font-medium uppercase tracking-wide text-muted-foreground'>
               Assessment status
             </p>
-            {allComplete ? (
+            {submitted ? (
+              <p className='text-base font-medium text-success-600'>
+                Submitted for review
+              </p>
+            ) : canSubmit ? (
               <p className='text-base font-medium text-success-600'>
                 Ready to submit
               </p>
@@ -69,8 +90,8 @@ export function OnboardingLanding() {
           />
         </div>
 
-        {/* Ready-to-submit card — shown once every step is complete */}
-        {allComplete && (
+        {/* Ready-to-submit card — shown once the backend reports canSubmit */}
+        {canSubmit && !submitted && (
           <div className='flex flex-col gap-6 rounded-2xl border border-primary/50 bg-primary p-6 text-mineral-white'>
             <div className='flex items-start gap-3'>
               <CircleCheck className='size-6 shrink-0' />
@@ -88,11 +109,16 @@ export function OnboardingLanding() {
             </div>
             <button
               type='button'
-              // TODO(onboarding): submit the assessment for review.
-              className='inline-flex h-14 w-fit cursor-pointer items-center justify-center gap-2 rounded-lg bg-white px-5 text-base font-semibold text-primary shadow-xs transition-opacity hover:opacity-90'
+              onClick={onSubmit}
+              disabled={submit.isPending}
+              className='inline-flex h-14 w-fit cursor-pointer items-center justify-center gap-2 rounded-lg bg-white px-5 text-base font-semibold text-primary shadow-xs transition-opacity hover:opacity-90 disabled:opacity-70'
             >
-              Submit for review
-              <Send className='size-5' />
+              {submit.isPending ? 'Submitting…' : 'Submit for review'}
+              {submit.isPending ? (
+                <Loader2 className='size-5 animate-spin' />
+              ) : (
+                <Send className='size-5' />
+              )}
             </button>
           </div>
         )}
@@ -111,7 +137,8 @@ export function OnboardingLanding() {
 
         <ol className='flex flex-col'>
           {ONBOARDING_STEPS.map((step, i) => {
-            const isDone = Boolean(completed[step.slug]);
+            const status = stepStatusOf(app, step.slug);
+            const isDone = status === 2;
             const isLast = i === ONBOARDING_STEPS.length - 1;
             const Icon = step.icon;
             return (
@@ -137,7 +164,7 @@ export function OnboardingLanding() {
                             {step.title}
                           </span>
                         </span>
-                        <StatusBadge done={isDone} />
+                        <StatusBadge status={status} />
                       </div>
                       <span className='shrink-0 text-sm text-muted-foreground'>
                         {step.time}
@@ -164,15 +191,21 @@ export function OnboardingLanding() {
   );
 }
 
-function StatusBadge({ done }: { done: boolean }) {
+function StatusBadge({ status }: { status: 0 | 1 | 2 }) {
+  const map = {
+    0: { label: 'Not Started', cls: 'bg-gray-200 text-gray-500' },
+    1: { label: 'In Progress', cls: 'bg-warning-50 text-warning' },
+    2: { label: 'Complete', cls: 'bg-success-50 text-success-600' },
+  } as const;
+  const { label, cls } = map[status];
   return (
     <span
       className={cn(
         'rounded-full px-3 py-1 text-[11px] font-normal leading-3.5',
-        done ? 'bg-success-50 text-success-600' : 'bg-gray-200 text-gray-500',
+        cls,
       )}
     >
-      {done ? 'Complete' : 'Not Started'}
+      {label}
     </span>
   );
 }

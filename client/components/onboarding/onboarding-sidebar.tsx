@@ -19,7 +19,7 @@ import type { LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ROUTES } from '@/lib/routes';
 import { logout } from '@/lib/api/auth';
-import { useAuthStore, displayName } from '@/stores/authStore';
+import { useAuthStore, displayName, initials } from '@/stores/authStore';
 import { useOnboardingStore } from '@/stores/onboardingStore';
 import { useMounted } from '@/lib/hooks/use-mounted';
 import { JusKelLogo } from '@/components/brand/juskel-logo';
@@ -36,15 +36,6 @@ const NAV: { label: string; icon: LucideIcon; active?: boolean }[] = [
   { label: 'Reports', icon: BookOpen },
   { label: 'Settings', icon: Settings },
 ];
-
-function initials(name: string): string {
-  return name
-    .split(' ')
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((p) => p[0]?.toUpperCase())
-    .join('');
-}
 
 export function OnboardingSidebar({
   currentStepTitle,

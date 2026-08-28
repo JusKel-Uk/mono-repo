@@ -41,10 +41,12 @@ export function LoginForm({ next }: { next?: string }) {
       login({ email: values.email, password: values.password }),
     onSuccess: (data, variables) => {
       // Merge keeps any name captured at signup on this device.
-
-      useAuthStore
-        .getState()
-        .setUser({ id: data.userId, email: variables.email });
+      useAuthStore.getState().setUser({
+        id: data.userId,
+        email: variables.email,
+        firstName: data.firstName,
+        lastName: data.lastName,
+      });
       // Return to the page they were bounced from (validated), else the app.
       // TODO(auth): route by role once user roles exist in the backend.
       router.push(safeInternalPath(next));

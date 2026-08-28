@@ -2,56 +2,37 @@ import { z } from 'zod';
 
 import {
   cleanText,
-  optionalMultiline,
+  requiredMultiline,
   optionalOneOf,
   optionalText,
-  oneOf,
   requiredText,
+  enumSelect,
 } from './sanitize';
 
-/* ---- Select options (placeholders — refine against the real data model) ---- */
+/** UK postcode — mirrors the backend's server-side rule. */
+export const UK_POSTCODE_RE = /^[A-Za-z]{1,2}\d[A-Za-z\d]?\s?\d[A-Za-z]{2}$/;
 
-export const RELATIONSHIP_OPTIONS = [
-  'Owner / Director',
-  'Employee',
-  'Accountant / Adviser',
-  'Other',
-];
-
-export const REGION_OPTIONS = [
-  'England',
-  'Scotland',
-  'Wales',
-  'Northern Ireland',
-];
-
-export const EMPLOYEE_BAND_OPTIONS = ['1-9', '10-49', '50-249', '250+'];
-
-export const TURNOVER_OPTIONS = [
-  'Under £250k',
-  '£250k-£1m',
-  '£1m-£5m',
-  '£5m-£25m',
-  'Over £25m',
-];
-
-export const YEARS_OPTIONS = [
-  'Under 1 year',
-  '1-3 years',
-  '3-5 years',
-  '5+ years',
-];
-
-export const SECTOR_OPTIONS = [
-  'Agriculture',
-  'Construction',
-  'Manufacturing',
-  'Professional Services',
-  'Retail & Wholesale',
-  'Technology',
-  'Transport & Logistics',
-  'Other',
-];
+/** Required, cleaned UK postcode field. */
+const ukPostcode = () =>
+  z
+    .string()
+    .transform(cleanText)
+    .pipe(
+      z
+        .string()
+        .min(1, 'Enter your postcode')
+        .regex(UK_POSTCODE_RE, 'Enter a valid UK postcode'),
+    );
+import {
+  COMPANY_RELATIONSHIP,
+  UK_REGION,
+  EMPLOYEE_SIZE_BAND,
+  ANNUAL_TURNOVER_BAND,
+  YEARS_IN_OPERATION_BAND,
+  FUNDING_PURPOSE,
+  FUNDING_URGENCY,
+  BUSINESS_SECTOR,
+} from '@/lib/onboarding/enums';
 
 /* ---- Step 1: Company setup ---- */
 
@@ -68,35 +49,37 @@ export const companySetupSchema = z.object({
           'A company number is 8 characters (letters or digits)',
         ),
     ),
-  registeredCompanyName: requiredText('Enter your registered company name', 160),
-  relationship: oneOf(
-    RELATIONSHIP_OPTIONS,
+  legalName: requiredText('Enter your registered company name', 160),
+  // Address (line 1) + city + postcode are all required by the backend.
+  // Auto-filled from Companies House verify, but editable / manual-enterable.
+  registeredAddress: requiredText('Enter your registered address', 250),
+  city: requiredText('Enter your city or town', 80),
+  postcode: ukPostcode(),
+  relationship: enumSelect(
+    COMPANY_RELATIONSHIP,
     'Select your relationship to the company',
   ),
-  region: oneOf(REGION_OPTIONS, 'Select a region'),
-  employeeBand: oneOf(EMPLOYEE_BAND_OPTIONS, 'Select an employee size band'),
-  annualTurnover: oneOf(TURNOVER_OPTIONS, 'Select your annual turnover'),
-  yearsInOperation: oneOf(YEARS_OPTIONS, 'Select years in operation'),
+  region: enumSelect(UK_REGION, 'Select a region'),
+  employeeSizeBand: enumSelect(EMPLOYEE_SIZE_BAND, 'Select an employee size band'),
+  annualTurnoverBand: enumSelect(
+    ANNUAL_TURNOVER_BAND,
+    'Select your annual turnover',
+  ),
+  yearsInOperationBand: enumSelect(
+    YEARS_IN_OPERATION_BAND,
+    'Select years in operation',
+  ),
 });
 export type CompanySetupInput = z.infer<typeof companySetupSchema>;
 
 /* ---- Step 2: Business profile ---- */
 
 export const businessProfileSchema = z.object({
-  sector: oneOf(SECTOR_OPTIONS, 'Select your sector'),
+  sector: enumSelect(BUSINESS_SECTOR, 'Select your sector'),
   subSector: optionalText(100),
   city: requiredText('Enter your city or town', 80),
-  postcode: z
-    .string()
-    .transform(cleanText)
-    .pipe(
-      z
-        .string()
-        .min(1, 'Enter your postcode')
-        .max(10, 'Enter a valid postcode')
-        .regex(/^[A-Za-z0-9 ]+$/, 'Enter a valid postcode'),
-    ),
-  description: optionalMultiline(2000),
+  postcode: ukPostcode(),
+  description: requiredMultiline('Describe your business', 2000),
 });
 export type BusinessProfileInput = z.infer<typeof businessProfileSchema>;
 
@@ -180,22 +163,6 @@ export type SustainabilityProfileInput = z.infer<
 
 /* ---- Step 5: Funding profile ---- */
 
-export const FUNDING_PURPOSE_OPTIONS = [
-  'Working capital',
-  'Equipment purchase',
-  'Expansion / growth',
-  'Refinancing',
-  'Property / premises',
-  'Other',
-];
-
-export const URGENCY_OPTIONS = [
-  'Immediate',
-  'Within 1-3 months',
-  'Within 3-6 months',
-  '6+ months',
-];
-
 export const fundingProfileSchema = z.object({
   // Accept currency-formatted input, e.g. "£150,000" or "150000".
   amount: z
@@ -208,19 +175,17 @@ export const fundingProfileSchema = z.object({
         .max(20, 'Enter a valid amount')
         .regex(/^[£$€]?\s?\d[\d,.\s]*$/, 'Enter a valid amount, e.g. £150,000'),
     ),
-  purpose: oneOf(FUNDING_PURPOSE_OPTIONS, 'Select a funding purpose'),
-  // Optional whole number of months.
+  purpose: enumSelect(FUNDING_PURPOSE, 'Select a funding purpose'),
+  // The backend requires the term — whole number of months.
   term: z
     .string()
     .transform(cleanText)
     .pipe(
       z
         .string()
-        .refine(
-          (v) => v === '' || /^\d{1,3}$/.test(v),
-          'Enter the term in whole months',
-        ),
+        .min(1, 'Enter the term in months')
+        .regex(/^\d{1,3}$/, 'Enter the term in whole months'),
     ),
-  urgency: oneOf(URGENCY_OPTIONS, 'Select urgency'),
+  urgency: enumSelect(FUNDING_URGENCY, 'Select urgency'),
 });
 export type FundingProfileInput = z.infer<typeof fundingProfileSchema>;

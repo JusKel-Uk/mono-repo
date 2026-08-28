@@ -3,6 +3,7 @@ import type { Control, FieldPath, FieldValues } from 'react-hook-form';
 import { Paperclip } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
+import type { EnumOption } from '@/lib/onboarding/enums';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import {
@@ -217,6 +218,71 @@ export function SelectField<T extends FieldValues>({
           <FormMessage />
         </FormItem>
       )}
+    />
+  );
+}
+
+/**
+ * Like SelectField, but backed by the integer enum registry: the option label
+ * is shown, the option's integer (as a string) is the stored value. Map to a
+ * number at the API boundary.
+ */
+export function EnumSelectField<T extends FieldValues>({
+  control,
+  name,
+  label,
+  placeholder = 'Select',
+  options,
+  helper,
+}: {
+  control: Control<T>;
+  name: FieldPath<T>;
+  label: string;
+  placeholder?: string;
+  options: EnumOption[];
+  helper?: string;
+}) {
+  return (
+    <FormField
+      control={control}
+      name={name}
+      render={({ field }) => {
+        const value = field.value === '' || field.value == null
+          ? undefined
+          : String(field.value);
+        return (
+          <FormItem className='flex flex-col gap-2'>
+            <FormLabel className={LABEL}>{label}</FormLabel>
+            {/* key on value so a programmatic form.reset() (draft rehydrate)
+                remounts the trigger and it re-derives its label. */}
+            <Select
+              key={value ?? 'empty'}
+              onValueChange={field.onChange}
+              value={value}
+            >
+              <FormControl>
+                <SelectTrigger
+                  className={cn(
+                    CONTROL,
+                    'w-full data-placeholder:text-gray-400 py-6',
+                  )}
+                >
+                  <SelectValue placeholder={placeholder} />
+                </SelectTrigger>
+              </FormControl>
+              <SelectContent>
+                {options.map((opt) => (
+                  <SelectItem key={opt.value} value={String(opt.value)}>
+                    {opt.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {helper && <p className='text-sm text-muted-foreground'>{helper}</p>}
+            <FormMessage />
+          </FormItem>
+        );
+      }}
     />
   );
 }

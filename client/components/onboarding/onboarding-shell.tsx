@@ -3,6 +3,8 @@
 import type { ReactNode } from 'react';
 import { Bell, CircleCheckBig, Menu } from 'lucide-react';
 
+import { useAuthStore, displayName, initials } from '@/stores/authStore';
+import { useMounted } from '@/lib/hooks/use-mounted';
 import { JusKelLogo } from '@/components/brand/juskel-logo';
 import { OnboardingSidebar } from '@/components/onboarding/onboarding-sidebar';
 import {
@@ -34,6 +36,12 @@ export function OnboardingShell({
   actions?: ReactNode;
   children: ReactNode;
 }) {
+  // Persisted store rehydrates client-side only — gate on mount to avoid a
+  // hydration mismatch, then show the signed-in user's initials.
+  const user = useAuthStore((s) => s.user);
+  const mounted = useMounted();
+  const avatar = mounted && user ? initials(displayName(user)) : '';
+
   return (
     <div className='min-h-screen bg-muted lg:flex'>
       {/* Mobile top bar */}
@@ -83,7 +91,7 @@ export function OnboardingShell({
                   <Bell className='size-6 text-carbon-black' />
                 </span>
                 <span className='flex size-14 items-center justify-center rounded-full bg-muted text-base font-semibold text-carbon-black'>
-                  FR
+                  {avatar || '—'}
                 </span>
               </div>
             </div>

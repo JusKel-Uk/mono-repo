@@ -4,19 +4,30 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 
 import { getStep, nextStepRoute } from '@/lib/onboarding/steps';
-import { useOnboardingStore } from '@/stores/onboardingStore';
+import { onboardingKeys, useLookupOptions } from '@/lib/hooks/use-onboarding';
+import {
+  getBusinessProfile,
+  saveBusinessProfile,
+  getCompanySetup,
+} from '@/lib/api/onboarding';
+import {
+  toBusinessProfileRequest,
+  fromBusinessProfile,
+} from '@/lib/onboarding/mappers';
+import { LOOKUP } from '@/lib/onboarding/enums';
 import {
   businessProfileSchema,
   type BusinessProfileInput,
-  SECTOR_OPTIONS,
 } from '@/lib/validations/onboarding';
 import { OnboardingShell } from '@/components/onboarding/onboarding-shell';
 import { OnboardingActions } from '@/components/onboarding/onboarding-actions';
 import {
+  EnumSelectField,
   FieldCard,
-  SelectField,
   TextField,
   TextareaField,
 } from '@/components/onboarding/onboarding-fields';
@@ -24,11 +35,12 @@ import { Form } from '@/components/ui/form';
 
 const step = getStep('business-profile')!;
 const FORM_ID = 'business-profile-form';
+const SLUG = 'business-profile';
 
 export function BusinessProfileForm() {
   const router = useRouter();
-  const saveStep = useOnboardingStore((s) => s.saveStep);
-  const markComplete = useOnboardingStore((s) => s.markComplete);
+  const qc = useQueryClient();
+  const opt = useLookupOptions();
 
   const form = useForm<BusinessProfileInput>({
     resolver: zodResolver(businessProfileSchema),
@@ -42,20 +54,47 @@ export function BusinessProfileForm() {
     },
   });
 
+  const { data: saved } = useQuery({
+    queryKey: onboardingKeys.step(SLUG),
+    queryFn: getBusinessProfile,
+  });
   useEffect(() => {
-    const saved = useOnboardingStore.getState().data.businessProfile;
-    if (saved) form.reset(saved);
-  }, [form]);
+    if (saved) form.reset(fromBusinessProfile(saved));
+  }, [saved, form]);
 
-  const onSubmit = form.handleSubmit((values) => {
-    saveStep('businessProfile', values);
-    markComplete('business-profile');
-    const next = nextStepRoute('business-profile');
-    if (next) router.push(next);
+  // region + size bands are inherited from company setup (not re-collected here).
+  const { data: company } = useQuery({
+    queryKey: onboardingKeys.step('company-setup'),
+    queryFn: getCompanySetup,
   });
 
-  const onSaveExit = () => {
-    saveStep('businessProfile', form.getValues());
+  const save = useMutation({
+    mutationFn: (values: BusinessProfileInput) =>
+      saveBusinessProfile(toBusinessProfileRequest(values, company)),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: onboardingKeys.application });
+      qc.invalidateQueries({ queryKey: onboardingKeys.step(SLUG) });
+    },
+  });
+
+  const onSubmit = form.handleSubmit(async (values) => {
+    try {
+      await save.mutateAsync(values);
+      const next = nextStepRoute(SLUG);
+      if (next) router.push(next);
+    } catch {
+      toast.error('Could not save your business profile. Please try again.');
+    }
+  });
+
+  const onSaveExit = async () => {
+    if (await form.trigger()) {
+      try {
+        await save.mutateAsync(form.getValues());
+      } catch {
+        toast.error('Could not save your business profile. Please try again.');
+      }
+    }
     router.push('/onboarding');
   };
 
@@ -68,7 +107,7 @@ export function BusinessProfileForm() {
       actions={
         <OnboardingActions
           formId={FORM_ID}
-          loading={form.formState.isSubmitting}
+          loading={save.isPending}
           disabled={!form.formState.isValid}
           onSaveExit={onSaveExit}
         />
@@ -83,12 +122,12 @@ export function BusinessProfileForm() {
         >
           {/* Left — company details */}
           <FieldCard className='lg:flex-1'>
-            <SelectField
+            <EnumSelectField
               control={form.control}
               name='sector'
               label='Sector'
               placeholder='Select your sector'
-              options={SECTOR_OPTIONS}
+              options={opt(LOOKUP.businessSector)}
             />
             <TextField
               control={form.control}

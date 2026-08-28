@@ -4,31 +4,38 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 
 import { getStep, nextStepRoute } from '@/lib/onboarding/steps';
-import { useOnboardingStore } from '@/stores/onboardingStore';
+import { onboardingKeys, useLookupOptions } from '@/lib/hooks/use-onboarding';
+import { getFundingProfile, saveFundingProfile } from '@/lib/api/onboarding';
+import {
+  toFundingProfileRequest,
+  fromFundingProfile,
+} from '@/lib/onboarding/mappers';
+import { LOOKUP } from '@/lib/onboarding/enums';
 import {
   fundingProfileSchema,
   type FundingProfileInput,
-  FUNDING_PURPOSE_OPTIONS,
-  URGENCY_OPTIONS,
 } from '@/lib/validations/onboarding';
 import { OnboardingShell } from '@/components/onboarding/onboarding-shell';
 import { OnboardingActions } from '@/components/onboarding/onboarding-actions';
 import {
+  EnumSelectField,
   FieldCard,
-  SelectField,
   TextField,
 } from '@/components/onboarding/onboarding-fields';
 import { Form } from '@/components/ui/form';
 
 const step = getStep('funding-profile')!;
 const FORM_ID = 'funding-profile-form';
+const SLUG = 'funding-profile';
 
 export function FundingProfileForm() {
   const router = useRouter();
-  const saveStep = useOnboardingStore((s) => s.saveStep);
-  const markComplete = useOnboardingStore((s) => s.markComplete);
+  const qc = useQueryClient();
+  const opt = useLookupOptions();
 
   const form = useForm<FundingProfileInput>({
     resolver: zodResolver(fundingProfileSchema),
@@ -36,20 +43,41 @@ export function FundingProfileForm() {
     defaultValues: { amount: '', purpose: '', term: '', urgency: '' },
   });
 
+  const { data: saved } = useQuery({
+    queryKey: onboardingKeys.step(SLUG),
+    queryFn: getFundingProfile,
+  });
   useEffect(() => {
-    const saved = useOnboardingStore.getState().data.fundingProfile;
-    if (saved) form.reset(saved);
-  }, [form]);
+    if (saved) form.reset(fromFundingProfile(saved));
+  }, [saved, form]);
 
-  const onSubmit = form.handleSubmit((values) => {
-    saveStep('fundingProfile', values);
-    markComplete('funding-profile');
-    const next = nextStepRoute('funding-profile');
-    router.push(next ?? '/onboarding');
+  const save = useMutation({
+    mutationFn: (values: FundingProfileInput) =>
+      saveFundingProfile(toFundingProfileRequest(values)),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: onboardingKeys.application });
+      qc.invalidateQueries({ queryKey: onboardingKeys.step(SLUG) });
+    },
   });
 
-  const onSaveExit = () => {
-    saveStep('fundingProfile', form.getValues());
+  const onSubmit = form.handleSubmit(async (values) => {
+    try {
+      await save.mutateAsync(values);
+      const next = nextStepRoute(SLUG);
+      router.push(next ?? '/onboarding');
+    } catch {
+      toast.error('Could not save your funding details. Please try again.');
+    }
+  });
+
+  const onSaveExit = async () => {
+    if (await form.trigger()) {
+      try {
+        await save.mutateAsync(form.getValues());
+      } catch {
+        toast.error('Could not save your funding details. Please try again.');
+      }
+    }
     router.push('/onboarding');
   };
 
@@ -61,7 +89,7 @@ export function FundingProfileForm() {
       actions={
         <OnboardingActions
           formId={FORM_ID}
-          loading={form.formState.isSubmitting}
+          loading={save.isPending}
           disabled={!form.formState.isValid}
           onSaveExit={onSaveExit}
         />
@@ -76,12 +104,12 @@ export function FundingProfileForm() {
               label='Funding amount needed (£)'
               placeholder='e.g. £150,000'
             />
-            <SelectField
+            <EnumSelectField
               control={form.control}
               name='purpose'
               label='Funding purpose'
               placeholder='Select purpose'
-              options={FUNDING_PURPOSE_OPTIONS}
+              options={opt(LOOKUP.fundingPurpose)}
             />
             <TextField
               control={form.control}
@@ -90,11 +118,11 @@ export function FundingProfileForm() {
               placeholder='e.g. 60'
               type='number'
             />
-            <SelectField
+            <EnumSelectField
               control={form.control}
               name='urgency'
               label='Urgency'
-              options={URGENCY_OPTIONS}
+              options={opt(LOOKUP.fundingUrgency)}
             />
           </FieldCard>
         </form>

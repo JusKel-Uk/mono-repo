@@ -40,3 +40,13 @@ export function displayName(user: AuthUser | null): string {
   const full = [user.firstName, user.lastName].filter(Boolean).join(' ').trim();
   return full || user.email.split('@')[0];
 }
+
+/** Up to two uppercase initials from a display name (avatar fallback). */
+export function initials(name: string): string {
+  return name
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((p) => p[0]?.toUpperCase())
+    .join('');
+}

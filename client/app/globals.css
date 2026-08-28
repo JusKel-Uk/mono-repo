@@ -38,6 +38,7 @@
 
   /* ---- Figma status scales — use bg-success-50, text-success-600, … ---- */
   --color-success-50: #ecfdf3;
+  --color-success-200: #a6f4c5;
   --color-success-600: #039855;
   --color-warning-50: #fffaeb;
   --color-warning-200: #fedf89;
