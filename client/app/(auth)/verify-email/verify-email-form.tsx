@@ -32,6 +32,8 @@ export function VerifyEmailForm({ email }: { email: string }) {
 
   const form = useForm<VerifyCodeInput>({
     resolver: zodResolver(verifyCodeSchema),
+    // onChange so the submit button's isValid gate updates as the user types.
+    mode: 'onChange',
     defaultValues: { code: '' },
   });
 
@@ -97,7 +99,8 @@ export function VerifyEmailForm({ email }: { email: string }) {
           <Button
             type='submit'
             loading={mutation.isPending}
-            className='w-full'
+            disabled={mutation.isPending || !form.formState.isValid}
+            className='h-14 w-full rounded-lg text-base font-semibold cursor-pointer'
           >
             {mutation.isPending ? 'Verifying…' : 'Verify Email'}
           </Button>

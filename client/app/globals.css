@@ -26,6 +26,49 @@
   --color-abyssal: #0a1b2a;             /* Secondary Accent — Abyssal Blue-Black */
   --color-refined-gold: #cba052;        /* Signature Accent — Refined Gold */
   --color-carbon-green-black: #0f1e1a;  /* Structural */
+
+  /* ---- Figma neutral ramp (Gray/*) — use bg-gray-300, text-gray-500, … ---- */
+  --color-gray-200: #e9eaeb;
+  --color-gray-300: #d5d7da;
+  --color-gray-400: #a4a7ae;
+  --color-gray-500: #717680;
+  --color-gray-600: #535862;
+  --color-gray-700: #414651;
+  --color-gray-800: #252b37;
+
+  /* ---- Figma status scales — use bg-success-50, text-success-600, … ---- */
+  --color-success-50: #ecfdf3;
+  --color-success-200: #a6f4c5;
+  --color-success-600: #039855;
+  --color-warning-50: #fffaeb;
+  --color-warning-200: #fedf89;
+  --color-error-600: #d92d20;
+
+  /* ---- Figma type scale (SF Pro). Each is size + line-height; pick the weight
+   *      with font-normal (400) / font-medium (~510→500) / font-semibold
+   *      (~590→600). e.g. `text-h2 font-semibold`, `text-label-sm`. ---- */
+  --text-h2: 2rem; /* 32/44 */
+  --text-h2--line-height: 2.75rem;
+  --text-h3: 1.75rem; /* 28/36 */
+  --text-h3--line-height: 2.25rem;
+  --text-h4: 1.5rem; /* 24/32 */
+  --text-h4--line-height: 2rem;
+  --text-h5: 1.25rem; /* 20/28 */
+  --text-h5--line-height: 1.75rem;
+  --text-h6: 1.125rem; /* 18/24 */
+  --text-h6--line-height: 1.5rem;
+  --text-body-lg: 1.125rem; /* 18/28 */
+  --text-body-lg--line-height: 1.75rem;
+  --text-body-md: 1rem; /* 16/24 */
+  --text-body-md--line-height: 1.5rem;
+  --text-body-sm: 0.875rem; /* 14/20 */
+  --text-body-sm--line-height: 1.25rem;
+  --text-label-lg: 0.875rem; /* 14/20 */
+  --text-label-lg--line-height: 1.25rem;
+  --text-label-md: 0.75rem; /* 12/16 */
+  --text-label-md--line-height: 1rem;
+  --text-label-sm: 0.6875rem; /* 11/14 */
+  --text-label-sm--line-height: 0.875rem;
 }
 
 /* ---- Layer 2: Semantic tokens (shadcn role → primitive) ---- */
@@ -46,27 +89,27 @@
   --secondary: var(--color-stone-grey);
   --secondary-foreground: var(--color-carbon-black);
   --muted: var(--color-mineral-white);
-  --muted-foreground: #717680; /* Figma Gray/500 — accessible secondary text + placeholders */
+  --muted-foreground: var(--color-gray-500); /* accessible secondary text + placeholders */
   --accent: var(--color-mineral-white);          /* shadcn: neutral hover surface */
   --accent-foreground: var(--color-carbon-black);
-  --destructive: #d92d20; /* Figma Error/600 */
+  --destructive: var(--color-error-600);
   --destructive-foreground: var(--color-white);
 
   /* Lines — Figma Gray/200 */
-  --border: #e9eaeb;
-  --input: #e9eaeb;
+  --border: var(--color-gray-200);
+  --input: var(--color-gray-200);
   --ring: var(--color-data-teal);
 
   /* Brand extras (not shadcn standard) */
   --gold: var(--color-refined-gold);
   --gold-foreground: var(--color-carbon-black);
-  --success: #039855; /* Figma Success/600 */
+  --success: var(--color-success-600);
   --warning: #d97706;
 
   /* Accessible secondary text on light surfaces (~7:1 on white).
      `muted-foreground` (Sage Grey) fails WCAG AA for body text, so use this
-     for secondary/helper copy. From Figma. */
-  --foreground-secondary: #535862;
+     for secondary/helper copy. Figma Gray/600. */
+  --foreground-secondary: var(--color-gray-600);
 
   /* Charts — brand-driven categorical set */
   --chart-1: var(--color-data-teal);

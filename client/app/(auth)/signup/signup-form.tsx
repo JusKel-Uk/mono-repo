@@ -12,6 +12,7 @@ import { cn } from '@/lib/utils';
 import { ROUTES } from '@/lib/routes';
 import { signupSchema, type SignupInput } from '@/lib/validations/auth';
 import { register, ApiError } from '@/lib/api/auth';
+import { useAuthStore } from '@/stores/authStore';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -24,7 +25,7 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 
-const labelClass = 'text-sm xl:text-lg text-carbon-black';
+const labelClass = 'text-sm font-semibold xl:text-lg text-carbon-black';
 
 type SignupField = ControllerRenderProps<
   SignupInput,
@@ -103,6 +104,9 @@ export function SignupForm() {
 
   const form = useForm<SignupInput>({
     resolver: zodResolver(signupSchema),
+    // onChange so formState.isValid updates as the user types (the submit
+    // button is gated on it).
+    mode: 'onChange',
     defaultValues: {
       firstName: '',
       lastName: '',
@@ -121,7 +125,15 @@ export function SignupForm() {
         email: values.businessEmail,
         password: values.password,
       }),
-    onSuccess: (data) => {
+    onSuccess: (data, variables) => {
+      // Remember the profile through verification → login (login only returns
+      // id + email, so this is where we capture the name).
+      useAuthStore.getState().setUser({
+        id: data.userId,
+        firstName: variables.firstName,
+        lastName: variables.lastName,
+        email: data.email,
+      });
       // Account created but unverified — go verify the email OTP.
       router.push(
         `${ROUTES.auth.verifyEmail}?email=${encodeURIComponent(data.email)}`,
@@ -281,7 +293,8 @@ export function SignupForm() {
           <Button
             type='submit'
             loading={mutation.isPending}
-            className='w-full'
+            disabled={mutation.isPending || !form.formState.isValid}
+            className='h-14 w-full rounded-lg text-base font-semibold'
           >
             {mutation.isPending ? 'Creating account…' : 'Create Account'}
           </Button>

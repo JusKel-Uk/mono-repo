@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+import { requiredText } from './sanitize';
+
 /** Login form schema (Zod v4). */
 export const loginSchema = z.object({
   email: z.email('Enter a valid email address'),
@@ -31,8 +33,8 @@ function isBusinessEmail(email: string): boolean {
 /** Signup form schema (Zod v4). */
 export const signupSchema = z
   .object({
-    firstName: z.string().min(1, 'First name is required'),
-    lastName: z.string().min(1, 'Last name is required'),
+    firstName: requiredText('First name is required', 80),
+    lastName: requiredText('Last name is required', 80),
     businessEmail: z
       .email('Enter a valid business email')
       .refine(isBusinessEmail, {
@@ -74,7 +76,10 @@ export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>;
 
 /** Step 2 — verify the 6-digit code. */
 export const verifyCodeSchema = z.object({
-  code: z.string().length(6, 'Enter the 6-digit code'),
+  code: z
+    .string()
+    .length(6, 'Enter the 6-digit code')
+    .regex(/^\d{6}$/, 'Enter the 6-digit code'),
 });
 export type VerifyCodeInput = z.infer<typeof verifyCodeSchema>;
 
