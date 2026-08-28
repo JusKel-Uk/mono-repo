@@ -238,6 +238,13 @@ async function testSystemEndpoints() {
 
   const debug = await apiGet('/debug');
   log('GET /debug (dev throws → 500)', debug.status === 500, { status: debug.status });
+
+  const lookups = await apiGet('/onboarding/lookups');
+  const sector = lookups.data?.options?.businessSector?.[0];
+  log('GET /onboarding/lookups', lookups.status === 200 && sector?.value === 1 && sector?.label === 'Technology', {
+    status: lookups.status,
+    firstSector: sector,
+  });
 }
 
 async function registerAndLogin(apiProcess) {

@@ -21,7 +21,7 @@ Maps each onboarding Figma screen to the exact REST endpoints the frontend shoul
 
 | Rule | Detail |
 |------|--------|
-| **Enums** | Send and receive **integers** (not strings). See [Enum reference](#enum-reference) below. |
+| **Enums** | Send and receive **integers** (not strings). Load labels from `GET /onboarding/lookups` (or `/funding/lookups`, `/scoring/lookups`). See [Dropdown options](#dropdown-options-sector-region-bands-etc). |
 | **Empty step** | `GET` a step resource → **404** means show an empty form. |
 | **Save step** | `PUT` with JSON body → **200** with saved data. |
 | **No-body POSTs** | `POST /onboarding/applications`, `POST .../submit`, `POST .../authorize` — user comes from JWT; draft application is resolved server-side. |
@@ -334,9 +334,96 @@ Store `accessToken` and attach to all subsequent requests.
 
 ---
 
+## Dropdown options (sector, region, bands, etc.)
+
+Form dropdowns are served from the API (backed by `api/onboarding-lookups.json` on the server — not stored in the database).
+
+| When | Method | Endpoint | Use for |
+|------|--------|----------|---------|
+| App init / cache all | `GET` | `/lookups` | Every dropdown in one call |
+| Company + business steps | `GET` | `/onboarding/lookups` | `companyRelationship`, `ukRegion`, `employeeSizeBand`, `annualTurnoverBand`, `yearsInOperationBand`, `businessSector` |
+| Financial + funding steps | `GET` | `/funding/lookups` | `revenueBand`, `ebitdaBand`, `debtBand`, `cashReservesBand`, `monthlyRevenueBand`, `fundingPurpose`, `fundingUrgency` |
+| Sustainability step | `GET` | `/scoring/lookups` | `sustainabilityAnswer` |
+
+**No auth required** — public reference data.
+
+**Response shape:**
+
+```json
+{
+  "options": {
+    "businessSector": [
+      { "value": 1, "label": "Technology" },
+      { "value": 2, "label": "Manufacturing" }
+    ],
+    "ukRegion": [
+      { "value": 1, "label": "England" }
+    ]
+  }
+}
+```
+
+### Business profile form example
+
+| Form field | Key in `options` |
+|------------|------------------|
+| `sector` | `businessSector` |
+| `region` | `ukRegion` |
+| `employeeSizeBand` | `employeeSizeBand` |
+| `annualTurnoverBand` | `annualTurnoverBand` |
+| `yearsInOperationBand` | `yearsInOperationBand` |
+
+**TypeScript pattern:**
+
+```ts
+const { options } = await fetch(`${API}/onboarding/lookups`).then((r) => r.json());
+
+// Render <select>
+options.businessSector.map((opt) => (
+  <option key={opt.value} value={opt.value}>{opt.label}</option>
+));
+
+// Display saved value from GET (sector: 1 → "Technology")
+const label = options.businessSector.find((o) => o.value === data.sector)?.label;
+```
+
+**On save:** send the selected `value` (integer) in the PUT body — not the label string.
+
+**On load:** `GET .../business-profile` returns integers; map each field to its label using the same lookups response.
+
+### Company setup uses the same lookups
+
+| Form field | Key in `options` |
+|------------|------------------|
+| `relationship` | `companyRelationship` |
+| `region` | `ukRegion` |
+| `employeeSizeBand` | `employeeSizeBand` |
+| `annualTurnoverBand` | `annualTurnoverBand` |
+| `yearsInOperationBand` | `yearsInOperationBand` |
+
+**Source file (backend):** [`api/onboarding-lookups.json`](./onboarding-lookups.json) — edit this file to change labels; redeploy API to update endpoints.
+
+### Updating enums (backend checklist)
+
+| Change | `*Enums.cs` | `onboarding-lookups.json` | Redeploy |
+|--------|-------------|---------------------------|----------|
+| Label text only | — | ✓ | ✓ |
+| New option | ✓ (next free integer) | ✓ (same `value`) | ✓ |
+| Remove option | deprecate in UI; keep integer | hide label | — |
+
+**Never reuse or renumber integer values after release** — existing applications store the raw `int` in the database. Comments in `CompanyEnums.cs`, `FundingEnums.cs`, `ScoringEnums.cs`, and `LookupCatalogService.cs` document this rule.
+
+**Adding a new option:** assign the next unused integer in the C# enum, add `{ "value": N, "label": "..." }` to the matching key in `onboarding-lookups.json`, run `dotnet build`, redeploy. No EF migration needed for value-only changes.
+
+**Adding a new dropdown category:** new enum + JSON key + register the key in `LookupCatalogService.cs` (`OnboardingKeys` / `FundingKeys` / `ScoringKeys`), then wire DTOs and endpoints.
+
+**Not served via lookups:** `OnboardingStep`, `StepStatus`, `SubmissionStatus`, `SustainabilityQuestionKey`, `IntegrationProvider` — C# only.
+
+---
+
 ## Enum reference
 
-Source of truth: `api/src/Modules/*/ *.Contracts/*Enums.cs`. Swagger lists allowed integers per field.
+Source of truth for **valid integers**: `api/src/Modules/*/*.Contracts/*Enums.cs`. Source of truth for **display labels**: `api/onboarding-lookups.json`. Swagger lists allowed integers per field.
 
 ### Company & business (`CompanyEnums.cs`)
 
@@ -387,6 +474,12 @@ POST   /identity/verification
 POST   /identity/verification/resend
 POST   /identity/sessions
 GET    /identity/me
+
+# Lookups (no auth — dropdown labels)
+GET    /lookups
+GET    /onboarding/lookups
+GET    /funding/lookups
+GET    /scoring/lookups
 
 # Dashboard & wizard
 POST   /onboarding/applications

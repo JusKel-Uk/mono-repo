@@ -2,9 +2,10 @@ using funding.Core;
 using funding.Core.Examples;
 using identity.Core;
 using identity.Core.Examples;
-using juskel.Api.Infrastructure;
+using juskel.Api;
 using juskel.Api.Contracts.Examples;
 using juskel.Api.Contracts.Responses;
+using juskel.Api.Infrastructure;
 using juskel.Email;
 using juskel.Integrations;
 using juskel.Shared;
@@ -56,6 +57,8 @@ builder.Services.AddSwaggerGen(options =>
 });
 
 builder.Services.AddSwaggerExamplesFromAssemblyOf<RootResponseExample>();
+builder.Services.AddSwaggerExamplesFromAssemblyOf<LookupsResponseExample>();
+builder.Services.AddSingleton<ILookupCatalog, LookupCatalogService>();
 builder.Services.AddSwaggerExamplesFromAssemblyOf<UserSummaryExample>();
 builder.Services.AddSwaggerExamplesFromAssemblyOf<CreateApplicationResponseExample>();
 builder.Services.AddSwaggerExamplesFromAssemblyOf<FinancialProfileResponseExample>();
@@ -160,6 +163,7 @@ if (app.Environment.IsDevelopment())
     .Produces<ProblemDetails>(StatusCodes.Status500InternalServerError);
 }
 
+app.MapLookupsEndpoints();
 app.MapIdentityEndpoints();
 app.MapOnboardingEndpoints();
 app.MapFundingEndpoints();

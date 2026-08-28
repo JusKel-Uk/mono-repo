@@ -1,5 +1,9 @@
 namespace funding.Contracts;
 
+// Dropdown enums: integer values are persisted in SQL. Never reuse or renumber a value
+// after release — add new members with the next free integer and mirror the same
+// value in api/onboarding-lookups.json. Use 99 for "Other" where applicable.
+
 public enum RevenueBand
 {
     Under100K = 1,

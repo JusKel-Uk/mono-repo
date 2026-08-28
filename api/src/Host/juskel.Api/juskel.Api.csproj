@@ -18,6 +18,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Content Include="..\..\..\onboarding-lookups.json" Link="Data\onboarding-lookups.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
   <ProjectReference Include="..\..\Infrastructure\juskel.Email\juskel.Email.csproj" />
     <ProjectReference Include="..\..\Infrastructure\juskel.Integrations\juskel.Integrations.csproj" />
     <ProjectReference Include="..\..\Shared\juskel.Shared\juskel.Shared.csproj" />

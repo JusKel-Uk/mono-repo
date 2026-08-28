@@ -1,5 +1,9 @@
 namespace scoring.Contracts;
 
+// Dropdown enums: integer values are persisted in SQL. Never reuse or renumber a value
+// after release — add new members with the next free integer and mirror the same
+// value in api/onboarding-lookups.json.
+
 public enum SustainabilityAnswer
 {
     NotAnswered = 0,
