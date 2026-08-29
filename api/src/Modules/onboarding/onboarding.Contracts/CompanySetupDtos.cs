@@ -1,15 +1,15 @@
+using System.Text.Json.Serialization;
+
 namespace onboarding.Contracts;
 
 public sealed record CompanySetupResponse(
     Guid ApplicationId,
     string LegalName,
-    string? TradingName,
     string? CompaniesHouseNumber,
     bool IsCompaniesHouseVerified,
     CompanyRelationship Relationship,
     UkRegion Region,
-    string RegisteredAddressLine1,
-    string? RegisteredAddressLine2,
+    string RegisteredAddress,
     string City,
     string Postcode,
     EmployeeSizeBand EmployeeSizeBand,
@@ -19,12 +19,10 @@ public sealed record CompanySetupResponse(
 
 public sealed record UpsertCompanySetupRequest(
     string LegalName,
-    string? TradingName,
     string? CompaniesHouseNumber,
     CompanyRelationship Relationship,
     UkRegion Region,
-    string RegisteredAddressLine1,
-    string? RegisteredAddressLine2,
+    string RegisteredAddress,
     string City,
     string Postcode,
     EmployeeSizeBand EmployeeSizeBand,

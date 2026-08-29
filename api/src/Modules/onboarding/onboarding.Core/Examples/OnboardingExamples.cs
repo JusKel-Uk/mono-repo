@@ -30,13 +30,11 @@ public sealed class CompanySetupResponseExample : IExamplesProvider<CompanySetup
     public CompanySetupResponse GetExamples() => new(
         Guid.Parse("11111111-1111-1111-1111-111111111111"),
         "Acme Widgets Ltd",
-        "Acme Widgets",
         "12345678",
         true,
         CompanyRelationship.Director,
         UkRegion.England,
         "1 High Street",
-        null,
         "London",
         "EC1A 1BB",
         EmployeeSizeBand.Small10To49,
@@ -49,12 +47,10 @@ public sealed class UpsertCompanySetupRequestExample : IExamplesProvider<UpsertC
 {
     public UpsertCompanySetupRequest GetExamples() => new(
         "Acme Widgets Ltd",
-        "Acme Widgets",
         "12345678",
         CompanyRelationship.Director,
         UkRegion.England,
         "1 High Street",
-        null,
         "London",
         "EC1A 1BB",
         EmployeeSizeBand.Small10To49,
@@ -83,6 +79,7 @@ public sealed class BusinessProfileResponseExample : IExamplesProvider<BusinessP
     public BusinessProfileResponse GetExamples() => new(
         Guid.Parse("11111111-1111-1111-1111-111111111111"),
         BusinessSector.Technology,
+        "IT services",
         UkRegion.England,
         EmployeeSizeBand.Small10To49,
         AnnualTurnoverBand.From250KTo1M,
@@ -97,6 +94,7 @@ public sealed class UpsertBusinessProfileRequestExample : IExamplesProvider<Upse
 {
     public UpsertBusinessProfileRequest GetExamples() => new(
         BusinessSector.Technology,
+        "IT services",
         UkRegion.England,
         EmployeeSizeBand.Small10To49,
         AnnualTurnoverBand.From250KTo1M,

@@ -9,19 +9,20 @@ public enum SustainabilityAnswer
     NotAnswered = 0,
     Yes = 1,
     No = 2,
-    Partially = 3,
-    NotApplicable = 4,
+    InProgress = 3,
+    Partially = 4,
+    Occasionally = 5,
 }
 
 public enum SustainabilityQuestionKey
 {
-    EnergyEfficiency = 1,
-    WasteReduction = 2,
-    CarbonFootprint = 3,
-    SustainableSourcing = 4,
-    WaterConservation = 5,
-    EmployeeWellbeing = 6,
-    CommunityEngagement = 7,
-    EthicalGovernance = 8,
-    EnvironmentalCertification = 9,
+    GhgEmissions = 1,
+    SustainabilityPolicy = 2,
+    ResourceTracking = 3,
+    Wellbeing = 4,
+    Training = 5,
+    Dei = 6,
+    Continuity = 7,
+    GovernancePolicies = 8,
+    RiskReview = 9,
 }

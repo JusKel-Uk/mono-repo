@@ -8,14 +8,14 @@ public sealed class SustainabilityProfileResponseExample : IExamplesProvider<Sus
     public SustainabilityProfileResponse GetExamples() => new(
         Guid.Parse("11111111-1111-1111-1111-111111111111"),
         SustainabilityAnswer.Yes,
+        SustainabilityAnswer.InProgress,
         SustainabilityAnswer.Partially,
         SustainabilityAnswer.Yes,
+        SustainabilityAnswer.Occasionally,
+        SustainabilityAnswer.InProgress,
         SustainabilityAnswer.Yes,
-        SustainabilityAnswer.No,
-        SustainabilityAnswer.Yes,
-        SustainabilityAnswer.Partially,
-        SustainabilityAnswer.Yes,
-        SustainabilityAnswer.NotApplicable,
+        SustainabilityAnswer.InProgress,
+        SustainabilityAnswer.Occasionally,
         DateTime.UtcNow);
 }
 
@@ -23,14 +23,14 @@ public sealed class UpsertSustainabilityProfileRequestExample : IExamplesProvide
 {
     public UpsertSustainabilityProfileRequest GetExamples() => new(
         SustainabilityAnswer.Yes,
+        SustainabilityAnswer.InProgress,
         SustainabilityAnswer.Partially,
         SustainabilityAnswer.Yes,
+        SustainabilityAnswer.Occasionally,
+        SustainabilityAnswer.InProgress,
         SustainabilityAnswer.Yes,
-        SustainabilityAnswer.No,
-        SustainabilityAnswer.Yes,
-        SustainabilityAnswer.Partially,
-        SustainabilityAnswer.Yes,
-        SustainabilityAnswer.NotApplicable);
+        SustainabilityAnswer.InProgress,
+        SustainabilityAnswer.Occasionally);
 }
 
 public sealed class SustainabilityEvidenceResponseExample : IExamplesProvider<SustainabilityEvidenceResponse>
@@ -38,7 +38,7 @@ public sealed class SustainabilityEvidenceResponseExample : IExamplesProvider<Su
     public SustainabilityEvidenceResponse GetExamples() => new(
         Guid.Parse("33333333-3333-3333-3333-333333333333"),
         Guid.Parse("11111111-1111-1111-1111-111111111111"),
-        SustainabilityQuestionKey.EnvironmentalCertification,
+        SustainabilityQuestionKey.GhgEmissions,
         "iso14001-certificate.pdf",
         "application/pdf",
         256_000,

@@ -55,25 +55,25 @@ internal static class SampleLookups
                 new(1, "Technology"),
                 new(99, "Other"),
             ],
-            ["revenueBand"] =
+            ["annualRevenueBand"] =
             [
-                new(2, "£100k – £500k"),
+                new(2, "£250k-£1m"),
             ],
             ["ebitdaBand"] =
             [
-                new(3, "£50k – £250k"),
+                new(3, "5-15% margin"),
             ],
-            ["debtBand"] =
+            ["existingDebtBand"] =
             [
-                new(1, "None"),
+                new(1, "No debt"),
             ],
-            ["cashReservesBand"] =
+            ["cashReserves"] =
             [
-                new(3, "£50k – £250k"),
+                new(3, "3-6 months"),
             ],
-            ["monthlyRevenueBand"] =
+            ["avgMonthlyRevenue"] =
             [
-                new(3, "£50k – £100k"),
+                new(2, "£20k-£80k"),
             ],
             ["fundingPurpose"] =
             [
@@ -87,6 +87,7 @@ internal static class SampleLookups
             [
                 new(1, "Yes"),
                 new(2, "No"),
+                new(3, "In progress"),
             ],
         };
 
@@ -104,11 +105,11 @@ internal static class SampleLookups
 
     public static LookupsResponse Funding() => new(new Dictionary<string, IReadOnlyList<LookupOptionDto>>
     {
-        ["revenueBand"] = Catalog["revenueBand"],
+        ["annualRevenueBand"] = Catalog["annualRevenueBand"],
         ["ebitdaBand"] = Catalog["ebitdaBand"],
-        ["debtBand"] = Catalog["debtBand"],
-        ["cashReservesBand"] = Catalog["cashReservesBand"],
-        ["monthlyRevenueBand"] = Catalog["monthlyRevenueBand"],
+        ["existingDebtBand"] = Catalog["existingDebtBand"],
+        ["cashReserves"] = Catalog["cashReserves"],
+        ["avgMonthlyRevenue"] = Catalog["avgMonthlyRevenue"],
         ["fundingPurpose"] = Catalog["fundingPurpose"],
         ["fundingUrgency"] = Catalog["fundingUrgency"],
     });

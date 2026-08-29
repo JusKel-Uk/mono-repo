@@ -4,49 +4,49 @@ namespace funding.Contracts;
 // after release — add new members with the next free integer and mirror the same
 // value in api/onboarding-lookups.json. Use 99 for "Other" where applicable.
 
-public enum RevenueBand
+public enum AnnualRevenueBand
 {
-    Under100K = 1,
-    From100KTo500K = 2,
-    From500KTo1M = 3,
-    From1MTo5M = 4,
-    Over5M = 5,
+    Under250K = 1,
+    From250KTo1M = 2,
+    From1MTo5M = 3,
+    From5MTo25M = 4,
+    Over25M = 5,
 }
 
-public enum EbitdaBand
+public enum EbitdaMarginBand
 {
-    Negative = 1,
+    LossMaking = 1,
+    Margin0To5 = 2,
+    Margin5To15 = 3,
+    Margin15To30 = 4,
+    Over30Margin = 5,
+}
+
+public enum ExistingDebtBand
+{
+    NoDebt = 1,
     Under50K = 2,
     From50KTo250K = 3,
     From250KTo1M = 4,
     Over1M = 5,
 }
 
-public enum DebtBand
+public enum CashReservesMonthsBand
 {
-    None = 1,
-    Under100K = 2,
-    From100KTo500K = 3,
-    From500KTo1M = 4,
-    Over1M = 5,
+    Under1Month = 1,
+    From1To3Months = 2,
+    From3To6Months = 3,
+    From6To12Months = 4,
+    Over12Months = 5,
 }
 
-public enum CashReservesBand
+public enum AvgMonthlyRevenueBand
 {
-    Under10K = 1,
-    From10KTo50K = 2,
-    From50KTo250K = 3,
-    From250KTo1M = 4,
+    Under20K = 1,
+    From20KTo80K = 2,
+    From80KTo400K = 3,
+    From400KTo1M = 4,
     Over1M = 5,
-}
-
-public enum MonthlyRevenueBand
-{
-    Under10K = 1,
-    From10KTo50K = 2,
-    From50KTo100K = 3,
-    From100KTo500K = 4,
-    Over500K = 5,
 }
 
 public enum FundingPurpose

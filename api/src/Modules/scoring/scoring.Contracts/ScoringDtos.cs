@@ -2,27 +2,27 @@ namespace scoring.Contracts;
 
 public sealed record SustainabilityProfileResponse(
     Guid ApplicationId,
-    SustainabilityAnswer EnergyEfficiency,
-    SustainabilityAnswer WasteReduction,
-    SustainabilityAnswer CarbonFootprint,
-    SustainabilityAnswer SustainableSourcing,
-    SustainabilityAnswer WaterConservation,
-    SustainabilityAnswer EmployeeWellbeing,
-    SustainabilityAnswer CommunityEngagement,
-    SustainabilityAnswer EthicalGovernance,
-    SustainabilityAnswer EnvironmentalCertification,
+    SustainabilityAnswer GhgEmissions,
+    SustainabilityAnswer SustainabilityPolicy,
+    SustainabilityAnswer ResourceTracking,
+    SustainabilityAnswer Wellbeing,
+    SustainabilityAnswer Training,
+    SustainabilityAnswer Dei,
+    SustainabilityAnswer Continuity,
+    SustainabilityAnswer GovernancePolicies,
+    SustainabilityAnswer RiskReview,
     DateTime UpdatedAt);
 
 public sealed record UpsertSustainabilityProfileRequest(
-    SustainabilityAnswer EnergyEfficiency,
-    SustainabilityAnswer WasteReduction,
-    SustainabilityAnswer CarbonFootprint,
-    SustainabilityAnswer SustainableSourcing,
-    SustainabilityAnswer WaterConservation,
-    SustainabilityAnswer EmployeeWellbeing,
-    SustainabilityAnswer CommunityEngagement,
-    SustainabilityAnswer EthicalGovernance,
-    SustainabilityAnswer EnvironmentalCertification);
+    SustainabilityAnswer GhgEmissions,
+    SustainabilityAnswer SustainabilityPolicy,
+    SustainabilityAnswer ResourceTracking,
+    SustainabilityAnswer Wellbeing,
+    SustainabilityAnswer Training,
+    SustainabilityAnswer Dei,
+    SustainabilityAnswer Continuity,
+    SustainabilityAnswer GovernancePolicies,
+    SustainabilityAnswer RiskReview);
 
 public sealed record SustainabilityEvidenceResponse(
     Guid EvidenceId,

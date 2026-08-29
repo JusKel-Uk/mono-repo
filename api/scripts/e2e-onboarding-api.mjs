@@ -33,12 +33,10 @@ const otpFile = process.env.E2E_OTP_FILE || join(tmpdir(), `juskel-e2e-otp-${pro
 
 const companySetupBody = {
   legalName: 'JusKel E2E Ltd',
-  tradingName: 'JusKel E2E',
   companiesHouseNumber: '00000006',
   relationship: 2,
   region: 1,
-  registeredAddressLine1: '1 Test Street',
-  registeredAddressLine2: null,
+  registeredAddress: '1 Test Street',
   city: 'Manchester',
   postcode: 'M1 1AA',
   employeeSizeBand: 2,
@@ -48,6 +46,7 @@ const companySetupBody = {
 
 const businessProfileBody = {
   sector: 1,
+  subSector: 'Software development',
   region: 1,
   employeeSizeBand: 2,
   annualTurnoverBand: 2,
@@ -58,23 +57,23 @@ const businessProfileBody = {
 };
 
 const financialProfileBody = {
-  revenueBand: 2,
+  annualRevenueBand: 2,
   ebitdaBand: 3,
-  debtBand: 1,
-  cashReservesBand: 3,
-  monthlyRevenueBand: 3,
+  existingDebtBand: 1,
+  cashReserves: 3,
+  avgMonthlyRevenue: 3,
 };
 
 const sustainabilityBody = {
-  energyEfficiency: 1,
-  wasteReduction: 1,
-  carbonFootprint: 2,
-  sustainableSourcing: 1,
-  waterConservation: 3,
-  employeeWellbeing: 1,
-  communityEngagement: 2,
-  ethicalGovernance: 1,
-  environmentalCertification: 2,
+  ghgEmissions: 1,
+  sustainabilityPolicy: 1,
+  resourceTracking: 2,
+  wellbeing: 1,
+  training: 2,
+  dei: 1,
+  continuity: 3,
+  governancePolicies: 1,
+  riskReview: 2,
 };
 
 const fundingProfileBody = {
@@ -392,7 +391,7 @@ async function runFullCoverage(token) {
   const financialGet = await apiGet('/funding/applications/current/financial-profile', token);
   log('GET /funding/.../financial-profile', financialGet.status === 200, {
     status: financialGet.status,
-    revenueBand: financialGet.data?.revenueBand,
+    annualRevenueBand: financialGet.data?.annualRevenueBand,
   });
 
   const fundingEvidenceId = await uploadFundingEvidence(token);
@@ -444,7 +443,7 @@ async function runFullCoverage(token) {
   const sustainabilityGet = await apiGet('/scoring/applications/current/sustainability-profile', token);
   log('GET /scoring/.../sustainability-profile', sustainabilityGet.status === 200, {
     status: sustainabilityGet.status,
-    energyEfficiency: sustainabilityGet.data?.energyEfficiency,
+    ghgEmissions: sustainabilityGet.data?.ghgEmissions,
   });
 
   const scoringEvidenceId = await uploadScoringEvidence(token);

@@ -19,15 +19,15 @@ internal sealed class ScoringModule : IScoringModule
         if (profile is null)
             return false;
 
-        return AllAnswered(profile.EnergyEfficiency)
-            && AllAnswered(profile.WasteReduction)
-            && AllAnswered(profile.CarbonFootprint)
-            && AllAnswered(profile.SustainableSourcing)
-            && AllAnswered(profile.WaterConservation)
-            && AllAnswered(profile.EmployeeWellbeing)
-            && AllAnswered(profile.CommunityEngagement)
-            && AllAnswered(profile.EthicalGovernance)
-            && AllAnswered(profile.EnvironmentalCertification);
+        return AllAnswered(profile.GhgEmissions)
+            && AllAnswered(profile.SustainabilityPolicy)
+            && AllAnswered(profile.ResourceTracking)
+            && AllAnswered(profile.Wellbeing)
+            && AllAnswered(profile.Training)
+            && AllAnswered(profile.Dei)
+            && AllAnswered(profile.Continuity)
+            && AllAnswered(profile.GovernancePolicies)
+            && AllAnswered(profile.RiskReview);
     }
 
     private static bool AllAnswered(SustainabilityAnswer answer) =>

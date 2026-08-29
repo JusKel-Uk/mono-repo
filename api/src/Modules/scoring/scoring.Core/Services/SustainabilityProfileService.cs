@@ -50,15 +50,15 @@ internal sealed class SustainabilityProfileService
 
         profile ??= new SustainabilityProfile { ApplicationId = applicationId };
 
-        profile.EnergyEfficiency = request.EnergyEfficiency;
-        profile.WasteReduction = request.WasteReduction;
-        profile.CarbonFootprint = request.CarbonFootprint;
-        profile.SustainableSourcing = request.SustainableSourcing;
-        profile.WaterConservation = request.WaterConservation;
-        profile.EmployeeWellbeing = request.EmployeeWellbeing;
-        profile.CommunityEngagement = request.CommunityEngagement;
-        profile.EthicalGovernance = request.EthicalGovernance;
-        profile.EnvironmentalCertification = request.EnvironmentalCertification;
+        profile.GhgEmissions = request.GhgEmissions;
+        profile.SustainabilityPolicy = request.SustainabilityPolicy;
+        profile.ResourceTracking = request.ResourceTracking;
+        profile.Wellbeing = request.Wellbeing;
+        profile.Training = request.Training;
+        profile.Dei = request.Dei;
+        profile.Continuity = request.Continuity;
+        profile.GovernancePolicies = request.GovernancePolicies;
+        profile.RiskReview = request.RiskReview;
         profile.UpdatedAt = DateTime.UtcNow;
 
         if (_db.Entry(profile).State == EntityState.Detached)
@@ -76,15 +76,15 @@ internal sealed class SustainabilityProfileService
 
     private static void ValidateRequest(UpsertSustainabilityProfileRequest request)
     {
-        ValidateAnswer(request.EnergyEfficiency, nameof(request.EnergyEfficiency));
-        ValidateAnswer(request.WasteReduction, nameof(request.WasteReduction));
-        ValidateAnswer(request.CarbonFootprint, nameof(request.CarbonFootprint));
-        ValidateAnswer(request.SustainableSourcing, nameof(request.SustainableSourcing));
-        ValidateAnswer(request.WaterConservation, nameof(request.WaterConservation));
-        ValidateAnswer(request.EmployeeWellbeing, nameof(request.EmployeeWellbeing));
-        ValidateAnswer(request.CommunityEngagement, nameof(request.CommunityEngagement));
-        ValidateAnswer(request.EthicalGovernance, nameof(request.EthicalGovernance));
-        ValidateAnswer(request.EnvironmentalCertification, nameof(request.EnvironmentalCertification));
+        ValidateAnswer(request.GhgEmissions, nameof(request.GhgEmissions));
+        ValidateAnswer(request.SustainabilityPolicy, nameof(request.SustainabilityPolicy));
+        ValidateAnswer(request.ResourceTracking, nameof(request.ResourceTracking));
+        ValidateAnswer(request.Wellbeing, nameof(request.Wellbeing));
+        ValidateAnswer(request.Training, nameof(request.Training));
+        ValidateAnswer(request.Dei, nameof(request.Dei));
+        ValidateAnswer(request.Continuity, nameof(request.Continuity));
+        ValidateAnswer(request.GovernancePolicies, nameof(request.GovernancePolicies));
+        ValidateAnswer(request.RiskReview, nameof(request.RiskReview));
     }
 
     private static void ValidateAnswer(SustainabilityAnswer answer, string fieldName)
@@ -96,14 +96,14 @@ internal sealed class SustainabilityProfileService
     private static SustainabilityProfileResponse Map(SustainabilityProfile profile) =>
         new(
             profile.ApplicationId,
-            profile.EnergyEfficiency,
-            profile.WasteReduction,
-            profile.CarbonFootprint,
-            profile.SustainableSourcing,
-            profile.WaterConservation,
-            profile.EmployeeWellbeing,
-            profile.CommunityEngagement,
-            profile.EthicalGovernance,
-            profile.EnvironmentalCertification,
+            profile.GhgEmissions,
+            profile.SustainabilityPolicy,
+            profile.ResourceTracking,
+            profile.Wellbeing,
+            profile.Training,
+            profile.Dei,
+            profile.Continuity,
+            profile.GovernancePolicies,
+            profile.RiskReview,
             profile.UpdatedAt);
 }

@@ -50,16 +50,12 @@ internal sealed class CompanySetupService
         var setup = application.CompanySetup ?? new CompanySetup { ApplicationId = application.Id };
 
         setup.LegalName = request.LegalName.Trim();
-        setup.TradingName = string.IsNullOrWhiteSpace(request.TradingName) ? null : request.TradingName.Trim();
         setup.CompaniesHouseNumber = string.IsNullOrWhiteSpace(request.CompaniesHouseNumber)
             ? null
             : request.CompaniesHouseNumber.Trim().ToUpperInvariant();
         setup.Relationship = request.Relationship;
         setup.Region = request.Region;
-        setup.RegisteredAddressLine1 = request.RegisteredAddressLine1.Trim();
-        setup.RegisteredAddressLine2 = string.IsNullOrWhiteSpace(request.RegisteredAddressLine2)
-            ? null
-            : request.RegisteredAddressLine2.Trim();
+        setup.RegisteredAddressLine1 = request.RegisteredAddress.Trim();
         setup.City = request.City.Trim();
         setup.Postcode = request.Postcode.Trim().ToUpperInvariant();
         setup.EmployeeSizeBand = request.EmployeeSizeBand;
@@ -103,6 +99,16 @@ internal sealed class CompanySetupService
         setup.IsCompaniesHouseVerified = lookup.IsActive;
         setup.UpdatedAt = DateTime.UtcNow;
 
+        if (!string.IsNullOrWhiteSpace(lookup.RegisteredOfficeAddress))
+        {
+            var parsed = ParseUkAddress(lookup.RegisteredOfficeAddress);
+            setup.RegisteredAddressLine1 = parsed.Line1;
+            if (!string.IsNullOrWhiteSpace(parsed.City))
+                setup.City = parsed.City;
+            if (!string.IsNullOrWhiteSpace(parsed.Postcode))
+                setup.Postcode = parsed.Postcode.ToUpperInvariant();
+        }
+
         if (application.CompanySetup is null)
             _db.CompanySetups.Add(setup);
 
@@ -130,8 +136,8 @@ internal sealed class CompanySetupService
         if (string.IsNullOrWhiteSpace(request.LegalName))
             throw new ArgumentException("Legal name is required.");
 
-        if (string.IsNullOrWhiteSpace(request.RegisteredAddressLine1))
-            throw new ArgumentException("Registered address line 1 is required.");
+        if (string.IsNullOrWhiteSpace(request.RegisteredAddress))
+            throw new ArgumentException("Registered address is required.");
 
         if (string.IsNullOrWhiteSpace(request.City))
             throw new ArgumentException("City is required.");
@@ -146,17 +152,38 @@ internal sealed class CompanySetupService
             throw new ArgumentException("Invalid UK region.");
     }
 
+    internal static (string Line1, string City, string Postcode) ParseUkAddress(string full)
+    {
+        var parts = full
+            .Split(',')
+            .Select(static s => s.Trim())
+            .Where(static s => !string.IsNullOrWhiteSpace(s))
+            .ToList();
+
+        var postcode = string.Empty;
+        if (parts.Count > 0 && UkPostcodeRegex.IsMatch(parts[^1]))
+            postcode = parts[^1];
+
+        if (!string.IsNullOrEmpty(postcode))
+            parts.RemoveAt(parts.Count - 1);
+
+        var city = parts.Count > 0 ? parts[^1] : string.Empty;
+        var line1 = parts.Count > 1
+            ? string.Join(", ", parts.Take(parts.Count - 1))
+            : city.Length > 0 ? city : full;
+
+        return (line1.Length > 0 ? line1 : full, city, postcode);
+    }
+
     private static CompanySetupResponse Map(Guid applicationId, CompanySetup setup) =>
         new(
             applicationId,
             setup.LegalName,
-            setup.TradingName,
             setup.CompaniesHouseNumber,
             setup.IsCompaniesHouseVerified,
             setup.Relationship,
             setup.Region,
             setup.RegisteredAddressLine1,
-            setup.RegisteredAddressLine2,
             setup.City,
             setup.Postcode,
             setup.EmployeeSizeBand,

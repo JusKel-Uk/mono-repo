@@ -3,6 +3,7 @@ namespace onboarding.Contracts;
 public sealed record BusinessProfileResponse(
     Guid ApplicationId,
     BusinessSector Sector,
+    string? SubSector,
     UkRegion Region,
     EmployeeSizeBand EmployeeSizeBand,
     AnnualTurnoverBand AnnualTurnoverBand,
@@ -14,6 +15,7 @@ public sealed record BusinessProfileResponse(
 
 public sealed record UpsertBusinessProfileRequest(
     BusinessSector Sector,
+    string? SubSector,
     UkRegion Region,
     EmployeeSizeBand EmployeeSizeBand,
     AnnualTurnoverBand AnnualTurnoverBand,

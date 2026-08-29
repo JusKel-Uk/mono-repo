@@ -8,22 +8,22 @@ public sealed record IntegrationStatusDto(
 
 public sealed record FinancialProfileResponse(
     Guid ApplicationId,
-    RevenueBand? RevenueBand,
-    EbitdaBand? EbitdaBand,
-    DebtBand? DebtBand,
-    CashReservesBand? CashReservesBand,
-    MonthlyRevenueBand? MonthlyRevenueBand,
+    AnnualRevenueBand? AnnualRevenueBand,
+    EbitdaMarginBand? EbitdaBand,
+    ExistingDebtBand? ExistingDebtBand,
+    CashReservesMonthsBand? CashReserves,
+    AvgMonthlyRevenueBand? AvgMonthlyRevenue,
     bool BandsLockedByIntegration,
     bool IsOpenBankingConnected,
     IReadOnlyList<IntegrationStatusDto> Integrations,
     DateTime UpdatedAt);
 
 public sealed record UpsertFinancialProfileRequest(
-    RevenueBand? RevenueBand,
-    EbitdaBand? EbitdaBand,
-    DebtBand? DebtBand,
-    CashReservesBand? CashReservesBand,
-    MonthlyRevenueBand? MonthlyRevenueBand);
+    AnnualRevenueBand? AnnualRevenueBand,
+    EbitdaMarginBand? EbitdaBand,
+    ExistingDebtBand? ExistingDebtBand,
+    CashReservesMonthsBand? CashReserves,
+    AvgMonthlyRevenueBand? AvgMonthlyRevenue);
 
 public sealed record FundingProfileResponse(
     Guid ApplicationId,

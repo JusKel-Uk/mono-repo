@@ -43,40 +43,40 @@
     { "value": 8, "label": "Healthcare" },
     { "value": 99, "label": "Other" }
   ],
-  "revenueBand": [
-    { "value": 1, "label": "Under £100k" },
-    { "value": 2, "label": "£100k – £500k" },
-    { "value": 3, "label": "£500k – £1m" },
-    { "value": 4, "label": "£1m – £5m" },
-    { "value": 5, "label": "Over £5m" }
+  "annualRevenueBand": [
+    { "value": 1, "label": "Under £250k" },
+    { "value": 2, "label": "£250k-£1m" },
+    { "value": 3, "label": "£1m-£5m" },
+    { "value": 4, "label": "£5m-£25m" },
+    { "value": 5, "label": "Over £25m" }
   ],
   "ebitdaBand": [
-    { "value": 1, "label": "Negative" },
+    { "value": 1, "label": "Loss-making" },
+    { "value": 2, "label": "0-5% margin" },
+    { "value": 3, "label": "5-15% margin" },
+    { "value": 4, "label": "15-30% margin" },
+    { "value": 5, "label": "Over 30% margin" }
+  ],
+  "existingDebtBand": [
+    { "value": 1, "label": "No debt" },
     { "value": 2, "label": "Under £50k" },
-    { "value": 3, "label": "£50k – £250k" },
-    { "value": 4, "label": "£250k – £1m" },
+    { "value": 3, "label": "£50k-£250k" },
+    { "value": 4, "label": "£250k-£1m" },
     { "value": 5, "label": "Over £1m" }
   ],
-  "debtBand": [
-    { "value": 1, "label": "None" },
-    { "value": 2, "label": "Under £100k" },
-    { "value": 3, "label": "£100k – £500k" },
-    { "value": 4, "label": "£500k – £1m" },
-    { "value": 5, "label": "Over £1m" }
+  "cashReserves": [
+    { "value": 1, "label": "Under 1 month" },
+    { "value": 2, "label": "1-3 months" },
+    { "value": 3, "label": "3-6 months" },
+    { "value": 4, "label": "6-12 months" },
+    { "value": 5, "label": "Over 12 months" }
   ],
-  "cashReservesBand": [
-    { "value": 1, "label": "Under £10k" },
-    { "value": 2, "label": "£10k – £50k" },
-    { "value": 3, "label": "£50k – £250k" },
-    { "value": 4, "label": "£250k – £1m" },
+  "avgMonthlyRevenue": [
+    { "value": 1, "label": "Under £20k" },
+    { "value": 2, "label": "£20k-£80k" },
+    { "value": 3, "label": "£80k-£400k" },
+    { "value": 4, "label": "£400k-£1m" },
     { "value": 5, "label": "Over £1m" }
-  ],
-  "monthlyRevenueBand": [
-    { "value": 1, "label": "Under £10k" },
-    { "value": 2, "label": "£10k – £50k" },
-    { "value": 3, "label": "£50k – £100k" },
-    { "value": 4, "label": "£100k – £500k" },
-    { "value": 5, "label": "Over £500k" }
   ],
   "fundingPurpose": [
     { "value": 1, "label": "Working capital" },
@@ -95,7 +95,8 @@
     { "value": 0, "label": "Not answered" },
     { "value": 1, "label": "Yes" },
     { "value": 2, "label": "No" },
-    { "value": 3, "label": "Partially" },
-    { "value": 4, "label": "Not applicable" }
+    { "value": 3, "label": "In progress" },
+    { "value": 4, "label": "Partially" },
+    { "value": 5, "label": "Occasionally" }
   ]
 }

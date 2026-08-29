@@ -11,6 +11,7 @@ internal sealed class BusinessProfileEntityConfiguration : IEntityTypeConfigurat
         entity.ToTable("BusinessProfiles");
         entity.HasKey(b => b.ApplicationId);
 
+        entity.Property(b => b.SubSector).HasMaxLength(100);
         entity.Property(b => b.City).HasMaxLength(100).IsRequired();
         entity.Property(b => b.Postcode).HasMaxLength(20).IsRequired();
         entity.Property(b => b.Description).HasMaxLength(2000).IsRequired();

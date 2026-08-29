@@ -8,6 +8,8 @@ internal sealed class BusinessProfile
 
     public BusinessSector Sector { get; set; }
 
+    public string? SubSector { get; set; }
+
     public UkRegion Region { get; set; }
 
     public EmployeeSizeBand EmployeeSizeBand { get; set; }

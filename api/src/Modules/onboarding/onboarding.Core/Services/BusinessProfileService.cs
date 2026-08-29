@@ -44,6 +44,7 @@ internal sealed class BusinessProfileService
         var profile = application.BusinessProfile ?? new BusinessProfile { ApplicationId = application.Id };
 
         profile.Sector = request.Sector;
+        profile.SubSector = string.IsNullOrWhiteSpace(request.SubSector) ? null : request.SubSector.Trim();
         profile.Region = request.Region;
         profile.EmployeeSizeBand = request.EmployeeSizeBand;
         profile.AnnualTurnoverBand = request.AnnualTurnoverBand;
@@ -90,6 +91,7 @@ internal sealed class BusinessProfileService
         new(
             applicationId,
             profile.Sector,
+            profile.SubSector,
             profile.Region,
             profile.EmployeeSizeBand,
             profile.AnnualTurnoverBand,

@@ -65,11 +65,11 @@ internal sealed class FinancialProfileService
         if (profile.BandsLockedByIntegration || openBankingConnected)
             throw new InvalidOperationException("Financial bands are locked by an active integration.");
 
-        profile.RevenueBand = request.RevenueBand;
+        profile.AnnualRevenueBand = request.AnnualRevenueBand;
         profile.EbitdaBand = request.EbitdaBand;
-        profile.DebtBand = request.DebtBand;
-        profile.CashReservesBand = request.CashReservesBand;
-        profile.MonthlyRevenueBand = request.MonthlyRevenueBand;
+        profile.ExistingDebtBand = request.ExistingDebtBand;
+        profile.CashReserves = request.CashReserves;
+        profile.AvgMonthlyRevenue = request.AvgMonthlyRevenue;
         profile.UpdatedAt = DateTime.UtcNow;
 
         if (_db.Entry(profile).State == EntityState.Detached)
@@ -89,11 +89,11 @@ internal sealed class FinancialProfileService
     internal static void ApplyOpenBankingBands(FinancialProfile profile, IReadOnlyList<OpenBankingAccountSummary> accounts)
     {
         var totalBalance = accounts.Sum(a => a.CurrentBalance);
-        profile.RevenueBand = MapRevenue(totalBalance);
-        profile.EbitdaBand = EbitdaBand.From50KTo250K;
-        profile.DebtBand = DebtBand.Under100K;
-        profile.CashReservesBand = MapCash(totalBalance);
-        profile.MonthlyRevenueBand = MapMonthly(totalBalance);
+        profile.AnnualRevenueBand = MapAnnualRevenue(totalBalance * 12m);
+        profile.EbitdaBand = EbitdaMarginBand.Margin5To15;
+        profile.ExistingDebtBand = ExistingDebtBand.Under50K;
+        profile.CashReserves = MapCashReservesMonths(totalBalance);
+        profile.AvgMonthlyRevenue = MapAvgMonthlyRevenue(totalBalance);
         profile.BandsLockedByIntegration = true;
         profile.UpdatedAt = DateTime.UtcNow;
     }
@@ -104,40 +104,45 @@ internal sealed class FinancialProfileService
         bool isOpenBankingConnected) =>
         new(
             profile.ApplicationId,
-            profile.RevenueBand,
+            profile.AnnualRevenueBand,
             profile.EbitdaBand,
-            profile.DebtBand,
-            profile.CashReservesBand,
-            profile.MonthlyRevenueBand,
+            profile.ExistingDebtBand,
+            profile.CashReserves,
+            profile.AvgMonthlyRevenue,
             profile.BandsLockedByIntegration,
             isOpenBankingConnected,
             integrations,
             profile.UpdatedAt);
 
-    private static RevenueBand MapRevenue(decimal balance) => balance switch
+    private static AnnualRevenueBand MapAnnualRevenue(decimal annualAmount) => annualAmount switch
     {
-        < 100_000m => RevenueBand.Under100K,
-        < 500_000m => RevenueBand.From100KTo500K,
-        < 1_000_000m => RevenueBand.From500KTo1M,
-        < 5_000_000m => RevenueBand.From1MTo5M,
-        _ => RevenueBand.Over5M,
+        < 250_000m => AnnualRevenueBand.Under250K,
+        < 1_000_000m => AnnualRevenueBand.From250KTo1M,
+        < 5_000_000m => AnnualRevenueBand.From1MTo5M,
+        < 25_000_000m => AnnualRevenueBand.From5MTo25M,
+        _ => AnnualRevenueBand.Over25M,
     };
 
-    private static CashReservesBand MapCash(decimal balance) => balance switch
+    private static CashReservesMonthsBand MapCashReservesMonths(decimal balance)
     {
-        < 10_000m => CashReservesBand.Under10K,
-        < 50_000m => CashReservesBand.From10KTo50K,
-        < 250_000m => CashReservesBand.From50KTo250K,
-        < 1_000_000m => CashReservesBand.From250KTo1M,
-        _ => CashReservesBand.Over1M,
-    };
+        const decimal assumedMonthlyBurn = 20_000m;
+        var months = assumedMonthlyBurn > 0 ? balance / assumedMonthlyBurn : 0m;
+        return months switch
+        {
+            < 1m => CashReservesMonthsBand.Under1Month,
+            < 3m => CashReservesMonthsBand.From1To3Months,
+            < 6m => CashReservesMonthsBand.From3To6Months,
+            < 12m => CashReservesMonthsBand.From6To12Months,
+            _ => CashReservesMonthsBand.Over12Months,
+        };
+    }
 
-    private static MonthlyRevenueBand MapMonthly(decimal balance) => balance switch
+    private static AvgMonthlyRevenueBand MapAvgMonthlyRevenue(decimal monthlyAmount) => monthlyAmount switch
     {
-        < 10_000m => MonthlyRevenueBand.Under10K,
-        < 50_000m => MonthlyRevenueBand.From10KTo50K,
-        < 100_000m => MonthlyRevenueBand.From50KTo100K,
-        < 500_000m => MonthlyRevenueBand.From100KTo500K,
-        _ => MonthlyRevenueBand.Over500K,
+        < 20_000m => AvgMonthlyRevenueBand.Under20K,
+        < 80_000m => AvgMonthlyRevenueBand.From20KTo80K,
+        < 400_000m => AvgMonthlyRevenueBand.From80KTo400K,
+        < 1_000_000m => AvgMonthlyRevenueBand.From400KTo1M,
+        _ => AvgMonthlyRevenueBand.Over1M,
     };
 }

@@ -7,11 +7,11 @@ public sealed class FinancialProfileResponseExample : IExamplesProvider<Financia
 {
     public FinancialProfileResponse GetExamples() => new(
         Guid.Parse("11111111-1111-1111-1111-111111111111"),
-        RevenueBand.From500KTo1M,
-        EbitdaBand.From50KTo250K,
-        DebtBand.Under100K,
-        CashReservesBand.From50KTo250K,
-        MonthlyRevenueBand.From50KTo100K,
+        AnnualRevenueBand.From250KTo1M,
+        EbitdaMarginBand.Margin5To15,
+        ExistingDebtBand.NoDebt,
+        CashReservesMonthsBand.From3To6Months,
+        AvgMonthlyRevenueBand.From20KTo80K,
         false,
         false,
         [
@@ -25,11 +25,11 @@ public sealed class FinancialProfileResponseExample : IExamplesProvider<Financia
 public sealed class UpsertFinancialProfileRequestExample : IExamplesProvider<UpsertFinancialProfileRequest>
 {
     public UpsertFinancialProfileRequest GetExamples() => new(
-        RevenueBand.From500KTo1M,
-        EbitdaBand.From50KTo250K,
-        DebtBand.Under100K,
-        CashReservesBand.From50KTo250K,
-        MonthlyRevenueBand.From50KTo100K);
+        AnnualRevenueBand.From250KTo1M,
+        EbitdaMarginBand.Margin5To15,
+        ExistingDebtBand.NoDebt,
+        CashReservesMonthsBand.From3To6Months,
+        AvgMonthlyRevenueBand.From20KTo80K);
 }
 
 public sealed class FundingProfileResponseExample : IExamplesProvider<FundingProfileResponse>

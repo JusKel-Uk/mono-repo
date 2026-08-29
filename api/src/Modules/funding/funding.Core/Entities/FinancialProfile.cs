@@ -6,15 +6,15 @@ internal sealed class FinancialProfile
 {
     public Guid ApplicationId { get; set; }
 
-    public RevenueBand? RevenueBand { get; set; }
+    public AnnualRevenueBand? AnnualRevenueBand { get; set; }
 
-    public EbitdaBand? EbitdaBand { get; set; }
+    public EbitdaMarginBand? EbitdaBand { get; set; }
 
-    public DebtBand? DebtBand { get; set; }
+    public ExistingDebtBand? ExistingDebtBand { get; set; }
 
-    public CashReservesBand? CashReservesBand { get; set; }
+    public CashReservesMonthsBand? CashReserves { get; set; }
 
-    public MonthlyRevenueBand? MonthlyRevenueBand { get; set; }
+    public AvgMonthlyRevenueBand? AvgMonthlyRevenue { get; set; }
 
     public bool BandsLockedByIntegration { get; set; }
 

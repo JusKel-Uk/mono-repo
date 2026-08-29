@@ -130,12 +130,10 @@ Store `accessToken` and attach to all subsequent requests.
 ```json
 {
   "legalName": "Acme Ltd",
-  "tradingName": "Acme",
   "companiesHouseNumber": "12345678",
   "relationship": 2,
   "region": 1,
-  "registeredAddressLine1": "1 High Street",
-  "registeredAddressLine2": null,
+  "registeredAddress": "1 High Street",
   "city": "London",
   "postcode": "EC1A 1BB",
   "employeeSizeBand": 2,
@@ -172,6 +170,7 @@ Store `accessToken` and attach to all subsequent requests.
 ```json
 {
   "sector": 1,
+  "subSector": "Software development",
   "region": 1,
   "employeeSizeBand": 2,
   "annualTurnoverBand": 2,
@@ -235,11 +234,11 @@ Store `accessToken` and attach to all subsequent requests.
 
 ```json
 {
-  "revenueBand": 2,
+  "annualRevenueBand": 2,
   "ebitdaBand": 3,
-  "debtBand": 1,
-  "cashReservesBand": 3,
-  "monthlyRevenueBand": 3
+  "existingDebtBand": 1,
+  "cashReserves": 3,
+  "avgMonthlyRevenue": 3
 }
 ```
 
@@ -266,21 +265,23 @@ Store `accessToken` and attach to all subsequent requests.
 | Upload certificate | `POST` | `/scoring/evidence` | `multipart/form-data`: `file`, `questionKey` (1–9) |
 | Remove certificate | `DELETE` | `/scoring/evidence/{evidenceId}` |
 
-**PUT body (all fields are `SustainabilityAnswer` 0–4):**
+**PUT body (all fields are `SustainabilityAnswer` 0–5):**
 
 ```json
 {
-  "energyEfficiency": 1,
-  "wasteReduction": 1,
-  "carbonFootprint": 2,
-  "sustainableSourcing": 1,
-  "waterConservation": 3,
-  "employeeWellbeing": 1,
-  "communityEngagement": 2,
-  "ethicalGovernance": 1,
-  "environmentalCertification": 2
+  "ghgEmissions": 1,
+  "sustainabilityPolicy": 1,
+  "resourceTracking": 2,
+  "wellbeing": 1,
+  "training": 2,
+  "dei": 1,
+  "continuity": 3,
+  "governancePolicies": 1,
+  "riskReview": 2
 }
 ```
+
+**`questionKey` for evidence uploads** maps to `SustainabilityQuestionKey`: 1 GhgEmissions · 2 SustainabilityPolicy · 3 ResourceTracking · 4 Wellbeing · 5 Training · 6 Dei · 7 Continuity · 8 GovernancePolicies · 9 RiskReview.
 
 ---
 
@@ -342,7 +343,7 @@ Form dropdowns are served from the API (backed by `api/onboarding-lookups.json` 
 |------|--------|----------|---------|
 | App init / cache all | `GET` | `/lookups` | Every dropdown in one call |
 | Company + business steps | `GET` | `/onboarding/lookups` | `companyRelationship`, `ukRegion`, `employeeSizeBand`, `annualTurnoverBand`, `yearsInOperationBand`, `businessSector` |
-| Financial + funding steps | `GET` | `/funding/lookups` | `revenueBand`, `ebitdaBand`, `debtBand`, `cashReservesBand`, `monthlyRevenueBand`, `fundingPurpose`, `fundingUrgency` |
+| Financial + funding steps | `GET` | `/funding/lookups` | `annualRevenueBand`, `ebitdaBand`, `existingDebtBand`, `cashReserves`, `avgMonthlyRevenue`, `fundingPurpose`, `fundingUrgency` |
 | Sustainability step | `GET` | `/scoring/lookups` | `sustainabilityAnswer` |
 
 **No auth required** — public reference data.
@@ -368,6 +369,7 @@ Form dropdowns are served from the API (backed by `api/onboarding-lookups.json` 
 | Form field | Key in `options` |
 |------------|------------------|
 | `sector` | `businessSector` |
+| `subSector` | free text (no lookup) |
 | `region` | `ukRegion` |
 | `employeeSizeBand` | `employeeSizeBand` |
 | `annualTurnoverBand` | `annualTurnoverBand` |
@@ -440,11 +442,11 @@ Source of truth for **valid integers**: `api/src/Modules/*/*.Contracts/*Enums.cs
 
 | Enum | Values |
 |------|--------|
-| **RevenueBand** | 1 Under100K · 2 From100KTo500K · 3 From500KTo1M · 4 From1MTo5M · 5 Over5M |
-| **EbitdaBand** | 1 Negative · 2 Under50K · 3 From50KTo250K · 4 From250KTo1M · 5 Over1M |
-| **DebtBand** | 1 None · 2 Under100K · 3 From100KTo500K · 4 From500KTo1M · 5 Over1M |
-| **CashReservesBand** | 1 Under10K · 2 From10KTo50K · 3 From50KTo250K · 4 From250KTo1M · 5 Over1M |
-| **MonthlyRevenueBand** | 1 Under10K · 2 From10KTo50K · 3 From50KTo100K · 4 From100KTo500K · 5 Over500K |
+| **AnnualRevenueBand** | 1 Under250K · 2 From250KTo1M · 3 From1MTo5M · 4 From5MTo25M · 5 Over25M |
+| **EbitdaMarginBand** (`ebitdaBand` in JSON) | 1 LossMaking · 2 Margin0To5 · 3 Margin5To15 · 4 Margin15To30 · 5 Over30Margin |
+| **ExistingDebtBand** | 1 NoDebt · 2 Under50K · 3 From50KTo250K · 4 From250KTo1M · 5 Over1M |
+| **CashReservesMonthsBand** (`cashReserves` in JSON) | 1 Under1Month · 2 From1To3Months · 3 From3To6Months · 4 From6To12Months · 5 Over12Months |
+| **AvgMonthlyRevenueBand** (`avgMonthlyRevenue` in JSON) | 1 Under20K · 2 From20KTo80K · 3 From80KTo400K · 4 From400KTo1M · 5 Over1M |
 | **FundingPurpose** | 1 WorkingCapital · 2 Equipment · 3 Expansion · 4 Refinance · 99 Other |
 | **FundingUrgency** | 1 Immediate · 2 Within30Days · 3 Within90Days · 4 Flexible |
 | **IntegrationProvider** | 1 OpenBanking · 2 Xero · 3 QuickBooks |
@@ -453,7 +455,8 @@ Source of truth for **valid integers**: `api/src/Modules/*/*.Contracts/*Enums.cs
 
 | Enum | Values |
 |------|--------|
-| **SustainabilityAnswer** | 0 NotAnswered · 1 Yes · 2 No · 3 Partially · 4 NotApplicable |
+| **SustainabilityAnswer** | 0 NotAnswered · 1 Yes · 2 No · 3 InProgress · 4 Partially · 5 Occasionally |
+| **SustainabilityQuestionKey** | 1 GhgEmissions · 2 SustainabilityPolicy · 3 ResourceTracking · 4 Wellbeing · 5 Training · 6 Dei · 7 Continuity · 8 GovernancePolicies · 9 RiskReview |
 
 ### Progress (`OnboardingEnums.cs`)
 

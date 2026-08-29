@@ -36,11 +36,11 @@ public sealed class LookupCatalogService : ILookupCatalog
 
     private static readonly string[] FundingKeys =
     [
-        "revenueBand",
+        "annualRevenueBand",
         "ebitdaBand",
-        "debtBand",
-        "cashReservesBand",
-        "monthlyRevenueBand",
+        "existingDebtBand",
+        "cashReserves",
+        "avgMonthlyRevenue",
         "fundingPurpose",
         "fundingUrgency",
     ];

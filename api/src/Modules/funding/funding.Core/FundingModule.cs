@@ -27,11 +27,11 @@ internal sealed class FundingModule : IFundingModule
         if (openBankingConnected)
             return true;
 
-        return profile.RevenueBand.HasValue
+        return profile.AnnualRevenueBand.HasValue
             && profile.EbitdaBand.HasValue
-            && profile.DebtBand.HasValue
-            && profile.CashReservesBand.HasValue
-            && profile.MonthlyRevenueBand.HasValue;
+            && profile.ExistingDebtBand.HasValue
+            && profile.CashReserves.HasValue
+            && profile.AvgMonthlyRevenue.HasValue;
     }
 
     public async Task<bool> IsFundingStepCompleteAsync(Guid applicationId, CancellationToken ct = default)
