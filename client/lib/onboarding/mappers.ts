@@ -9,6 +9,8 @@
 import type {
   CompanySetupInput,
   BusinessProfileInput,
+  SustainabilityProfileInput,
+  FinancialProfileInput,
   FundingProfileInput,
 } from '@/lib/validations/onboarding';
 import type {
@@ -16,9 +18,14 @@ import type {
   UpsertCompanySetupRequest,
   BusinessProfile,
   UpsertBusinessProfileRequest,
+  SustainabilityProfile,
+  UpsertSustainabilityProfileRequest,
+  FinancialProfile,
+  UpsertFinancialProfileRequest,
   FundingProfile,
   UpsertFundingProfileRequest,
 } from '@/lib/api/onboarding';
+import { SUSTAINABILITY_ANSWER } from '@/lib/onboarding/enums';
 
 /** "2" → 2, ""/undefined → undefined. */
 function toInt(v: string | number | null | undefined): number | undefined {
@@ -123,6 +130,69 @@ export function fromBusinessProfile(d: BusinessProfile): BusinessProfileInput {
     city: d.city ?? '',
     postcode: d.postcode ?? '',
     description: d.description ?? '',
+  };
+}
+
+/* ---- Step 4: Sustainability profile ---- */
+
+const ANSWER_TO_INT = new Map(
+  SUSTAINABILITY_ANSWER.map((o) => [o.label, o.value]),
+);
+const INT_TO_ANSWER = new Map(
+  SUSTAINABILITY_ANSWER.map((o) => [o.value, o.label]),
+);
+
+const SUSTAINABILITY_FIELDS = [
+  'ghgEmissions',
+  'sustainabilityPolicy',
+  'resourceTracking',
+  'wellbeing',
+  'training',
+  'dei',
+  'continuity',
+  'governancePolicies',
+  'riskReview',
+] as const;
+
+export function toSustainabilityProfileRequest(
+  v: SustainabilityProfileInput,
+): UpsertSustainabilityProfileRequest {
+  const out = {} as Record<string, number>;
+  for (const k of SUSTAINABILITY_FIELDS) out[k] = ANSWER_TO_INT.get(v[k]) ?? 0;
+  return out as UpsertSustainabilityProfileRequest;
+}
+
+export function fromSustainabilityProfile(
+  d: SustainabilityProfile,
+): SustainabilityProfileInput {
+  const out = {} as Record<string, string>;
+  for (const k of SUSTAINABILITY_FIELDS) out[k] = INT_TO_ANSWER.get(d[k]) ?? '';
+  return out as SustainabilityProfileInput;
+}
+
+/* ---- Step 3: Financial profile ---- */
+
+export function toFinancialProfileRequest(
+  v: FinancialProfileInput,
+): UpsertFinancialProfileRequest {
+  return {
+    annualRevenueBand: toInt(v.annualRevenueBand) ?? null,
+    ebitdaBand: toInt(v.ebitdaBand) ?? null,
+    existingDebtBand: toInt(v.existingDebtBand) ?? null,
+    cashReserves: toInt(v.cashReserves) ?? null,
+    avgMonthlyRevenue: toInt(v.avgMonthlyRevenue) ?? null,
+  };
+}
+
+export function fromFinancialProfile(
+  d: FinancialProfile,
+): FinancialProfileInput {
+  return {
+    annualRevenueBand: toStr(d.annualRevenueBand),
+    ebitdaBand: toStr(d.ebitdaBand),
+    existingDebtBand: toStr(d.existingDebtBand),
+    cashReserves: toStr(d.cashReserves),
+    avgMonthlyRevenue: toStr(d.avgMonthlyRevenue),
   };
 }
 

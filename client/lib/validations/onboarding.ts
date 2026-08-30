@@ -3,10 +3,10 @@ import { z } from 'zod';
 import {
   cleanText,
   requiredMultiline,
-  optionalOneOf,
   optionalText,
   requiredText,
   enumSelect,
+  optionalEnumSelect,
 } from './sanitize';
 
 /** UK postcode — mirrors the backend's server-side rule. */
@@ -32,6 +32,11 @@ import {
   FUNDING_PURPOSE,
   FUNDING_URGENCY,
   BUSINESS_SECTOR,
+  ANNUAL_REVENUE_BAND,
+  EBITDA_BAND,
+  EXISTING_DEBT_BAND,
+  CASH_RESERVES_BAND,
+  AVG_MONTHLY_REVENUE_BAND,
 } from '@/lib/onboarding/enums';
 
 /* ---- Step 1: Company setup ---- */
@@ -85,50 +90,13 @@ export type BusinessProfileInput = z.infer<typeof businessProfileSchema>;
 
 /* ---- Step 3: Financial profile ---- */
 
-// Per-field bands (placeholders — refine against the real data model). Each set
-// includes the value a connected data source reports (see VERIFIED_BANDS).
-export const ANNUAL_REVENUE_BANDS = [
-  'Under £250k',
-  '£250k-£1m',
-  '£1m-£5m',
-  '£5m-£25m',
-  'Over £25m',
-];
-export const EBITDA_BANDS = [
-  'Loss-making',
-  '0-5% margin',
-  '5-15% margin',
-  '15-30% margin',
-  'Over 30% margin',
-];
-export const EXISTING_DEBT_BANDS = [
-  'No debt',
-  'Under £50k',
-  '£50k-£250k',
-  '£250k-£1m',
-  'Over £1m',
-];
-export const CASH_RESERVES_BANDS = [
-  'Under 1 month',
-  '1-3 months',
-  '3-6 months',
-  '6-12 months',
-  'Over 12 months',
-];
-export const AVG_MONTHLY_REVENUE_BANDS = [
-  'Under £20k',
-  '£20k-£80k',
-  '£80k-£400k',
-  '£400k-£1m',
-  'Over £1m',
-];
-
+// All bands are self-declared and optional; options come from /lookups.
 export const financialProfileSchema = z.object({
-  annualRevenueBand: optionalOneOf(ANNUAL_REVENUE_BANDS),
-  ebitdaBand: optionalOneOf(EBITDA_BANDS),
-  existingDebtBand: optionalOneOf(EXISTING_DEBT_BANDS),
-  cashReserves: optionalOneOf(CASH_RESERVES_BANDS),
-  avgMonthlyRevenue: optionalOneOf(AVG_MONTHLY_REVENUE_BANDS),
+  annualRevenueBand: optionalEnumSelect(ANNUAL_REVENUE_BAND),
+  ebitdaBand: optionalEnumSelect(EBITDA_BAND),
+  existingDebtBand: optionalEnumSelect(EXISTING_DEBT_BAND),
+  cashReserves: optionalEnumSelect(CASH_RESERVES_BAND),
+  avgMonthlyRevenue: optionalEnumSelect(AVG_MONTHLY_REVENUE_BAND),
 });
 export type FinancialProfileInput = z.infer<typeof financialProfileSchema>;
 
@@ -144,7 +112,11 @@ export const SUSTAINABILITY_ANSWER_OPTIONS = [
   'Occasionally',
 ];
 
-const answer = () => optionalOneOf(SUSTAINABILITY_ANSWER_OPTIONS);
+// The backend requires every question answered (a valid answer, not "unset").
+const answer = () =>
+  z
+    .string()
+    .refine((v) => SUSTAINABILITY_ANSWER_OPTIONS.includes(v), 'Select an answer');
 
 export const sustainabilityProfileSchema = z.object({
   ghgEmissions: answer(),

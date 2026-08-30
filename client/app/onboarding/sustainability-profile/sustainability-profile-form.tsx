@@ -4,17 +4,30 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm, type Control } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 
 import { cn } from '@/lib/utils';
 import { getStep, nextStepRoute } from '@/lib/onboarding/steps';
-import { useOnboardingStore } from '@/stores/onboardingStore';
+import { onboardingKeys } from '@/lib/hooks/use-onboarding';
+import {
+  getSustainabilityProfile,
+  saveSustainabilityProfile,
+  uploadSustainabilityEvidence,
+  removeSustainabilityEvidence,
+  type SustainabilityQuestionKey,
+} from '@/lib/api/onboarding';
+import {
+  toSustainabilityProfileRequest,
+  fromSustainabilityProfile,
+} from '@/lib/onboarding/mappers';
 import {
   sustainabilityProfileSchema,
   type SustainabilityProfileInput,
 } from '@/lib/validations/onboarding';
 import { OnboardingShell } from '@/components/onboarding/onboarding-shell';
 import { OnboardingActions } from '@/components/onboarding/onboarding-actions';
-import { EvidenceRow } from '@/components/onboarding/onboarding-fields';
+import { EvidenceAttach } from '@/components/onboarding/evidence-attach';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import {
   Form,
@@ -29,7 +42,12 @@ const step = getStep('sustainability-profile')!;
 const FORM_ID = 'sustainability-profile-form';
 
 type QuestionName = keyof SustainabilityProfileInput;
-type Question = { name: QuestionName; label: string; options: string[] };
+type Question = {
+  name: QuestionName;
+  key: SustainabilityQuestionKey;
+  label: string;
+  options: string[];
+};
 type Section = { pillar: string; desc: string; questions: Question[] };
 
 const SECTIONS: Section[] = [
@@ -39,17 +57,20 @@ const SECTIONS: Section[] = [
     questions: [
       {
         name: 'ghgEmissions',
+        key: 1,
         label:
           'Do you measure greenhouse gas emissions (Scope 1, Scope 2 or Scope 3)?',
         options: ['Yes', 'No', 'In progress'],
       },
       {
         name: 'sustainabilityPolicy',
+        key: 2,
         label: 'Do you have a sustainability policy?',
         options: ['Yes', 'No', 'In progress'],
       },
       {
         name: 'resourceTracking',
+        key: 3,
         label: 'Do you track energy, water, or waste consumption?',
         options: ['Yes', 'No', 'Partially'],
       },
@@ -61,18 +82,21 @@ const SECTIONS: Section[] = [
     questions: [
       {
         name: 'wellbeing',
+        key: 4,
         label:
           'Do you provide regular health, safety, or wellbeing initiatives for employees?',
         options: ['Yes', 'No', 'In progress'],
       },
       {
         name: 'training',
+        key: 5,
         label:
           'Do you provide training or professional development opportunities for employees?',
         options: ['Yes', 'No', 'Occasionally'],
       },
       {
         name: 'dei',
+        key: 6,
         label:
           'Do you have policies that promote equality, diversity, and inclusion?',
         options: ['Yes', 'No', 'In progress'],
@@ -85,18 +109,21 @@ const SECTIONS: Section[] = [
     questions: [
       {
         name: 'continuity',
+        key: 7,
         label:
           'Does your business have a Business Continuity or Disaster Recovery Plan?',
         options: ['Yes', 'No', 'In progress'],
       },
       {
         name: 'governancePolicies',
+        key: 8,
         label:
           'Does your business have documented governance or risk management policies?',
         options: ['Yes', 'No', 'In progress'],
       },
       {
         name: 'riskReview',
+        key: 9,
         label:
           'Do you regularly review compliance, operational risks, or supplier risks?',
         options: ['Yes', 'No', 'Occasionally'],
@@ -105,13 +132,15 @@ const SECTIONS: Section[] = [
   },
 ];
 
+const SLUG = 'sustainability-profile';
+
 export function SustainabilityProfileForm() {
   const router = useRouter();
-  const saveStep = useOnboardingStore((s) => s.saveStep);
-  const markComplete = useOnboardingStore((s) => s.markComplete);
+  const qc = useQueryClient();
 
   const form = useForm<SustainabilityProfileInput>({
     resolver: zodResolver(sustainabilityProfileSchema),
+    mode: 'onChange',
     defaultValues: {
       ghgEmissions: '',
       sustainabilityPolicy: '',
@@ -125,20 +154,41 @@ export function SustainabilityProfileForm() {
     },
   });
 
+  const { data: saved } = useQuery({
+    queryKey: onboardingKeys.step(SLUG),
+    queryFn: getSustainabilityProfile,
+  });
   useEffect(() => {
-    const saved = useOnboardingStore.getState().data.sustainabilityProfile;
-    if (saved) form.reset(saved);
-  }, [form]);
+    if (saved) form.reset(fromSustainabilityProfile(saved));
+  }, [saved, form]);
 
-  const onSubmit = form.handleSubmit((values) => {
-    saveStep('sustainabilityProfile', values);
-    markComplete('sustainability-profile');
-    const next = nextStepRoute('sustainability-profile');
-    router.push(next ?? '/onboarding');
+  const save = useMutation({
+    mutationFn: (values: SustainabilityProfileInput) =>
+      saveSustainabilityProfile(toSustainabilityProfileRequest(values)),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: onboardingKeys.application });
+      qc.invalidateQueries({ queryKey: onboardingKeys.step(SLUG) });
+    },
   });
 
-  const onSaveExit = () => {
-    saveStep('sustainabilityProfile', form.getValues());
+  const onSubmit = form.handleSubmit(async (values) => {
+    try {
+      await save.mutateAsync(values);
+      const next = nextStepRoute(SLUG);
+      router.push(next ?? '/onboarding');
+    } catch {
+      toast.error('Could not save your answers. Please try again.');
+    }
+  });
+
+  const onSaveExit = async () => {
+    if (await form.trigger()) {
+      try {
+        await save.mutateAsync(form.getValues());
+      } catch {
+        toast.error('Could not save your answers. Please try again.');
+      }
+    }
     router.push('/onboarding');
   };
 
@@ -150,7 +200,8 @@ export function SustainabilityProfileForm() {
       actions={
         <OnboardingActions
           formId={FORM_ID}
-          loading={form.formState.isSubmitting}
+          loading={save.isPending}
+          disabled={!form.formState.isValid}
           onSaveExit={onSaveExit}
         />
       }
@@ -179,6 +230,7 @@ export function SustainabilityProfileForm() {
                     key={q.name}
                     control={form.control}
                     name={q.name}
+                    questionKey={q.key}
                     label={q.label}
                     options={q.options}
                   />
@@ -195,11 +247,13 @@ export function SustainabilityProfileForm() {
 function RadioQuestion({
   control,
   name,
+  questionKey,
   label,
   options,
 }: {
   control: Control<SustainabilityProfileInput>;
   name: QuestionName;
+  questionKey: SustainabilityQuestionKey;
   label: string;
   options: string[];
 }) {
@@ -229,9 +283,11 @@ function RadioQuestion({
               ))}
             </RadioGroup>
           </FormControl>
-          <EvidenceRow
+          <EvidenceAttach
             attachLabel='Attach certification proof'
-            hint='Certificate PDF or link screenshot · max 10 MB'
+            hint='PDF, DOC, PNG or JPG · max 10 MB'
+            onUpload={(file) => uploadSustainabilityEvidence(file, questionKey)}
+            onRemove={removeSustainabilityEvidence}
           />
           <FormMessage />
         </FormItem>

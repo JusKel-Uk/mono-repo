@@ -4,19 +4,24 @@ import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { CheckCircle2, ChevronDown } from 'lucide-react';
 
 import { getStep, nextStepRoute } from '@/lib/onboarding/steps';
-import { useOnboardingStore } from '@/stores/onboardingStore';
+import { onboardingKeys, useLookupOptions } from '@/lib/hooks/use-onboarding';
+import {
+  getFinancialProfile,
+  saveFinancialProfile,
+} from '@/lib/api/onboarding';
+import {
+  toFinancialProfileRequest,
+  fromFinancialProfile,
+} from '@/lib/onboarding/mappers';
+import { LOOKUP, labelOf, type LookupSpec } from '@/lib/onboarding/enums';
 import {
   financialProfileSchema,
   type FinancialProfileInput,
-  ANNUAL_REVENUE_BANDS,
-  EBITDA_BANDS,
-  EXISTING_DEBT_BANDS,
-  CASH_RESERVES_BANDS,
-  AVG_MONTHLY_REVENUE_BANDS,
 } from '@/lib/validations/onboarding';
 import {
   CONNECTORS,
@@ -30,7 +35,7 @@ import { ConnectCard } from '@/components/onboarding/connect-card';
 import { AuthoriseDialog } from '@/components/onboarding/authorise-dialog';
 import {
   EvidenceRow,
-  SelectField,
+  EnumSelectField,
 } from '@/components/onboarding/onboarding-fields';
 import { Form } from '@/components/ui/form';
 
@@ -40,35 +45,37 @@ const EVIDENCE_HINT = 'PDF, DOC, PNG or JPG · max 10 MB';
 // Simulated OAuth round-trip while the real integrations are stubbed.
 const CONNECT_DELAY_MS = 2200;
 
+const SLUG = 'financial-profile';
+
 const BANDS: {
   name: keyof FinancialProfileInput;
   label: string;
-  options: string[];
+  lookup: LookupSpec;
 }[] = [
   {
     name: 'annualRevenueBand',
     label: 'Annual revenue band',
-    options: ANNUAL_REVENUE_BANDS,
+    lookup: LOOKUP.annualRevenueBand,
   },
   {
     name: 'ebitdaBand',
     label: 'EBITDA / Profitability band',
-    options: EBITDA_BANDS,
+    lookup: LOOKUP.ebitdaBand,
   },
   {
     name: 'existingDebtBand',
     label: 'Existing debt band',
-    options: EXISTING_DEBT_BANDS,
+    lookup: LOOKUP.existingDebtBand,
   },
   {
     name: 'cashReserves',
     label: 'Cash reserves',
-    options: CASH_RESERVES_BANDS,
+    lookup: LOOKUP.cashReserves,
   },
   {
     name: 'avgMonthlyRevenue',
     label: 'Average monthly revenue',
-    options: AVG_MONTHLY_REVENUE_BANDS,
+    lookup: LOOKUP.avgMonthlyRevenue,
   },
 ];
 
@@ -85,11 +92,12 @@ const BAND_KEYS = Object.keys(
 
 export function FinancialProfileForm() {
   const router = useRouter();
-  const saveStep = useOnboardingStore((s) => s.saveStep);
-  const markComplete = useOnboardingStore((s) => s.markComplete);
+  const qc = useQueryClient();
+  const opt = useLookupOptions();
 
   const form = useForm<FinancialProfileInput>({
     resolver: zodResolver(financialProfileSchema),
+    mode: 'onChange',
     defaultValues: {
       annualRevenueBand: '',
       ebitdaBand: '',
@@ -151,20 +159,39 @@ export function FinancialProfileForm() {
     [],
   );
 
+  const { data: saved } = useQuery({
+    queryKey: onboardingKeys.step(SLUG),
+    queryFn: getFinancialProfile,
+  });
   useEffect(() => {
-    const saved = useOnboardingStore.getState().data.financialProfile;
-    if (saved) form.reset(saved);
-  }, [form]);
+    if (saved) form.reset(fromFinancialProfile(saved));
+  }, [saved, form]);
 
-  const onSubmit = form.handleSubmit((values) => {
-    saveStep('financialProfile', values);
-    markComplete('financial-profile');
-    const next = nextStepRoute('financial-profile');
-    router.push(next ?? '/onboarding');
+  const save = useMutation({
+    mutationFn: (values: FinancialProfileInput) =>
+      saveFinancialProfile(toFinancialProfileRequest(values)),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: onboardingKeys.application });
+      qc.invalidateQueries({ queryKey: onboardingKeys.step(SLUG) });
+    },
   });
 
-  const onSaveExit = () => {
-    saveStep('financialProfile', form.getValues());
+  const onSubmit = form.handleSubmit(async (values) => {
+    try {
+      await save.mutateAsync(values);
+      const next = nextStepRoute(SLUG);
+      router.push(next ?? '/onboarding');
+    } catch {
+      toast.error('Could not save your financial profile. Please try again.');
+    }
+  });
+
+  const onSaveExit = async () => {
+    try {
+      await save.mutateAsync(form.getValues());
+    } catch {
+      toast.error('Could not save your financial profile. Please try again.');
+    }
     router.push('/onboarding');
   };
 
@@ -177,7 +204,7 @@ export function FinancialProfileForm() {
         actions={
           <OnboardingActions
             formId={FORM_ID}
-            loading={form.formState.isSubmitting}
+            loading={save.isPending}
             onSaveExit={onSaveExit}
           />
         }
@@ -267,17 +294,20 @@ export function FinancialProfileForm() {
                     <VerifiedBand
                       key={band.name}
                       label={band.label}
-                      value={VERIFIED_BANDS[band.name]}
+                      value={labelOf(
+                        opt(band.lookup),
+                        Number(VERIFIED_BANDS[band.name]),
+                      )}
                       provider={CONNECTORS[connectedId].name}
                     />
                   ) : (
                     <div key={band.name} className='flex flex-col gap-3'>
-                      <SelectField
+                      <EnumSelectField
                         control={form.control}
                         name={band.name}
                         label={band.label}
                         placeholder='Select band'
-                        options={band.options}
+                        options={opt(band.lookup)}
                       />
                       <EvidenceRow
                         attachLabel='Attach evidence'

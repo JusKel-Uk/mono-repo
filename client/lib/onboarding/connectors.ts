@@ -106,13 +106,16 @@ export const CONNECTORS: Record<ConnectorId, ConnectorConfig> = {
   },
 };
 
-/** Band values a connected source reports (stub). Applied on a successful connect. */
+/**
+ * Band values a connected source reports (stub), as enum-value strings matching
+ * the select options. Applied to the form on a successful (simulated) connect.
+ */
 export const VERIFIED_BANDS: Record<keyof FinancialProfileInput, string> = {
-  annualRevenueBand: '£250k-£1m',
-  ebitdaBand: '5-15% margin',
-  existingDebtBand: 'Under £50k',
-  cashReserves: '3-6 months',
-  avgMonthlyRevenue: '£80k-£400k',
+  annualRevenueBand: '2', // £250k-£1m
+  ebitdaBand: '3', // 5-15% margin
+  existingDebtBand: '2', // Under £50k
+  cashReserves: '3', // 3-6 months
+  avgMonthlyRevenue: '3', // £80k-£400k
 };
 
 export type ConnectionStatus = 'idle' | 'connecting' | 'connected' | 'error';

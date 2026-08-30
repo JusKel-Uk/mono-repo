@@ -186,22 +186,23 @@ export type FinancialIntegration = {
 };
 
 export type FinancialProfile = {
-  revenueBand?: number | null;
+  annualRevenueBand?: number | null;
   ebitdaBand?: number | null;
-  debtBand?: number | null;
-  cashReservesBand?: number | null;
-  monthlyRevenueBand?: number | null;
+  existingDebtBand?: number | null;
+  cashReserves?: number | null;
+  avgMonthlyRevenue?: number | null;
   /** When true, connected-source fields are read-only; skip them on PUT. */
-  bandsLockedByIntegration: boolean;
-  integrations: FinancialIntegration[];
+  bandsLockedByIntegration?: boolean;
+  integrations?: FinancialIntegration[];
 };
 
+/** All bands are optional — the financial profile is self-declared. */
 export type UpsertFinancialProfileRequest = {
-  revenueBand: number;
-  ebitdaBand: number;
-  debtBand: number;
-  cashReservesBand: number;
-  monthlyRevenueBand: number;
+  annualRevenueBand?: number | null;
+  ebitdaBand?: number | null;
+  existingDebtBand?: number | null;
+  cashReserves?: number | null;
+  avgMonthlyRevenue?: number | null;
 };
 
 export function getFinancialProfile() {
@@ -267,17 +268,17 @@ export function removeFundingEvidence(evidenceId: string) {
  * Step 4 — Sustainability profile  (/scoring)
  * ==================================================================== */
 
-/** Nine ESG questions; each is a SustainabilityAnswer (0–4). */
+/** Nine ESG questions; each is a SustainabilityAnswer (0–5). */
 export type SustainabilityProfile = {
-  energyEfficiency: number;
-  wasteReduction: number;
-  carbonFootprint: number;
-  sustainableSourcing: number;
-  waterConservation: number;
-  employeeWellbeing: number;
-  communityEngagement: number;
-  ethicalGovernance: number;
-  environmentalCertification: number;
+  ghgEmissions: number;
+  sustainabilityPolicy: number;
+  resourceTracking: number;
+  wellbeing: number;
+  training: number;
+  dei: number;
+  continuity: number;
+  governancePolicies: number;
+  riskReview: number;
 };
 
 export type UpsertSustainabilityProfileRequest = SustainabilityProfile;
