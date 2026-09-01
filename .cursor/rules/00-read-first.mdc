@@ -8,7 +8,8 @@ alwaysApply: true
 Before planning, suggesting code, or making any change:
 
 1. Read `.cursorrules` at the repository root.
-2. Read every file in `.cursor/rules/` (especially naming conventions, modular monolith boundaries, CQRS-Lite, budget constraints, and learning workflow).
-3. Confirm your approach complies with the $5–$15/mo Azure cost constraints and modular monolith boundary rules.
+2. Read every file in `.cursor/rules/` (especially **repo ownership**, naming conventions, modular monolith boundaries, CQRS-Lite, budget constraints, and learning workflow).
+3. Confirm scope: backend work in `api/` only; `client/` is reference unless the user explicitly requests frontend changes.
+4. Confirm your approach complies with the $5–$15/mo Azure cost constraints and modular monolith boundary rules.
 
 If a request conflicts with these rules, explain the conflict and propose a compliant alternative.

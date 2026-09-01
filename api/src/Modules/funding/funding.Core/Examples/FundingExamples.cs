@@ -19,6 +19,15 @@ public sealed class FinancialProfileResponseExample : IExamplesProvider<Financia
             new IntegrationStatusDto(IntegrationProvider.Xero, false, null, null),
             new IntegrationStatusDto(IntegrationProvider.QuickBooks, false, null, null),
         ],
+        [
+            new EvidenceResponse(
+                Guid.Parse("22222222-2222-2222-2222-222222222222"),
+                Guid.Parse("11111111-1111-1111-1111-111111111111"),
+                "bank-statement.pdf",
+                "application/pdf",
+                512_000,
+                DateTime.UtcNow),
+        ],
         DateTime.UtcNow);
 }
 

@@ -24,7 +24,7 @@ internal sealed class SustainabilityProfileService
 
     public async Task<SustainabilityProfileResponse?> GetAsync(Guid userId, CancellationToken ct = default)
     {
-        var applicationId = await _onboarding.GetDraftApplicationIdAsync(userId, ct);
+        var applicationId = await _onboarding.GetCurrentApplicationIdAsync(userId, ct);
         if (applicationId is null)
             return null;
 
@@ -32,7 +32,18 @@ internal sealed class SustainabilityProfileService
             .AsNoTracking()
             .FirstOrDefaultAsync(s => s.ApplicationId == applicationId, ct);
 
-        return profile is null ? null : Map(profile);
+        var evidence = await LoadEvidenceAsync(applicationId.Value, ct);
+
+        if (profile is null && evidence.Count == 0)
+            return null;
+
+        profile ??= new SustainabilityProfile
+        {
+            ApplicationId = applicationId.Value,
+            UpdatedAt = DateTime.UtcNow,
+        };
+
+        return Map(profile, evidence);
     }
 
     public async Task<SustainabilityProfileResponse?> UpsertAsync(
@@ -71,8 +82,26 @@ internal sealed class SustainabilityProfileService
             : StepStatus.InProgress;
         await _onboarding.MarkStepAsync(applicationId, OnboardingStep.Sustainability, status, ct);
 
-        return Map(profile);
+        var evidence = await LoadEvidenceAsync(applicationId, ct);
+        return Map(profile, evidence);
     }
+
+    private async Task<IReadOnlyList<SustainabilityEvidenceResponse>> LoadEvidenceAsync(
+        Guid applicationId,
+        CancellationToken ct) =>
+        await _db.SustainabilityEvidence
+            .AsNoTracking()
+            .Where(e => e.ApplicationId == applicationId)
+            .OrderBy(e => e.QuestionKey)
+            .Select(e => new SustainabilityEvidenceResponse(
+                e.Id,
+                e.ApplicationId,
+                e.QuestionKey,
+                e.FileName,
+                e.ContentType,
+                e.FileSizeBytes,
+                e.UploadedAt))
+            .ToListAsync(ct);
 
     private static void ValidateRequest(UpsertSustainabilityProfileRequest request)
     {
@@ -93,7 +122,9 @@ internal sealed class SustainabilityProfileService
             throw new ArgumentException($"A valid answer is required for {fieldName}.");
     }
 
-    private static SustainabilityProfileResponse Map(SustainabilityProfile profile) =>
+    private static SustainabilityProfileResponse Map(
+        SustainabilityProfile profile,
+        IReadOnlyList<SustainabilityEvidenceResponse> evidence) =>
         new(
             profile.ApplicationId,
             profile.GhgEmissions,
@@ -105,5 +136,6 @@ internal sealed class SustainabilityProfileService
             profile.Continuity,
             profile.GovernancePolicies,
             profile.RiskReview,
+            evidence,
             profile.UpdatedAt);
 }

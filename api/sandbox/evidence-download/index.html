@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>juskel — Evidence download tester</title>
+  <style>
+    :root {
+      --ink: #0f172a;
+      --muted: #64748b;
+      --border: #e2e8f0;
+      --bg: #f8fafc;
+      --card: #ffffff;
+      --accent: #1d4ed8;
+      --accent-soft: #dbeafe;
+      --ok: #15803d;
+      --err: #b91c1c;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+      line-height: 1.5;
+    }
+    .wrap { max-width: 880px; margin: 0 auto; padding: 2rem 1.25rem 3rem; }
+    h1 { font-size: 1.5rem; margin: 0 0 0.35rem; }
+    .sub { color: var(--muted); margin: 0 0 1.5rem; font-size: 0.95rem; }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.25rem;
+      margin-bottom: 1rem;
+    }
+    .card h2 { font-size: 1rem; margin: 0 0 1rem; }
+    label { display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.35rem; }
+    input, select, button {
+      font: inherit;
+    }
+    input[type="text"], input[type="email"], input[type="password"], input[type="url"] {
+      width: 100%;
+      padding: 0.55rem 0.75rem;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      margin-bottom: 0.75rem;
+    }
+    .row { display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: end; }
+    .row > * { flex: 1; min-width: 140px; }
+    button {
+      border: none;
+      border-radius: 8px;
+      padding: 0.55rem 1rem;
+      cursor: pointer;
+      font-weight: 600;
+      background: var(--accent);
+      color: #fff;
+    }
+    button.secondary { background: var(--accent-soft); color: var(--accent); }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+    .pill {
+      display: inline-block;
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 0.2rem 0.55rem;
+      border-radius: 999px;
+      background: var(--accent-soft);
+      color: var(--accent);
+    }
+    .status { font-size: 0.9rem; margin-top: 0.75rem; }
+    .status.ok { color: var(--ok); }
+    .status.err { color: var(--err); }
+    table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+    th, td { text-align: left; padding: 0.5rem; border-bottom: 1px solid var(--border); }
+    th { color: var(--muted); font-weight: 600; font-size: 0.8rem; }
+    .actions button { margin-right: 0.35rem; padding: 0.35rem 0.65rem; font-size: 0.8rem; }
+    #preview {
+      margin-top: 1rem;
+      border: 1px dashed var(--border);
+      border-radius: 8px;
+      min-height: 120px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      background: #fff;
+    }
+    #preview img { max-width: 100%; max-height: 320px; }
+    #preview embed { width: 100%; height: 360px; }
+    .hint { font-size: 0.8rem; color: var(--muted); margin-top: 0.5rem; }
+    code { background: #f1f5f9; padding: 0.1rem 0.35rem; border-radius: 4px; font-size: 0.85em; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Evidence download tester</h1>
+    <p class="sub">Private blob download via JWT — Option A. Serve this page from <code>http://localhost:3000</code> (CORS).</p>
+
+    <div class="card">
+      <h2>API</h2>
+      <label for="baseUrl">Base URL</label>
+      <input id="baseUrl" type="url" value="http://localhost:5242">
+      <div class="row" style="margin-bottom:0.75rem">
+        <button type="button" class="secondary" id="useLocal">Local (5242)</button>
+        <button type="button" class="secondary" id="useAzure">Azure (deployed)</button>
+      </div>
+      <p class="hint">API: <code>cd api/src/Host/juskel.Api && dotnet run --launch-profile http</code>. If Azure SQL is paused, retry after ~30s or use the Azure button.</p>
+    </div>
+
+    <div class="card">
+      <h2>Login</h2>
+      <label for="email">Email</label>
+      <input id="email" type="email" placeholder="you@company.co.uk" autocomplete="username">
+      <label for="password">Password</label>
+      <input id="password" type="password" placeholder="••••••••" autocomplete="current-password">
+      <div class="row">
+        <button type="button" id="loginBtn">Sign in</button>
+        <button type="button" id="loadBtn" class="secondary" disabled>Load evidence lists</button>
+      </div>
+      <div id="authStatus" class="status"></div>
+    </div>
+
+    <div class="card">
+      <h2>Manual download</h2>
+      <label for="module">Module</label>
+      <select id="module">
+        <option value="funding">funding (financial)</option>
+        <option value="scoring">scoring (sustainability)</option>
+      </select>
+      <label for="evidenceId">Evidence ID</label>
+      <input id="evidenceId" type="text" placeholder="uuid from profile GET → evidence[]">
+      <div class="row">
+        <button type="button" id="previewBtn" class="secondary" disabled>Preview (inline)</button>
+        <button type="button" id="downloadBtn" disabled>Download (attachment)</button>
+      </div>
+      <div id="downloadStatus" class="status"></div>
+      <div id="preview"><span class="hint">Preview appears here</span></div>
+    </div>
+
+    <div class="card">
+      <h2>Your evidence</h2>
+      <div id="lists"><p class="hint">Sign in, then click “Load evidence lists”.</p></div>
+    </div>
+  </div>
+
+  <script>
+    let token = sessionStorage.getItem('juskel_token') || '';
+    let objectUrl = null;
+
+    const $ = (id) => document.getElementById(id);
+
+    function setStatus(el, text, ok) {
+      el.textContent = text;
+      el.className = 'status ' + (ok ? 'ok' : 'err');
+    }
+
+    function authHeaders() {
+      return token ? { Authorization: 'Bearer ' + token } : {};
+    }
+
+    async function apiJson(method, path, body) {
+      const res = await fetch($('baseUrl').value.replace(/\/$/, '') + path, {
+        method,
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
+        body: body ? JSON.stringify(body) : undefined,
+      });
+      const text = await res.text();
+      let data;
+      try { data = JSON.parse(text); } catch { data = text; }
+      return { status: res.status, data };
+    }
+
+    function updateUi() {
+      const loggedIn = Boolean(token);
+      $('loadBtn').disabled = !loggedIn;
+      $('previewBtn').disabled = !loggedIn || !$('evidenceId').value.trim();
+      $('downloadBtn').disabled = !loggedIn || !$('evidenceId').value.trim();
+    }
+
+    function revokePreview() {
+      if (objectUrl) {
+        URL.revokeObjectURL(objectUrl);
+        objectUrl = null;
+      }
+      $('preview').innerHTML = '<span class="hint">Preview appears here</span>';
+    }
+
+  async function fetchEvidence(module, evidenceId, download) {
+      const q = download ? '?download=true' : '?download=false';
+      const path = `/${module}/evidence/${evidenceId}/download${q}`;
+      const res = await fetch($('baseUrl').value.replace(/\/$/, '') + path, {
+        headers: authHeaders(),
+      });
+      return { res, path };
+    }
+
+    function showPreview(blob, contentType) {
+      revokePreview();
+      objectUrl = URL.createObjectURL(blob);
+      const box = $('preview');
+      if (contentType.startsWith('image/')) {
+        box.innerHTML = '';
+        const img = document.createElement('img');
+        img.src = objectUrl;
+        img.alt = 'Evidence preview';
+        box.appendChild(img);
+      } else if (contentType === 'application/pdf') {
+        box.innerHTML = '';
+        const embed = document.createElement('embed');
+        embed.src = objectUrl;
+        embed.type = 'application/pdf';
+        box.appendChild(embed);
+      } else {
+        box.innerHTML = '<span class="hint">Binary file (' + contentType + ') — use Download.</span>';
+      }
+    }
+
+    async function previewEvidence(module, evidenceId) {
+      const { res, path } = await fetchEvidence(module, evidenceId, false);
+      if (!res.ok) {
+        setStatus($('downloadStatus'), res.status + ' ' + path, false);
+        return;
+      }
+      const blob = await res.blob();
+      const ct = res.headers.get('content-type') || blob.type || 'application/octet-stream';
+      showPreview(blob, ct);
+      setStatus($('downloadStatus'), 'Preview OK — ' + blob.size + ' bytes, ' + ct, true);
+    }
+
+    async function downloadEvidence(module, evidenceId) {
+      const { res, path } = await fetchEvidence(module, evidenceId, true);
+      if (!res.ok) {
+        setStatus($('downloadStatus'), res.status + ' ' + path, false);
+        return;
+      }
+      const blob = await res.blob();
+      const cd = res.headers.get('content-disposition') || '';
+      const match = /filename\*?=(?:UTF-8'')?["']?([^"';]+)/i.exec(cd);
+      const fileName = match ? decodeURIComponent(match[1]) : 'evidence-download';
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileName;
+      a.click();
+      URL.revokeObjectURL(url);
+      setStatus($('downloadStatus'), 'Downloaded ' + fileName + ' (' + blob.size + ' bytes)', true);
+    }
+
+    function renderTable(title, module, items) {
+      if (!items.length) return '<p class="hint">No ' + title + ' evidence.</p>';
+      let rows = items.map((e) => {
+        const id = e.evidenceId || e.EvidenceId;
+        const name = e.fileName || e.FileName;
+        const ct = e.contentType || e.ContentType;
+        return '<tr data-module="' + module + '" data-id="' + id + '">' +
+          '<td><span class="pill">' + module + '</span></td>' +
+          '<td><code>' + id + '</code></td>' +
+          '<td>' + name + '</td>' +
+          '<td>' + ct + '</td>' +
+          '<td class="actions">' +
+          '<button type="button" class="secondary btn-preview">Preview</button>' +
+          '<button type="button" class="btn-dl">Download</button>' +
+          '</td></tr>';
+      }).join('');
+      return '<h3 style="margin:0 0 0.5rem;font-size:0.95rem">' + title + '</h3>' +
+        '<table><thead><tr><th>Module</th><th>ID</th><th>File</th><th>Type</th><th></th></tr></thead><tbody>' +
+        rows + '</tbody></table>';
+    }
+
+    async function loadEvidenceLists() {
+      const funding = await apiJson('GET', '/funding/applications/current/financial-profile');
+      const scoring = await apiJson('GET', '/scoring/applications/current/sustainability-profile');
+
+      if (funding.status !== 200 || scoring.status !== 200) {
+        $('lists').innerHTML = '<p class="hint err">Profile load failed — funding ' + funding.status
+          + ', scoring ' + scoring.status + '</p>';
+        return;
+      }
+
+      const fItems = (funding.data && funding.data.evidence) || [];
+      const sItems = (scoring.data && scoring.data.evidence) || [];
+      $('lists').innerHTML =
+        renderTable('Financial', 'funding', fItems) +
+        renderTable('Sustainability', 'scoring', sItems);
+
+      document.querySelectorAll('.btn-preview').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const tr = btn.closest('tr');
+          $('module').value = tr.dataset.module;
+          $('evidenceId').value = tr.dataset.id;
+          updateUi();
+          previewEvidence(tr.dataset.module, tr.dataset.id);
+        });
+      });
+      document.querySelectorAll('.btn-dl').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const tr = btn.closest('tr');
+          downloadEvidence(tr.dataset.module, tr.dataset.id);
+        });
+      });
+
+      if (fItems[0]) {
+        $('module').value = 'funding';
+        $('evidenceId').value = fItems[0].evidenceId || fItems[0].EvidenceId;
+      } else if (sItems[0]) {
+        $('module').value = 'scoring';
+        $('evidenceId').value = sItems[0].evidenceId || sItems[0].EvidenceId;
+      }
+      updateUi();
+
+      const total = fItems.length + sItems.length;
+      setStatus($('authStatus'), 'Loaded ' + total + ' file(s) — financial ' + fItems.length
+        + ', sustainability ' + sItems.length, total > 0);
+      if (total === 0) {
+        setStatus($('authStatus'), 'Signed in — no evidence uploaded yet for this application', true);
+      }
+    }
+
+    $('loginBtn').addEventListener('click', async () => {
+      const email = $('email').value.trim();
+      const password = $('password').value;
+      const { status, data } = await apiJson('POST', '/identity/sessions', { email, password });
+      if ((status !== 200 && status !== 201) || !data.accessToken) {
+        setStatus($('authStatus'), 'Login failed: ' + status + ' ' + JSON.stringify(data), false);
+        token = '';
+        sessionStorage.removeItem('juskel_token');
+        updateUi();
+        return;
+      }
+      token = data.accessToken;
+      sessionStorage.setItem('juskel_token', token);
+      setStatus($('authStatus'), 'Signed in as ' + (data.firstName || email) + ' — loading evidence…', true);
+      updateUi();
+      await loadEvidenceLists();
+    });
+
+    $('loadBtn').addEventListener('click', () => loadEvidenceLists());
+
+    $('previewBtn').addEventListener('click', () => {
+      previewEvidence($('module').value, $('evidenceId').value.trim());
+    });
+
+    $('downloadBtn').addEventListener('click', () => {
+      downloadEvidence($('module').value, $('evidenceId').value.trim());
+    });
+
+    $('evidenceId').addEventListener('input', updateUi);
+
+    $('useLocal').addEventListener('click', () => {
+      $('baseUrl').value = 'http://localhost:5242';
+    });
+    $('useAzure').addEventListener('click', () => {
+      $('baseUrl').value = 'https://juskel-api.livelydune-575d8971.uksouth.azurecontainerapps.io';
+    });
+
+    if (token) {
+      setStatus($('authStatus'), 'Restored session token from this tab', true);
+    }
+    updateUi();
+  </script>
+</body>
+</html>

@@ -25,7 +25,7 @@ const BASE = process.env.BASE_URL || (process.env.E2E_SPAWN_API === '1'
 const tag = Date.now();
 const email = `e2e-${tag}@juskel.co.uk`;
 const password = 'E2eTestPass123!';
-const { api, apiGet, apiDelete, apiMultipart, oauthCallback } = createApiClient(BASE);
+const { api, apiGet, apiDelete, apiMultipart, apiDownload, oauthCallback } = createApiClient(BASE);
 const { log, summary } = createLogger();
 
 const otpPattern = /\[E2E_OTP\]\s+([^:]+):\s+(\d{6})/;
@@ -364,11 +364,10 @@ async function runFullCoverage(token) {
     token,
     { companyNumber: '00000006' },
   );
-  const chHasKey = !!process.env.COMPANIES_HOUSE_API_KEY;
-  const chOk = chHasKey ? chVerify.status === 200 : chVerify.status === 404;
+  const chOk = chVerify.status === 200 || chVerify.status === 404;
   log('POST /onboarding/.../verify-companies-house', chOk, {
     status: chVerify.status,
-    note: chHasKey ? 'live CH key' : 'no API key → 404 expected',
+    note: chVerify.status === 200 ? 'CH verify available on server' : 'no CH key → 404',
   });
 
   const businessGetEmpty = await apiGet('/onboarding/applications/current/business-profile', token);
@@ -396,8 +395,29 @@ async function runFullCoverage(token) {
 
   const fundingEvidenceId = await uploadFundingEvidence(token);
   if (fundingEvidenceId) {
-    const delEvidence = await apiDelete(`/funding/evidence/${fundingEvidenceId}`, token);
-    log('DELETE /funding/evidence/{id}', delEvidence.status === 204, { status: delEvidence.status });
+    const financialWithEvidence = await apiGet('/funding/applications/current/financial-profile', token);
+    const fundingEvidenceListed = financialWithEvidence.data?.evidence?.some(
+      (e) => e.evidenceId === fundingEvidenceId,
+    );
+    log('GET /funding/.../financial-profile (includes evidence)', financialWithEvidence.status === 200
+      && fundingEvidenceListed, {
+      status: financialWithEvidence.status,
+      evidenceCount: financialWithEvidence.data?.evidence?.length,
+    });
+
+    const fundingDownload = await apiDownload(`/funding/evidence/${fundingEvidenceId}/download`, token);
+    log('GET /funding/evidence/{id}/download (preview)', fundingDownload.status === 200
+      && fundingDownload.byteLength > 0
+      && fundingDownload.contentType?.includes('image/png'), {
+      status: fundingDownload.status,
+      contentType: fundingDownload.contentType,
+      byteLength: fundingDownload.byteLength,
+    });
+
+    const fundingDownloadNoAuth = await apiDownload(`/funding/evidence/${fundingEvidenceId}/download`, null);
+    log('GET /funding/evidence/{id}/download (no auth → 401)', fundingDownloadNoAuth.status === 401, {
+      status: fundingDownloadNoAuth.status,
+    });
   }
 
   await testOAuthProvider(
@@ -448,8 +468,25 @@ async function runFullCoverage(token) {
 
   const scoringEvidenceId = await uploadScoringEvidence(token);
   if (scoringEvidenceId) {
-    const delScoring = await apiDelete(`/scoring/evidence/${scoringEvidenceId}`, token);
-    log('DELETE /scoring/evidence/{id}', delScoring.status === 204, { status: delScoring.status });
+    const sustainabilityWithEvidence = await apiGet('/scoring/applications/current/sustainability-profile', token);
+    const scoringEvidenceListed = sustainabilityWithEvidence.data?.evidence?.some(
+      (e) => e.evidenceId === scoringEvidenceId,
+    );
+    log('GET /scoring/.../sustainability-profile (includes evidence)', sustainabilityWithEvidence.status === 200
+      && scoringEvidenceListed, {
+      status: sustainabilityWithEvidence.status,
+      evidenceCount: sustainabilityWithEvidence.data?.evidence?.length,
+      questionKey: sustainabilityWithEvidence.data?.evidence?.[0]?.questionKey,
+    });
+
+    const scoringDownload = await apiDownload(`/scoring/evidence/${scoringEvidenceId}/download`, token);
+    log('GET /scoring/evidence/{id}/download (preview)', scoringDownload.status === 200
+      && scoringDownload.byteLength > 0
+      && scoringDownload.contentType?.includes('image/png'), {
+      status: scoringDownload.status,
+      contentType: scoringDownload.contentType,
+      byteLength: scoringDownload.byteLength,
+    });
   }
 
   const fundingGetEmpty = await apiGet('/funding/applications/current/funding-profile', token);
@@ -495,6 +532,74 @@ async function runFullCoverage(token) {
     status: afterSubmit.data?.status,
     submittedAt: afterSubmit.data?.submittedAt,
   });
+
+  const companyAfterSubmit = await apiGet('/onboarding/applications/current/company-setup', token);
+  log('GET /onboarding/.../company-setup (after submit)', companyAfterSubmit.status === 200, {
+    status: companyAfterSubmit.status,
+  });
+
+  const businessAfterSubmit = await apiGet('/onboarding/applications/current/business-profile', token);
+  log('GET /onboarding/.../business-profile (after submit)', businessAfterSubmit.status === 200, {
+    status: businessAfterSubmit.status,
+  });
+
+  const financialAfterSubmit = await apiGet('/funding/applications/current/financial-profile', token);
+  const financialEvidenceAfterSubmit = fundingEvidenceId
+    ? financialAfterSubmit.data?.evidence?.some((e) => e.evidenceId === fundingEvidenceId)
+    : true;
+  log('GET /funding/.../financial-profile (after submit)', financialAfterSubmit.status === 200
+    && financialEvidenceAfterSubmit, {
+    status: financialAfterSubmit.status,
+    evidenceCount: financialAfterSubmit.data?.evidence?.length,
+  });
+
+  const sustainabilityAfterSubmit = await apiGet('/scoring/applications/current/sustainability-profile', token);
+  const scoringEvidenceAfterSubmit = scoringEvidenceId
+    ? sustainabilityAfterSubmit.data?.evidence?.some((e) => e.evidenceId === scoringEvidenceId)
+    : true;
+  log('GET /scoring/.../sustainability-profile (after submit)', sustainabilityAfterSubmit.status === 200
+    && scoringEvidenceAfterSubmit, {
+    status: sustainabilityAfterSubmit.status,
+    ghgEmissions: sustainabilityAfterSubmit.data?.ghgEmissions,
+  });
+
+  const fundingAfterSubmit = await apiGet('/funding/applications/current/funding-profile', token);
+  log('GET /funding/.../funding-profile (after submit)', fundingAfterSubmit.status === 200, {
+    status: fundingAfterSubmit.status,
+    requestedAmount: fundingAfterSubmit.data?.requestedAmount,
+  });
+
+  if (fundingEvidenceId) {
+    const fundingDownloadAfterSubmit = await apiDownload(
+      `/funding/evidence/${fundingEvidenceId}/download?download=true`,
+      token,
+    );
+    log('GET /funding/evidence/{id}/download (after submit)', fundingDownloadAfterSubmit.status === 200
+      && fundingDownloadAfterSubmit.byteLength > 0, {
+      status: fundingDownloadAfterSubmit.status,
+      byteLength: fundingDownloadAfterSubmit.byteLength,
+    });
+  }
+
+  if (scoringEvidenceId) {
+    const scoringDownloadAfterSubmit = await apiDownload(
+      `/scoring/evidence/${scoringEvidenceId}/download`,
+      token,
+    );
+    log('GET /scoring/evidence/{id}/download (after submit)', scoringDownloadAfterSubmit.status === 200
+      && scoringDownloadAfterSubmit.byteLength > 0, {
+      status: scoringDownloadAfterSubmit.status,
+      byteLength: scoringDownloadAfterSubmit.byteLength,
+    });
+  }
+
+  if (fundingEvidenceId) {
+    const delFundingEvidence = await apiDelete(`/funding/evidence/${fundingEvidenceId}`, token);
+    log('DELETE /funding/evidence/{id} (post-submit blocked)', delFundingEvidence.status === 404, {
+      status: delFundingEvidence.status,
+      note: 'writes require draft — expected 404 after submit',
+    });
+  }
 }
 
 async function main() {

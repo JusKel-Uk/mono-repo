@@ -29,7 +29,7 @@ internal sealed class CompanySetupService
 
     public async Task<CompanySetupResponse?> GetAsync(Guid userId, CancellationToken ct = default)
     {
-        var application = await GetDraftApplicationAsync(userId, ct);
+        var application = await GetCurrentApplicationAsync(userId, ct);
         if (application?.CompanySetup is null)
             return null;
 
@@ -122,6 +122,15 @@ internal sealed class CompanySetupService
             lookup.RegisteredOfficeAddress,
             lookup.IsActive,
             lookup.IsActive);
+    }
+
+    private async Task<Application?> GetCurrentApplicationAsync(Guid userId, CancellationToken ct)
+    {
+        return await _db.Applications
+            .Include(a => a.CompanySetup)
+            .Where(a => a.UserId == userId)
+            .OrderByDescending(a => a.CreatedAt)
+            .FirstOrDefaultAsync(ct);
     }
 
     private async Task<Application?> GetDraftApplicationAsync(Guid userId, CancellationToken ct)

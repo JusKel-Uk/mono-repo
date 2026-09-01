@@ -100,6 +100,32 @@ public static class ScoringEndpoints
         .Produces<ProblemDetails>(StatusCodes.Status500InternalServerError)
         .WithMetadata(new SwaggerResponseExampleAttribute(StatusCodes.Status201Created, typeof(SustainabilityEvidenceResponseExample)));
 
+        group.MapGet("/evidence/{evidenceId:guid}/download", async (
+            ClaimsPrincipal user,
+            Guid evidenceId,
+            EvidenceService service,
+            CancellationToken ct,
+            [FromQuery] bool download = false) =>
+        {
+            if (!TryGetUserId(user, out var userId))
+                return Results.Unauthorized();
+
+            var file = await service.DownloadAsync(userId, evidenceId, ct);
+            if (file is null)
+                return Results.NotFound();
+
+            return Results.File(
+                file.Content,
+                file.ContentType,
+                fileDownloadName: download ? file.FileName : null,
+                enableRangeProcessing: true);
+        })
+        .WithName("DownloadSustainabilityEvidence")
+        .Produces(StatusCodes.Status200OK, contentType: "application/octet-stream")
+        .Produces(StatusCodes.Status401Unauthorized)
+        .Produces(StatusCodes.Status404NotFound)
+        .Produces<ProblemDetails>(StatusCodes.Status500InternalServerError);
+
         group.MapDelete("/evidence/{evidenceId:guid}", async (
             ClaimsPrincipal user,
             Guid evidenceId,

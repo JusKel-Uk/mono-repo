@@ -8,6 +8,8 @@ using onboarding.Contracts;
 
 namespace funding.Core.Services;
 
+internal sealed record EvidenceFile(Stream Content, string FileName, string ContentType);
+
 internal sealed class EvidenceService
 {
     private const long MaxFileSizeBytes = 10 * 1024 * 1024;
@@ -110,6 +112,29 @@ internal sealed class EvidenceService
         _db.FinancialEvidence.Remove(evidence);
         await _db.SaveChangesAsync(ct);
         return true;
+    }
+
+    public async Task<EvidenceFile?> DownloadAsync(
+        Guid userId,
+        Guid evidenceId,
+        CancellationToken ct = default)
+    {
+        var applicationId = await _onboarding.GetCurrentApplicationIdAsync(userId, ct);
+        if (applicationId is null)
+            return null;
+
+        var evidence = await _db.FinancialEvidence
+            .AsNoTracking()
+            .FirstOrDefaultAsync(e => e.Id == evidenceId && e.ApplicationId == applicationId, ct);
+
+        if (evidence is null)
+            return null;
+
+        var stream = await _blobStorage.OpenReadAsync(evidence.BlobPath, ct);
+        if (stream is null)
+            return null;
+
+        return new EvidenceFile(stream, evidence.FileName, evidence.ContentType);
     }
 
     private static void ValidateFile(IFormFile file)

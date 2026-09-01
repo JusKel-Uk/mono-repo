@@ -23,6 +23,7 @@ Maps each onboarding Figma screen to the exact REST endpoints the frontend shoul
 |------|--------|
 | **Enums** | Send and receive **integers** (not strings). Load labels from `GET /onboarding/lookups` (or `/funding/lookups`, `/scoring/lookups`). See [Dropdown options](#dropdown-options-sector-region-bands-etc). |
 | **Empty step** | `GET` a step resource → **404** means show an empty form. |
+| **After submit** | Step `GET`s resolve the user's **latest** application (draft or submitted) so saved answers and `evidence[]` remain available for review. Writes (`PUT`, evidence upload/delete) still require a **draft** application. |
 | **Save step** | `PUT` with JSON body → **200** with saved data. |
 | **No-body POSTs** | `POST /onboarding/applications`, `POST .../submit`, `POST .../authorize` — user comes from JWT; draft application is resolved server-side. |
 | **Progress** | `GET /onboarding/applications/current` drives the dashboard sidebar, step ticks, and “Ready for submission”. |
@@ -216,7 +217,7 @@ Store `accessToken` and attach to all subsequent requests.
 
 | When | Method | Endpoint | Notes |
 |------|--------|----------|-------|
-| Open step | `GET` | `/funding/applications/current/financial-profile` | Check `bandsLockedByIntegration`, `integrations[]` |
+| Open step | `GET` | `/funding/applications/current/financial-profile` | Check `bandsLockedByIntegration`, `integrations[]`, `evidence[]` |
 | Save manual bands | `PUT` | `/funding/applications/current/financial-profile` | Skip locked fields when `bandsLockedByIntegration: true` |
 | Connect Open Banking | `POST` | `/funding/integrations/open-banking/authorize` | No body → `{ authorizationUrl, state }` — redirect user |
 | OAuth return | Browser | `GET` | `/funding/integrations/open-banking/callback?code=...&state=...` | Backend handles; then refresh financial profile |
@@ -228,7 +229,30 @@ Store `accessToken` and attach to all subsequent requests.
 | QB callback | `GET` | `/funding/integrations/quickbooks/callback` | |
 | Disconnect QB | `DELETE` | `/funding/integrations/quickbooks` | |
 | Upload file | `POST` | `/funding/evidence` | `multipart/form-data`, field `file` |
-| Remove file | `DELETE` | `/funding/evidence/{evidenceId}` | |
+| Preview / download file | `GET` | `/funding/evidence/{evidenceId}/download` | Optional query `download=true` for attachment |
+| Remove file | `DELETE` | `/funding/evidence/{evidenceId}` | Draft only |
+
+**Download / preview:** Requires `Authorization: Bearer <token>`. Returns the file bytes with the stored `Content-Type`. Use `evidenceId` from profile `GET` → `evidence[]`.
+
+| Query | `Content-Disposition` | Use |
+|-------|----------------------|-----|
+| (default) | `inline` | Preview in browser |
+| `?download=true` | `attachment` | Force save |
+
+The browser cannot use a plain `<a href>` — there is no public blob URL. Fetch with the JWT, then use `URL.createObjectURL(blob)` (frontend developer).
+
+**GET response** includes `evidence[]` (empty array when none uploaded). Each item:
+
+```json
+{
+  "evidenceId": "22222222-2222-2222-2222-222222222222",
+  "applicationId": "11111111-1111-1111-1111-111111111111",
+  "fileName": "bank-statement.pdf",
+  "contentType": "application/pdf",
+  "fileSizeBytes": 512000,
+  "uploadedAt": "2026-01-15T10:00:00Z"
+}
+```
 
 **PUT body (`UpsertFinancialProfileRequest`):**
 
@@ -263,7 +287,24 @@ Store `accessToken` and attach to all subsequent requests.
 | Open step | `GET` | `/scoring/applications/current/sustainability-profile` |
 | Save answers | `PUT` | `/scoring/applications/current/sustainability-profile` |
 | Upload certificate | `POST` | `/scoring/evidence` | `multipart/form-data`: `file`, `questionKey` (1–9) |
-| Remove certificate | `DELETE` | `/scoring/evidence/{evidenceId}` |
+| Preview / download certificate | `GET` | `/scoring/evidence/{evidenceId}/download` | Optional query `download=true` for attachment |
+| Remove certificate | `DELETE` | `/scoring/evidence/{evidenceId}` | Draft only |
+
+**Download / preview:** Same as financial evidence — JWT required, `evidenceId` from `evidence[]` on sustainability profile `GET`. See financial step for `download` query behaviour.
+
+**GET response** includes `evidence[]` (empty array when none uploaded). Each item includes `questionKey` (1–9):
+
+```json
+{
+  "evidenceId": "33333333-3333-3333-3333-333333333333",
+  "applicationId": "11111111-1111-1111-1111-111111111111",
+  "questionKey": 1,
+  "fileName": "iso14001-certificate.pdf",
+  "contentType": "application/pdf",
+  "fileSizeBytes": 256000,
+  "uploadedAt": "2026-01-15T10:00:00Z"
+}
+```
 
 **PUT body (all fields are `SustainabilityAnswer` 0–5):**
 
@@ -504,10 +545,12 @@ POST   /funding/integrations/quickbooks/authorize
 GET    /funding/integrations/quickbooks/callback
 DELETE /funding/integrations/quickbooks
 POST   /funding/evidence
+GET    /funding/evidence/{evidenceId}/download
 DELETE /funding/evidence/{evidenceId}
 GET    /scoring/applications/current/sustainability-profile
 PUT    /scoring/applications/current/sustainability-profile
 POST   /scoring/evidence
+GET    /scoring/evidence/{evidenceId}/download
 DELETE /scoring/evidence/{evidenceId}
 GET    /funding/applications/current/funding-profile
 PUT    /funding/applications/current/funding-profile

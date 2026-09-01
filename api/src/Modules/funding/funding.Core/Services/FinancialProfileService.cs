@@ -25,7 +25,7 @@ internal sealed class FinancialProfileService
 
     public async Task<FinancialProfileResponse?> GetAsync(Guid userId, CancellationToken ct = default)
     {
-        var applicationId = await _onboarding.GetDraftApplicationIdAsync(userId, ct);
+        var applicationId = await _onboarding.GetCurrentApplicationIdAsync(userId, ct);
         if (applicationId is null)
             return null;
 
@@ -37,12 +37,14 @@ internal sealed class FinancialProfileService
         var isOpenBankingConnected = integrations.Any(i =>
             i.Provider == IntegrationProvider.OpenBanking && i.IsConnected);
 
-        if (profile is null && !integrations.Any(i => i.IsConnected))
+        var evidence = await LoadEvidenceAsync(applicationId.Value, ct);
+
+        if (profile is null && !integrations.Any(i => i.IsConnected) && evidence.Count == 0)
             return null;
 
         profile ??= new FinancialProfile { ApplicationId = applicationId.Value, UpdatedAt = DateTime.UtcNow };
 
-        return Map(profile, integrations, isOpenBankingConnected);
+        return Map(profile, integrations, isOpenBankingConnected, evidence);
     }
 
     public async Task<FinancialProfileResponse?> UpsertAsync(
@@ -83,7 +85,8 @@ internal sealed class FinancialProfileService
         await _onboarding.MarkStepAsync(applicationId, OnboardingStep.Financial, status, ct);
 
         var integrations = await _funding.GetIntegrationStatusAsync(applicationId, ct);
-        return Map(profile, integrations, openBankingConnected);
+        var evidence = await LoadEvidenceAsync(applicationId, ct);
+        return Map(profile, integrations, openBankingConnected, evidence);
     }
 
     internal static void ApplyOpenBankingBands(FinancialProfile profile, IReadOnlyList<OpenBankingAccountSummary> accounts)
@@ -98,10 +101,27 @@ internal sealed class FinancialProfileService
         profile.UpdatedAt = DateTime.UtcNow;
     }
 
+    private async Task<IReadOnlyList<EvidenceResponse>> LoadEvidenceAsync(
+        Guid applicationId,
+        CancellationToken ct) =>
+        await _db.FinancialEvidence
+            .AsNoTracking()
+            .Where(e => e.ApplicationId == applicationId)
+            .OrderByDescending(e => e.UploadedAt)
+            .Select(e => new EvidenceResponse(
+                e.Id,
+                e.ApplicationId,
+                e.FileName,
+                e.ContentType,
+                e.FileSizeBytes,
+                e.UploadedAt))
+            .ToListAsync(ct);
+
     private static FinancialProfileResponse Map(
         FinancialProfile profile,
         IReadOnlyList<IntegrationStatusDto> integrations,
-        bool isOpenBankingConnected) =>
+        bool isOpenBankingConnected,
+        IReadOnlyList<EvidenceResponse> evidence) =>
         new(
             profile.ApplicationId,
             profile.AnnualRevenueBand,
@@ -112,6 +132,7 @@ internal sealed class FinancialProfileService
             profile.BandsLockedByIntegration,
             isOpenBankingConnected,
             integrations,
+            evidence,
             profile.UpdatedAt);
 
     private static AnnualRevenueBand MapAnnualRevenue(decimal annualAmount) => annualAmount switch

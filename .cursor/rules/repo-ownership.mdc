@@ -1,0 +1,57 @@
+---
+description: Monorepo ownership — backend (this user) vs frontend (separate developer)
+alwaysApply: true
+---
+
+# Repo Ownership & Scope
+
+This monorepo contains two products. **Only one person works on each.** Agents must respect these boundaries unless the user explicitly overrides them.
+
+## Who owns what
+
+| Path | Owner | Agent default |
+|------|--------|----------------|
+| `api/` | **This user** (backend / .NET) | Implement, instruct, review, and verify here |
+| `client/` | **Separate frontend developer** | **Reference only** — do not edit unless the user explicitly asks |
+
+The `client/` tree exists so the backend can stay aligned with real integration needs (types, routes, forms). It is **not** in scope for this user's day-to-day work.
+
+## Backend agent behavior
+
+- **Default workspace:** `api/` — modular monolith, Swagger, EF Core, Azure budget rules.
+- **When a feature spans API + UI** (e.g. onboarding persistence, evidence on GET):
+  - Implement and document the **API contract** in `api/` (DTOs, endpoints, examples, `api/ONBOARDING_FRONTEND_API.md`).
+  - Describe what the frontend developer needs (request/response shapes, reload behavior) in docs or PR notes — **do not** change `client/` unless explicitly requested.
+- **Plans and todos:** Scope backend phases only. Mark frontend work as "for frontend developer" or omit it; never assume this user will implement React/Next.js.
+- **Verification:** `dotnet build`, Swagger, e2e scripts under `api/scripts/`, curl against local/Azure API — not `npm` / Next.js unless the user asks.
+
+## Frontend reference (read-only)
+
+Use `client/` only to:
+
+- Confirm how the UI currently calls endpoints (`client/lib/api/onboarding.ts`, hooks, forms).
+- Spot contract mismatches (wrong field names, missing GET fields) and **fix them on the backend** or document the correct contract.
+- Avoid breaking changes without documenting them for the frontend developer.
+
+Do **not**:
+
+- Refactor forms, Zustand stores, or components as part of backend tasks.
+- Add frontend todos to this user's implementation plans unless they say they are pairing on UI.
+
+## API contract documentation
+
+When adding or changing endpoints consumed by onboarding:
+
+1. Update [`api/ONBOARDING_FRONTEND_API.md`](../api/ONBOARDING_FRONTEND_API.md) (paths, bodies, response fields including nested `evidence[]`).
+2. Keep Swashbuckle examples in sync (`.cursor/rules/swagger-conventions.mdc`).
+3. Prefer extending existing `GET .../current/*` responses over new endpoints when the UI needs reload/review data in one round-trip.
+
+## Onboarding persistence plan (backend scope)
+
+For the attached onboarding persistence plan, **this user implements only:**
+
+- `GetCurrentApplicationIdAsync` and GET handlers that resolve draft **or** submitted applications.
+- `evidence[]` on financial and sustainability profile GET responses.
+- Swagger examples, e2e assertions, and `ONBOARDING_FRONTEND_API.md`.
+
+**Frontend developer implements:** types/mappers in `client/`, `EvidenceRow` wiring, TanStack Query on financial/sustainability forms, read-only UI after submit.

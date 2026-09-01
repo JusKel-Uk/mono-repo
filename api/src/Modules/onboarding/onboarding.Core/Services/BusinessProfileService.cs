@@ -23,7 +23,7 @@ internal sealed class BusinessProfileService
 
     public async Task<BusinessProfileResponse?> GetAsync(Guid userId, CancellationToken ct = default)
     {
-        var application = await GetDraftApplicationAsync(userId, ct);
+        var application = await GetCurrentApplicationAsync(userId, ct);
         if (application?.BusinessProfile is null)
             return null;
 
@@ -63,6 +63,15 @@ internal sealed class BusinessProfileService
         await _onboarding.MarkStepAsync(application.Id, OnboardingStep.Business, StepStatus.Complete, ct);
 
         return Map(application.Id, profile);
+    }
+
+    private async Task<Application?> GetCurrentApplicationAsync(Guid userId, CancellationToken ct)
+    {
+        return await _db.Applications
+            .Include(a => a.BusinessProfile)
+            .Where(a => a.UserId == userId)
+            .OrderByDescending(a => a.CreatedAt)
+            .FirstOrDefaultAsync(ct);
     }
 
     private async Task<Application?> GetDraftApplicationAsync(Guid userId, CancellationToken ct)
