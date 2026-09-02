@@ -130,3 +130,68 @@ function safeJsonParse(text: string): unknown {
     return null;
   }
 }
+
+/* ---- Binary GET (evidence download / preview) ----
+ * The JSON `request` above parses every body as text, so it can't return a
+ * file. This variant returns the raw Blob plus the headers a viewer needs
+ * (content-type for inline rendering, filename from content-disposition).
+ */
+export type BlobResponse = {
+  blob: Blob;
+  contentType: string;
+  fileName: string | null;
+};
+
+export async function requestBlob(
+  path: string,
+  { auth = false }: { auth?: boolean } = {},
+): Promise<BlobResponse> {
+  const headers: Record<string, string> = {};
+  if (auth) {
+    const token = getToken();
+    if (token) headers.Authorization = `Bearer ${token}`;
+  }
+
+  let res: Response;
+  try {
+    res = await fetch(`${API_URL}${path}`, {
+      method: 'GET',
+      headers,
+      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+    });
+  } catch (err) {
+    const timedOut = err instanceof DOMException && err.name === 'TimeoutError';
+    throw new ApiError(
+      timedOut
+        ? 'The service is taking longer than usual. Please try again.'
+        : 'Unable to reach the server. Please try again.',
+      0,
+    );
+  }
+
+  if (!res.ok) {
+    // Error bodies are JSON problem-details even though success is binary.
+    const problem = (safeJsonParse(await res.text().catch(() => '')) ??
+      {}) as ProblemDetails;
+    throw new ApiError(
+      problem.detail || problem.title || 'Could not load the file. Please try again.',
+      res.status,
+      problem.errorCode,
+    );
+  }
+
+  const blob = await res.blob();
+  return {
+    blob,
+    contentType:
+      res.headers.get('content-type') || blob.type || 'application/octet-stream',
+    fileName: parseContentDispositionFilename(res.headers.get('content-disposition')),
+  };
+}
+
+/** Pull the filename out of a Content-Disposition header (RFC 5987 or plain). */
+function parseContentDispositionFilename(header: string | null): string | null {
+  if (!header) return null;
+  const match = /filename\*?=(?:UTF-8'')?["']?([^"';]+)/i.exec(header);
+  return match ? decodeURIComponent(match[1]) : null;
+}

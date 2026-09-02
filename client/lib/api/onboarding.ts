@@ -12,7 +12,7 @@
  * a blank form instead of erroring.
  */
 
-import { request, ApiError } from './client';
+import { request, requestBlob, ApiError, type BlobResponse } from './client';
 
 /** Run a step `GET` and treat a 404 (empty step) as "no data yet". */
 async function getOrNull<T>(path: string): Promise<T | null> {
@@ -247,6 +247,32 @@ export function disconnectIntegration(slug: IntegrationSlug) {
 
 export type Evidence = { evidenceId: string; fileName: string };
 
+/* ---- Evidence download / preview ----
+ * GET /{module}/evidence/{id}/download — private blob served via JWT.
+ *   download=false → inline (content-type set) for preview
+ *   download=true  → attachment (content-disposition filename) for save
+ */
+export type EvidenceModule = 'scoring' | 'funding';
+
+export function downloadEvidence(
+  module: EvidenceModule,
+  evidenceId: string,
+  download = false,
+): Promise<BlobResponse> {
+  return requestBlob(
+    `/${module}/evidence/${evidenceId}/download?download=${download}`,
+    { auth: true },
+  );
+}
+
+export const downloadSustainabilityEvidence = (
+  evidenceId: string,
+  download = false,
+) => downloadEvidence('scoring', evidenceId, download);
+
+export const downloadFundingEvidence = (evidenceId: string, download = false) =>
+  downloadEvidence('funding', evidenceId, download);
+
 export function uploadFundingEvidence(file: File) {
   const form = new FormData();
   form.append('file', file);
@@ -286,8 +312,23 @@ export type UpsertSustainabilityProfileRequest = SustainabilityProfile;
 /** questionKey 1–9, matching the nine fields above in order. */
 export type SustainabilityQuestionKey = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9;
 
+/** One uploaded evidence file, as returned on the profile GET. */
+export type SustainabilityEvidenceItem = {
+  evidenceId: string;
+  questionKey: SustainabilityQuestionKey;
+  fileName: string;
+  contentType: string;
+  fileSizeBytes: number;
+  uploadedAt: string;
+};
+
+/** The GET response carries the saved answers plus any attached evidence. */
+export type SustainabilityProfileData = SustainabilityProfile & {
+  evidence?: SustainabilityEvidenceItem[];
+};
+
 export function getSustainabilityProfile() {
-  return getOrNull<SustainabilityProfile>(
+  return getOrNull<SustainabilityProfileData>(
     '/scoring/applications/current/sustainability-profile',
   );
 }

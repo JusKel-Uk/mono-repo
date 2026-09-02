@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm, type Control } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -15,6 +15,7 @@ import {
   saveSustainabilityProfile,
   uploadSustainabilityEvidence,
   removeSustainabilityEvidence,
+  downloadSustainabilityEvidence,
   type SustainabilityQuestionKey,
 } from '@/lib/api/onboarding';
 import {
@@ -162,6 +163,20 @@ export function SustainabilityProfileForm() {
     if (saved) form.reset(fromSustainabilityProfile(saved));
   }, [saved, form]);
 
+  // First uploaded file per question, to rehydrate the attach control on load.
+  const evidenceByKey = useMemo(() => {
+    const map = new Map<number, { evidenceId: string; fileName: string }>();
+    saved?.evidence?.forEach((e) => {
+      if (!map.has(e.questionKey)) {
+        map.set(e.questionKey, {
+          evidenceId: e.evidenceId,
+          fileName: e.fileName,
+        });
+      }
+    });
+    return map;
+  }, [saved]);
+
   const save = useMutation({
     mutationFn: (values: SustainabilityProfileInput) =>
       saveSustainabilityProfile(toSustainabilityProfileRequest(values)),
@@ -233,6 +248,7 @@ export function SustainabilityProfileForm() {
                     questionKey={q.key}
                     label={q.label}
                     options={q.options}
+                    initialEvidence={evidenceByKey.get(q.key)}
                   />
                 ))}
               </div>
@@ -250,12 +266,14 @@ function RadioQuestion({
   questionKey,
   label,
   options,
+  initialEvidence,
 }: {
   control: Control<SustainabilityProfileInput>;
   name: QuestionName;
   questionKey: SustainabilityQuestionKey;
   label: string;
   options: string[];
+  initialEvidence?: { evidenceId: string; fileName: string };
 }) {
   return (
     <FormField
@@ -277,7 +295,10 @@ function RadioQuestion({
                   key={opt}
                   className='flex cursor-pointer items-center gap-2 text-base text-carbon-black'
                 >
-                  <RadioGroupItem value={opt} className='border-carbon-black' />
+                  <RadioGroupItem
+                    value={opt}
+                    className='border-carbon-black cursor-pointer'
+                  />
                   {opt}
                 </label>
               ))}
@@ -288,6 +309,8 @@ function RadioQuestion({
             hint='PDF, DOC, PNG or JPG · max 10 MB'
             onUpload={(file) => uploadSustainabilityEvidence(file, questionKey)}
             onRemove={removeSustainabilityEvidence}
+            onView={downloadSustainabilityEvidence}
+            initial={initialEvidence}
           />
           <FormMessage />
         </FormItem>
