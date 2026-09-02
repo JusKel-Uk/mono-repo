@@ -20,6 +20,16 @@ internal sealed class OnboardingModule : IOnboardingModule
             .FirstOrDefaultAsync(ct);
     }
 
+    public async Task<Guid?> GetCurrentApplicationIdAsync(Guid userId, CancellationToken ct = default)
+    {
+        return await _db.Applications
+            .AsNoTracking()
+            .Where(a => a.UserId == userId)
+            .OrderByDescending(a => a.CreatedAt)
+            .Select(a => (Guid?)a.Id)
+            .FirstOrDefaultAsync(ct);
+    }
+
     public async Task MarkStepAsync(
         Guid applicationId,
         OnboardingStep step,

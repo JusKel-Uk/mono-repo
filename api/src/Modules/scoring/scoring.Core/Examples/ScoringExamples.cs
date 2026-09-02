@@ -16,6 +16,16 @@ public sealed class SustainabilityProfileResponseExample : IExamplesProvider<Sus
         SustainabilityAnswer.Yes,
         SustainabilityAnswer.InProgress,
         SustainabilityAnswer.Occasionally,
+        [
+            new SustainabilityEvidenceResponse(
+                Guid.Parse("33333333-3333-3333-3333-333333333333"),
+                Guid.Parse("11111111-1111-1111-1111-111111111111"),
+                SustainabilityQuestionKey.GhgEmissions,
+                "iso14001-certificate.pdf",
+                "application/pdf",
+                256_000,
+                DateTime.UtcNow),
+        ],
         DateTime.UtcNow);
 }
 

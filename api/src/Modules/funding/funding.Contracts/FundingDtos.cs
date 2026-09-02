@@ -16,6 +16,7 @@ public sealed record FinancialProfileResponse(
     bool BandsLockedByIntegration,
     bool IsOpenBankingConnected,
     IReadOnlyList<IntegrationStatusDto> Integrations,
+    IReadOnlyList<EvidenceResponse> Evidence,
     DateTime UpdatedAt);
 
 public sealed record UpsertFinancialProfileRequest(

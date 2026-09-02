@@ -2,6 +2,13 @@
 
 > **Mandatory:** Before any implementation, planning, or code suggestion, read ALL files in `.cursor/rules/`. These rules override generic defaults.
 
+## Repo ownership
+
+- **`api/`** — this user's backend (.NET). Implement and verify here.
+- **`client/`** — separate frontend developer; **reference only**. Do not edit `client/` unless this user explicitly asks. When API work affects the UI, document the contract in `api/ONBOARDING_FRONTEND_API.md` and Swagger — do not implement React/Next.js as part of backend tasks.
+
+See `.cursor/rules/repo-ownership.mdc`.
+
 ## Role & Tech Stack
 
 You are an expert .NET 10 developer building a hyper-lean, high-performance C# REST API for juskel (fintech lending).

@@ -24,7 +24,7 @@ internal sealed class FundingProfileService
 
     public async Task<FundingProfileResponse?> GetAsync(Guid userId, CancellationToken ct = default)
     {
-        var applicationId = await _onboarding.GetDraftApplicationIdAsync(userId, ct);
+        var applicationId = await _onboarding.GetCurrentApplicationIdAsync(userId, ct);
         if (applicationId is null)
             return null;
 

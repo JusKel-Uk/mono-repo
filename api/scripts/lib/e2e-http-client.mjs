@@ -50,6 +50,19 @@ export function createApiClient(baseUrl) {
     return parseResponse(res);
   }
 
+  /** Binary GET — returns status, contentType, byteLength (no JSON parse). */
+  async function apiDownload(path, token) {
+    const res = await fetch(`${baseUrl}${path}`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+    const buffer = await res.arrayBuffer();
+    return {
+      status: res.status,
+      contentType: res.headers.get('content-type'),
+      byteLength: buffer.byteLength,
+    };
+  }
+
   async function oauthCallback(path, code, state) {
     const url = new URL(`${baseUrl}${path}`);
     url.searchParams.set('code', code);
@@ -58,7 +71,7 @@ export function createApiClient(baseUrl) {
     return parseResponse(res);
   }
 
-  return { api, apiGet, apiDelete, apiMultipart, oauthCallback };
+  return { api, apiGet, apiDelete, apiMultipart, apiDownload, oauthCallback };
 }
 
 export function createLogger() {

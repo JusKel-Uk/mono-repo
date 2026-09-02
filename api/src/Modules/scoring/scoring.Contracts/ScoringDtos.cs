@@ -11,6 +11,7 @@ public sealed record SustainabilityProfileResponse(
     SustainabilityAnswer Continuity,
     SustainabilityAnswer GovernancePolicies,
     SustainabilityAnswer RiskReview,
+    IReadOnlyList<SustainabilityEvidenceResponse> Evidence,
     DateTime UpdatedAt);
 
 public sealed record UpsertSustainabilityProfileRequest(
