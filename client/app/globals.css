@@ -41,7 +41,12 @@
   --color-success-200: #a6f4c5;
   --color-success-600: #039855;
   --color-warning-50: #fffaeb;
+  --color-warning-100: #fef0c7;
   --color-warning-200: #fedf89;
+  --color-warning-600: #dc6803;
+  --color-warning-800: #93370d;
+  --color-error-50: #fef3f2;
+  --color-error-100: #fee4e2;
   --color-error-600: #d92d20;
 
   /* ---- Figma type scale (SF Pro). Each is size + line-height; pick the weight
