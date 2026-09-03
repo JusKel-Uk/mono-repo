@@ -6,6 +6,41 @@ public sealed record IntegrationStatusDto(
     DateTime? ConnectedAt,
     DateTime? ExpiresAt);
 
+public sealed record FinancialIntegrationMetricsDto(
+    IntegrationProvider Provider,
+    string Currency,
+    DateOnly PeriodStart,
+    DateOnly PeriodEnd,
+    DateOnly? PriorPeriodEnd,
+    DateOnly BalanceSheetAsOf,
+    DateTime SyncedAt,
+    decimal? AnnualRevenue,
+    decimal? PriorAnnualRevenue,
+    decimal? GrossProfit,
+    decimal? OperatingProfit,
+    decimal? NetIncome,
+    decimal? PriorNetIncome,
+    decimal? Ebitda,
+    decimal? CashBalance,
+    decimal? AccountsReceivable,
+    decimal? AccountsPayable,
+    decimal? CurrentAssets,
+    decimal? CurrentLiabilities,
+    decimal? WorkingCapital,
+    decimal? TotalAssets,
+    decimal? TotalLiabilities,
+    decimal? TotalEquity,
+    decimal? OutstandingDebt,
+    decimal? OperatingCashFlow,
+    decimal? CurrentRatio,
+    decimal? DebtToAssets,
+    decimal? ProfitMargin,
+    decimal? RevenueGrowthYoY,
+    decimal? NetIncomeGrowthYoY,
+    int AccountCount,
+    bool HasReportData,
+    bool PriorPeriodHasReportData);
+
 public sealed record FinancialProfileResponse(
     Guid ApplicationId,
     AnnualRevenueBand? AnnualRevenueBand,
@@ -17,6 +52,7 @@ public sealed record FinancialProfileResponse(
     bool IsOpenBankingConnected,
     IReadOnlyList<IntegrationStatusDto> Integrations,
     IReadOnlyList<EvidenceResponse> Evidence,
+    FinancialIntegrationMetricsDto? IntegrationMetrics,
     DateTime UpdatedAt);
 
 public sealed record UpsertFinancialProfileRequest(

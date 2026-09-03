@@ -253,6 +253,11 @@ deploy_app() {
 
   local ch_base_url="${INTEGRATIONS__COMPANIESHOUSE__BASEURL:-https://api.company-information.service.gov.uk}"
   local ch_api_key="${INTEGRATIONS__COMPANIESHOUSE__APIKEY:-}"
+  local qb_client_id="${INTEGRATIONS__QUICKBOOKS__CLIENTID:-}"
+  local qb_client_secret="${INTEGRATIONS__QUICKBOOKS__CLIENTSECRET:-}"
+  local qb_api_base="${INTEGRATIONS__QUICKBOOKS__APIBASEURL:-https://sandbox-quickbooks.api.intuit.com/v3/company}"
+  local qb_report_start="${INTEGRATIONS__QUICKBOOKS__REPORTSTARTDATE:-2026-01-01}"
+  local qb_report_end="${INTEGRATIONS__QUICKBOOKS__REPORTENDDATE:-2026-12-31}"
 
   local env_vars=(
     "ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT}"
@@ -273,6 +278,9 @@ deploy_app() {
     "Integrations__OpenBanking__RedirectUri=${api_base_url}/funding/integrations/open-banking/callback"
     "Integrations__Xero__RedirectUri=${api_base_url}/funding/integrations/xero/callback"
     "Integrations__QuickBooks__RedirectUri=${api_base_url}/funding/integrations/quickbooks/callback"
+    "Integrations__QuickBooks__ApiBaseUrl=${qb_api_base}"
+    "Integrations__QuickBooks__ReportStartDate=${qb_report_start}"
+    "Integrations__QuickBooks__ReportEndDate=${qb_report_end}"
     "Integrations__BlobStorage__Provider=${INTEGRATIONS__BLOBSTORAGE__PROVIDER}"
     "Integrations__BlobStorage__AzureContainerName=${INTEGRATIONS__BLOBSTORAGE__AZURECONTAINERNAME}"
   )
@@ -287,6 +295,13 @@ deploy_app() {
     echo "Warning: INTEGRATIONS__COMPANIESHOUSE__APIKEY not set — Companies House verify will return 404."
   fi
 
+  if [[ -n "$qb_client_id" && -n "$qb_client_secret" ]]; then
+    env_vars+=("Integrations__QuickBooks__ClientId=secretref:quickbooks-client-id")
+    env_vars+=("Integrations__QuickBooks__ClientSecret=secretref:quickbooks-client-secret")
+  else
+    echo "Warning: INTEGRATIONS__QUICKBOOKS__CLIENTID/CLIENTSECRET not set — QuickBooks OAuth uses stub mode."
+  fi
+
   local app_secrets=(
     "sql-connection-string=${CONNECTIONSTRINGS__IDENTITY}"
     "jwt-secret=${JWT__SECRET}"
@@ -296,6 +311,10 @@ deploy_app() {
   )
   if [[ -n "$ch_api_key" ]]; then
     app_secrets+=("companies-house-api-key=${ch_api_key}")
+  fi
+  if [[ -n "$qb_client_id" && -n "$qb_client_secret" ]]; then
+    app_secrets+=("quickbooks-client-id=${qb_client_id}")
+    app_secrets+=("quickbooks-client-secret=${qb_client_secret}")
   fi
   if [[ -n "$blob_connection_string" ]]; then
     app_secrets+=("blob-storage-connection-string=${blob_connection_string}")

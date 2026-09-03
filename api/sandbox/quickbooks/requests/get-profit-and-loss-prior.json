@@ -1,0 +1,10 @@
+{
+  "_note": "Prior-year P&L for trend / growth probes (dates = current window minus one calendar year).",
+  "method": "GET",
+  "url": "{QUICKBOOKS_API_BASE_URL}/{QUICKBOOKS_REALM_ID}/reports/ProfitAndLoss?start_date={PRIOR_START}&end_date={PRIOR_END}&minorversion={QUICKBOOKS_MINOR_VERSION}",
+  "headers": {
+    "Accept": "application/json",
+    "Authorization": "Bearer {QUICKBOOKS_ACCESS_TOKEN}",
+    "Content-Type": "application/json"
+  }
+}

@@ -6,6 +6,6 @@ namespace identity.Core.Examples;
 public sealed class SignInRequestExample : IExamplesProvider<SignInRequest>
 {
     public SignInRequest GetExamples() => new(
-        Email: "user@example.com",
-        Password: "P@ssw0rd!");
+        Email: "zpfkqn@riwutz-gmail.com",
+        Password: "gamingRig1!!");
 }

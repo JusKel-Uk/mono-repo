@@ -12,4 +12,12 @@ public interface IQuickBooksClient
     OAuthAuthorizationResult BuildAuthorizationUrl(Guid applicationId, Guid userId);
 
     Task<OAuthTokenResult> ExchangeCodeAsync(string code, CancellationToken ct = default);
+
+    Task<OAuthTokenResult> RefreshAccessTokenAsync(string refreshToken, CancellationToken ct = default);
+
+    Task<QuickBooksSyncResult> SyncFinancialDataAsync(
+        string accessToken,
+        string? refreshToken,
+        string realmId,
+        CancellationToken ct = default);
 }
