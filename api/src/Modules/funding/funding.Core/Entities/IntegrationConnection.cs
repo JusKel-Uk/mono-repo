@@ -17,4 +17,8 @@ internal sealed class IntegrationConnection
     public DateTime ConnectedAt { get; set; }
 
     public DateTime? ExpiresAt { get; set; }
+
+    public string? ExternalRealmId { get; set; }
+
+    public string? ProviderMetadataJson { get; set; }
 }

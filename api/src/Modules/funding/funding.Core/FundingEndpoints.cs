@@ -247,13 +247,16 @@ public static class FundingEndpoints
         group.MapGet("/integrations/quickbooks/callback", async (
             [FromQuery] string code,
             [FromQuery] string state,
+            [FromQuery] string? realmId,
+            [FromQuery(Name = "realmID")] string? realmIdLegacy,
             IntegrationService service,
             CancellationToken ct) =>
         {
             if (string.IsNullOrWhiteSpace(code) || string.IsNullOrWhiteSpace(state))
                 return Results.BadRequest();
 
-            await service.HandleQuickBooksCallbackAsync(code, state, ct);
+            var resolvedRealmId = string.IsNullOrWhiteSpace(realmId) ? realmIdLegacy : realmId;
+            await service.HandleQuickBooksCallbackAsync(code, state, resolvedRealmId, ct);
             return Results.Ok(new { status = "connected", provider = "quickbooks" });
         })
         .AllowAnonymous()

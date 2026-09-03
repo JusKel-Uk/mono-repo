@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>QuickBooks Explorer</title>
+  <link rel="stylesheet" href="/assets/styles.css">
+</head>
+<body>
+  <div class="layout">
+    <header class="site-header">
+      <div>
+        <h1>QuickBooks Data Explorer</h1>
+        <p>Intuit sandbox → probe every <strong>Financial Profile.pdf</strong> accounting field (P&amp;L, balance sheet, AR/AP, cash flow, derived ratios).</p>
+      </div>
+      <span id="env-badge" class="badge badge--sandbox">sandbox</span>
+    </header>
+
+    <div id="token-banner" class="card token-banner hidden">
+      <p><strong>Not connected yet.</strong> Whitelist the redirect URI below in Intuit Developer → Keys &amp; OAuth (Development), then click <em>Connect sandbox company</em>.</p>
+      <p class="hint">Redirect URI (exact match): <code id="redirect-hint">http://127.0.0.1:8769/callback</code></p>
+      <div class="inline-field" style="margin-top:12px">
+        <input id="auth-code" type="text" placeholder="Or paste authorization code if callback did not run" aria-label="Authorization code">
+        <input id="realm-id" type="text" placeholder="Realm ID" aria-label="Realm ID">
+        <button type="button" id="exchange-btn" class="btn-primary btn-sm">Exchange</button>
+      </div>
+    </div>
+
+    <div class="company-layout">
+      <aside class="card endpoint-sidebar">
+        <h2>Endpoints</h2>
+        <div id="endpoint-groups"></div>
+      </aside>
+
+      <section class="card endpoint-main">
+        <div class="endpoint-main__head">
+          <h2 id="active-endpoint-label">Response</h2>
+          <button type="button" id="copy-btn" class="btn-ghost btn-sm" disabled>Copy JSON</button>
+        </div>
+        <div class="status-bar">
+          <span id="status-pill" class="status-pill status-pill--idle">Ready</span>
+          <span id="status-detail" class="status-detail"></span>
+        </div>
+        <div id="request-url" class="request-url">Pick an endpoint from the left.</div>
+        <div id="response-body" class="response-panel empty-state">Connect a sandbox company, then fetch reports.</div>
+      </section>
+    </div>
+  </div>
+  <script src="/assets/app.js?v=3"></script>
+</body>
+</html>

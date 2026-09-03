@@ -1,4 +1,5 @@
 using System.Text;
+using System.Text.Json;
 using funding.Contracts;
 using funding.Core.Entities;
 using funding.Core.Persistence;
@@ -65,6 +66,8 @@ internal sealed class IntegrationService
             token.AccessToken,
             token.RefreshToken,
             token.ExpiresAt,
+            null,
+            null,
             ct);
 
         var accounts = await _openBanking.GetAccountsAsync(token.AccessToken, ct);
@@ -103,6 +106,8 @@ internal sealed class IntegrationService
             token.AccessToken,
             token.RefreshToken,
             token.ExpiresAt,
+            null,
+            null,
             ct);
         return true;
     }
@@ -119,17 +124,57 @@ internal sealed class IntegrationService
         return new OAuthAuthorizeResponse(result.AuthorizationUrl, result.State);
     }
 
-    public async Task<bool> HandleQuickBooksCallbackAsync(string code, string state, CancellationToken ct = default)
+    public async Task<bool> HandleQuickBooksCallbackAsync(
+        string code,
+        string state,
+        string? realmId,
+        CancellationToken ct = default)
     {
         var (applicationId, _) = ParseState(state);
         var token = await _quickBooks.ExchangeCodeAsync(code, ct);
+        var resolvedRealmId = string.IsNullOrWhiteSpace(realmId) ? "stub-realm" : realmId.Trim();
+
+        var accessToken = token.AccessToken;
+        var refreshToken = token.RefreshToken;
+        var expiresAt = token.ExpiresAt;
+
+        var sync = await _quickBooks.SyncFinancialDataAsync(accessToken, refreshToken, resolvedRealmId, ct);
+        if (sync.RefreshedTokens is not null)
+        {
+            accessToken = sync.RefreshedTokens.AccessToken;
+            refreshToken = sync.RefreshedTokens.RefreshToken ?? refreshToken;
+            expiresAt = sync.RefreshedTokens.ExpiresAt;
+        }
+
+        var metadataJson = BuildQuickBooksMetadataJson(sync.Snapshot);
         await UpsertConnectionAsync(
             applicationId,
             IntegrationProvider.QuickBooks,
-            token.AccessToken,
-            token.RefreshToken,
-            token.ExpiresAt,
+            accessToken,
+            refreshToken,
+            expiresAt,
+            resolvedRealmId,
+            metadataJson,
             ct);
+
+        var profile = await _db.FinancialProfiles.FirstOrDefaultAsync(f => f.ApplicationId == applicationId, ct)
+            ?? new FinancialProfile { ApplicationId = applicationId };
+
+        FinancialProfileService.ApplyQuickBooksBands(profile, sync.Snapshot);
+        await FinancialProfileService.UpsertQuickBooksMetricsAsync(_db, applicationId, sync.Snapshot, ct);
+
+        if (_db.Entry(profile).State == EntityState.Detached)
+            _db.FinancialProfiles.Add(profile);
+
+        await _db.SaveChangesAsync(ct);
+
+        var complete = await _funding.IsFinancialStepCompleteAsync(applicationId, ct);
+        await _onboarding.MarkStepAsync(
+            applicationId,
+            OnboardingStep.Financial,
+            complete ? StepStatus.Complete : StepStatus.InProgress,
+            ct);
+
         return true;
     }
 
@@ -160,6 +205,21 @@ internal sealed class IntegrationService
             }
         }
 
+        if (provider == IntegrationProvider.QuickBooks)
+        {
+            var profile = await _db.FinancialProfiles.FirstOrDefaultAsync(f => f.ApplicationId == applicationId, ct);
+            if (profile is not null)
+            {
+                profile.BandsLockedByIntegration = false;
+                profile.UpdatedAt = DateTime.UtcNow;
+            }
+
+            var metrics = await _db.FinancialIntegrationMetrics
+                .FirstOrDefaultAsync(m => m.ApplicationId == applicationId, ct);
+            if (metrics is not null)
+                _db.FinancialIntegrationMetrics.Remove(metrics);
+        }
+
         await _db.SaveChangesAsync(ct);
 
         if (provider == IntegrationProvider.OpenBanking)
@@ -172,8 +232,34 @@ internal sealed class IntegrationService
                 ct);
         }
 
+        if (provider == IntegrationProvider.QuickBooks)
+        {
+            var complete = await _funding.IsFinancialStepCompleteAsync(applicationId.Value, ct);
+            await _onboarding.MarkStepAsync(
+                applicationId.Value,
+                OnboardingStep.Financial,
+                complete ? StepStatus.Complete : StepStatus.InProgress,
+                ct);
+        }
+
         return true;
     }
+
+    private static string BuildQuickBooksMetadataJson(QuickBooksFinancialSnapshot snapshot) =>
+        JsonSerializer.Serialize(new
+        {
+            companyName = snapshot.CompanyName,
+            snapshot.Currency,
+            snapshot.HasReportData,
+            snapshot.PeriodStart,
+            snapshot.PeriodEnd,
+            annualRevenue = snapshot.AnnualRevenue,
+            snapshot.NetIncome,
+            cashBalance = snapshot.CashBalance,
+            outstandingDebt = snapshot.OutstandingDebt,
+            totalLiabilities = snapshot.TotalLiabilities,
+            syncedAt = DateTime.UtcNow,
+        });
 
     private async Task UpsertConnectionAsync(
         Guid applicationId,
@@ -181,6 +267,8 @@ internal sealed class IntegrationService
         string accessToken,
         string? refreshToken,
         DateTime? expiresAt,
+        string? externalRealmId,
+        string? providerMetadataJson,
         CancellationToken ct)
     {
         var connection = await _db.IntegrationConnections
@@ -217,6 +305,12 @@ internal sealed class IntegrationService
 
         connection.ConnectedAt = DateTime.UtcNow;
         connection.ExpiresAt = expiresAt;
+
+        if (!string.IsNullOrWhiteSpace(externalRealmId))
+            connection.ExternalRealmId = externalRealmId;
+
+        if (!string.IsNullOrWhiteSpace(providerMetadataJson))
+            connection.ProviderMetadataJson = providerMetadataJson;
 
         if (_db.Entry(connection).State == EntityState.Detached)
             _db.IntegrationConnections.Add(connection);

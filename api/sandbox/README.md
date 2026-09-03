@@ -42,7 +42,13 @@ cp secrets.env.example secrets.env   # paste Intuit Development keys + OAuth tok
 ./test.sh all
 ```
 
-See `quickbooks/README.md` for where each key comes from in the Intuit portal.
+See `quickbooks/README.md` and `quickbooks/SPEC-MAP.md` for where each key comes from in the Intuit portal.
+
+```bash
+cd api/sandbox/quickbooks/ui
+./run-ui.sh
+# open http://127.0.0.1:8769
+```
 
 ## Quick start (Xero)
 

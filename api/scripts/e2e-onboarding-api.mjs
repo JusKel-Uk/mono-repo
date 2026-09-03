@@ -440,12 +440,40 @@ async function runFullCoverage(token) {
     '/funding/integrations/xero/callback',
   );
 
-  await testOAuthProvider(
-    token,
-    'quickbooks',
-    '/funding/integrations/quickbooks/authorize',
+  const qbAuth = await api('POST', '/funding/integrations/quickbooks/authorize', token);
+  log('POST /funding/integrations/quickbooks/authorize', qbAuth.status === 200 && !!qbAuth.data?.state, {
+    status: qbAuth.status,
+    hasUrl: !!qbAuth.data?.authorizationUrl,
+  });
+
+  const qbCb = await oauthCallback(
     '/funding/integrations/quickbooks/callback',
+    'e2e-stub-auth-code',
+    qbAuth.data.state,
   );
+  log('GET /funding/integrations/quickbooks/callback', qbCb.status === 200, {
+    status: qbCb.status,
+    provider: qbCb.data?.provider,
+  });
+
+  const financialAfterQb = await apiGet('/funding/applications/current/financial-profile', token);
+  log('GET /funding/.../financial-profile (after QB connect)', financialAfterQb.status === 200
+    && financialAfterQb.data?.bandsLockedByIntegration === true
+    && financialAfterQb.data?.annualRevenueBand != null
+    && financialAfterQb.data?.integrationMetrics?.provider === 3
+    && financialAfterQb.data?.integrationMetrics?.annualRevenue != null, {
+    status: financialAfterQb.status,
+    bandsLocked: financialAfterQb.data?.bandsLockedByIntegration,
+    annualRevenueBand: financialAfterQb.data?.annualRevenueBand,
+    integrationMetricsProvider: financialAfterQb.data?.integrationMetrics?.provider,
+    annualRevenue: financialAfterQb.data?.integrationMetrics?.annualRevenue,
+    qbConnected: financialAfterQb.data?.integrations?.some(
+      (i) => i.provider === 3 && i.isConnected,
+    ),
+  });
+
+  const qbDel = await apiDelete('/funding/integrations/quickbooks', token);
+  log('DELETE /funding/integrations/quickbooks', qbDel.status === 204, { status: qbDel.status });
 
   const financialRefresh = await api('PUT', '/funding/applications/current/financial-profile', token, financialProfileBody);
   log('PUT /funding/.../financial-profile (refresh after integrations)', financialRefresh.status === 200, {

@@ -225,9 +225,9 @@ Store `accessToken` and attach to all subsequent requests.
 | Connect Xero | `POST` | `/funding/integrations/xero/authorize` | Same pattern |
 | Xero callback | `GET` | `/funding/integrations/xero/callback` | |
 | Disconnect Xero | `DELETE` | `/funding/integrations/xero` | |
-| Connect QuickBooks | `POST` | `/funding/integrations/quickbooks/authorize` | |
-| QB callback | `GET` | `/funding/integrations/quickbooks/callback` | |
-| Disconnect QB | `DELETE` | `/funding/integrations/quickbooks` | |
+| Connect QuickBooks | `POST` | `/funding/integrations/quickbooks/authorize` | Returns `{ authorizationUrl, state }` — open URL in browser |
+| QB callback | `GET` | `/funding/integrations/quickbooks/callback?code=...&state=...&realmId=...` | Backend syncs QB reports (P&amp;L, balance sheet, AR/AP, cash flow, accounts), persists **integration metrics** + 5 bands + `bandsLockedByIntegration: true`; refresh financial profile |
+| Disconnect QB | `DELETE` | `/funding/integrations/quickbooks` | Unlocks bands (same as Open Banking) |
 | Upload file | `POST` | `/funding/evidence` | `multipart/form-data`, field `file` |
 | Preview / download file | `GET` | `/funding/evidence/{evidenceId}/download` | Optional query `download=true` for attachment |
 | Remove file | `DELETE` | `/funding/evidence/{evidenceId}` | Draft only |
@@ -241,7 +241,7 @@ Store `accessToken` and attach to all subsequent requests.
 
 The browser cannot use a plain `<a href>` — there is no public blob URL. Fetch with the JWT, then use `URL.createObjectURL(blob)` (frontend developer).
 
-**GET response** includes `evidence[]` (empty array when none uploaded). Each item:
+**GET response** includes `evidence[]` (empty array when none uploaded) and optional `integrationMetrics` (populated after QuickBooks connect; `null` when no accounting sync). Each evidence item:
 
 ```json
 {
@@ -251,6 +251,55 @@ The browser cannot use a plain `<a href>` — there is no public blob URL. Fetch
   "contentType": "application/pdf",
   "fileSizeBytes": 512000,
   "uploadedAt": "2026-01-15T10:00:00Z"
+}
+```
+
+**`integrationMetrics`** (read-only; QuickBooks today) — Layer-2 accounting amounts from QBO reports. All money fields are `decimal` in API JSON (not bands). `null` when user has not connected QuickBooks or metrics were cleared on disconnect.
+
+| Field | Type | Source |
+|-------|------|--------|
+| `provider` | int | `3` = QuickBooks |
+| `currency` | string | QBO report header |
+| `periodStart` / `periodEnd` | date | Configured report window (`Integrations:QuickBooks:ReportStartDate/EndDate`) |
+| `priorPeriodEnd` | date? | Prior-year P&amp;L window end |
+| `balanceSheetAsOf` | date | Balance sheet as-of date |
+| `syncedAt` | datetime | Last successful QB sync |
+| `annualRevenue` | decimal? | P&amp;L total income |
+| `priorAnnualRevenue` | decimal? | Prior-year revenue |
+| `grossProfit` | decimal? | P&amp;L |
+| `operatingProfit` | decimal? | P&amp;L net operating income |
+| `netIncome` | decimal? | P&amp;L net income |
+| `priorNetIncome` | decimal? | Prior-year net income |
+| `ebitda` | decimal? | Derived when D&amp;A/interest/tax lines exist |
+| `cashBalance` | decimal? | Bank accounts |
+| `accountsReceivable` | decimal? | Aged AR / A/R accounts |
+| `accountsPayable` | decimal? | Aged AP / A/P accounts |
+| `currentAssets` / `currentLiabilities` | decimal? | Balance sheet |
+| `workingCapital` | decimal? | Derived |
+| `totalAssets` / `totalLiabilities` / `totalEquity` | decimal? | Balance sheet |
+| `outstandingDebt` | decimal? | Loan/LOC account types (not trade payables) |
+| `operatingCashFlow` | decimal? | Cash flow statement |
+| `currentRatio` / `debtToAssets` / `profitMargin` | decimal? | Derived ratios |
+| `revenueGrowthYoY` / `netIncomeGrowthYoY` | decimal? | YoY trends (null if prior year empty) |
+| `accountCount` | int | Chart of accounts fetched |
+| `hasReportData` / `priorPeriodHasReportData` | bool | QBO `NoReportData` flags |
+
+Example snippet:
+
+```json
+{
+  "integrationMetrics": {
+    "provider": 3,
+    "currency": "USD",
+    "periodStart": "2026-01-01",
+    "periodEnd": "2026-12-31",
+    "annualRevenue": 10200.77,
+    "netIncome": 1642.46,
+    "cashBalance": 2001.00,
+    "workingCapital": 3809.96,
+    "currentRatio": 1.62,
+    "syncedAt": "2026-09-02T16:00:00Z"
+  }
 }
 ```
 

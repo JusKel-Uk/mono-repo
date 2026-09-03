@@ -1,0 +1,10 @@
+{
+  "_note": "Cash flow statement (accounting view — not Open Banking transactions).",
+  "method": "GET",
+  "url": "{QUICKBOOKS_API_BASE_URL}/{QUICKBOOKS_REALM_ID}/reports/CashFlow?start_date={QUICKBOOKS_REPORT_START_DATE}&end_date={QUICKBOOKS_REPORT_END_DATE}&minorversion={QUICKBOOKS_MINOR_VERSION}",
+  "headers": {
+    "Accept": "application/json",
+    "Authorization": "Bearer {QUICKBOOKS_ACCESS_TOKEN}",
+    "Content-Type": "application/json"
+  }
+}

@@ -2,6 +2,7 @@ using funding.Contracts;
 using funding.Core.Entities;
 using funding.Core.Persistence;
 using juskel.Integrations.OpenBanking;
+using juskel.Integrations.QuickBooks;
 using Microsoft.EntityFrameworkCore;
 using onboarding.Contracts;
 
@@ -38,13 +39,14 @@ internal sealed class FinancialProfileService
             i.Provider == IntegrationProvider.OpenBanking && i.IsConnected);
 
         var evidence = await LoadEvidenceAsync(applicationId.Value, ct);
+        var integrationMetrics = await LoadIntegrationMetricsAsync(applicationId.Value, ct);
 
-        if (profile is null && !integrations.Any(i => i.IsConnected) && evidence.Count == 0)
+        if (profile is null && !integrations.Any(i => i.IsConnected) && evidence.Count == 0 && integrationMetrics is null)
             return null;
 
         profile ??= new FinancialProfile { ApplicationId = applicationId.Value, UpdatedAt = DateTime.UtcNow };
 
-        return Map(profile, integrations, isOpenBankingConnected, evidence);
+        return Map(profile, integrations, isOpenBankingConnected, evidence, integrationMetrics);
     }
 
     public async Task<FinancialProfileResponse?> UpsertAsync(
@@ -58,13 +60,17 @@ internal sealed class FinancialProfileService
         var profile = await _db.FinancialProfiles
             .FirstOrDefaultAsync(f => f.ApplicationId == applicationId, ct);
 
-        var openBankingConnected = await _db.IntegrationConnections
+        var integrationLocked = await _db.IntegrationConnections
             .AsNoTracking()
-            .AnyAsync(i => i.ApplicationId == applicationId && i.Provider == IntegrationProvider.OpenBanking, ct);
+            .AnyAsync(
+                i => i.ApplicationId == applicationId
+                    && (i.Provider == IntegrationProvider.OpenBanking
+                        || i.Provider == IntegrationProvider.QuickBooks),
+                ct);
 
         profile ??= new FinancialProfile { ApplicationId = applicationId };
 
-        if (profile.BandsLockedByIntegration || openBankingConnected)
+        if (profile.BandsLockedByIntegration || integrationLocked)
             throw new InvalidOperationException("Financial bands are locked by an active integration.");
 
         profile.AnnualRevenueBand = request.AnnualRevenueBand;
@@ -85,9 +91,63 @@ internal sealed class FinancialProfileService
         await _onboarding.MarkStepAsync(applicationId, OnboardingStep.Financial, status, ct);
 
         var integrations = await _funding.GetIntegrationStatusAsync(applicationId, ct);
+        var isOpenBankingConnected = integrations.Any(i =>
+            i.Provider == IntegrationProvider.OpenBanking && i.IsConnected);
         var evidence = await LoadEvidenceAsync(applicationId, ct);
-        return Map(profile, integrations, openBankingConnected, evidence);
+        var integrationMetrics = await LoadIntegrationMetricsAsync(applicationId, ct);
+        return Map(profile, integrations, isOpenBankingConnected, evidence, integrationMetrics);
     }
+
+    internal static void ApplyQuickBooksBands(FinancialProfile profile, QuickBooksFinancialSnapshot snapshot)
+    {
+        if (snapshot.AnnualRevenue is > 0m)
+        {
+            profile.AnnualRevenueBand = MapAnnualRevenue(snapshot.AnnualRevenue.Value);
+            profile.AvgMonthlyRevenue = MapAvgMonthlyRevenue(snapshot.AnnualRevenue.Value / 12m);
+        }
+        else if (snapshot.CashBalance > 0m)
+        {
+            profile.AnnualRevenueBand = MapAnnualRevenue(snapshot.CashBalance * 12m);
+            profile.AvgMonthlyRevenue = MapAvgMonthlyRevenue(snapshot.CashBalance);
+        }
+
+        profile.EbitdaBand = MapEbitdaBand(snapshot.AnnualRevenue, snapshot.NetIncome);
+
+        var debtAmount = snapshot.OutstandingDebt > 0m
+            ? snapshot.OutstandingDebt
+            : snapshot.TotalLiabilities ?? 0m;
+        profile.ExistingDebtBand = MapExistingDebt(debtAmount);
+        profile.CashReserves = MapCashReservesMonths(snapshot.CashBalance);
+        profile.BandsLockedByIntegration = true;
+        profile.UpdatedAt = DateTime.UtcNow;
+    }
+
+    private static EbitdaMarginBand MapEbitdaBand(decimal? totalIncome, decimal? netIncome)
+    {
+        if (totalIncome is > 0m && netIncome.HasValue)
+        {
+            var margin = netIncome.Value / totalIncome.Value;
+            return margin switch
+            {
+                < 0m => EbitdaMarginBand.LossMaking,
+                < 0.05m => EbitdaMarginBand.Margin0To5,
+                < 0.15m => EbitdaMarginBand.Margin5To15,
+                < 0.30m => EbitdaMarginBand.Margin15To30,
+                _ => EbitdaMarginBand.Over30Margin,
+            };
+        }
+
+        return EbitdaMarginBand.Margin5To15;
+    }
+
+    private static ExistingDebtBand MapExistingDebt(decimal liabilities) => liabilities switch
+    {
+        <= 0m => ExistingDebtBand.NoDebt,
+        < 50_000m => ExistingDebtBand.Under50K,
+        < 250_000m => ExistingDebtBand.From50KTo250K,
+        < 1_000_000m => ExistingDebtBand.From250KTo1M,
+        _ => ExistingDebtBand.Over1M,
+    };
 
     internal static void ApplyOpenBankingBands(FinancialProfile profile, IReadOnlyList<OpenBankingAccountSummary> accounts)
     {
@@ -117,11 +177,74 @@ internal sealed class FinancialProfileService
                 e.UploadedAt))
             .ToListAsync(ct);
 
+    private async Task<FinancialIntegrationMetricsDto?> LoadIntegrationMetricsAsync(
+        Guid applicationId,
+        CancellationToken ct)
+    {
+        var metrics = await _db.FinancialIntegrationMetrics
+            .AsNoTracking()
+            .FirstOrDefaultAsync(m => m.ApplicationId == applicationId, ct);
+
+        return metrics is null ? null : FinancialIntegrationMetricsMapper.ToDto(metrics);
+    }
+
+    internal static async Task UpsertQuickBooksMetricsAsync(
+        FundingDbContext db,
+        Guid applicationId,
+        QuickBooksFinancialSnapshot snapshot,
+        CancellationToken ct)
+    {
+        var metrics = await db.FinancialIntegrationMetrics
+            .FirstOrDefaultAsync(m => m.ApplicationId == applicationId, ct);
+
+        var mapped = FinancialIntegrationMetricsMapper.FromQuickBooksSnapshot(applicationId, snapshot);
+        if (metrics is null)
+        {
+            db.FinancialIntegrationMetrics.Add(mapped);
+            return;
+        }
+
+        metrics.Provider = mapped.Provider;
+        metrics.Currency = mapped.Currency;
+        metrics.PeriodStart = mapped.PeriodStart;
+        metrics.PeriodEnd = mapped.PeriodEnd;
+        metrics.PriorPeriodEnd = mapped.PriorPeriodEnd;
+        metrics.BalanceSheetAsOf = mapped.BalanceSheetAsOf;
+        metrics.SyncedAt = mapped.SyncedAt;
+        metrics.AnnualRevenue = mapped.AnnualRevenue;
+        metrics.PriorAnnualRevenue = mapped.PriorAnnualRevenue;
+        metrics.GrossProfit = mapped.GrossProfit;
+        metrics.OperatingProfit = mapped.OperatingProfit;
+        metrics.NetIncome = mapped.NetIncome;
+        metrics.PriorNetIncome = mapped.PriorNetIncome;
+        metrics.Ebitda = mapped.Ebitda;
+        metrics.CashBalance = mapped.CashBalance;
+        metrics.AccountsReceivable = mapped.AccountsReceivable;
+        metrics.AccountsPayable = mapped.AccountsPayable;
+        metrics.CurrentAssets = mapped.CurrentAssets;
+        metrics.CurrentLiabilities = mapped.CurrentLiabilities;
+        metrics.WorkingCapital = mapped.WorkingCapital;
+        metrics.TotalAssets = mapped.TotalAssets;
+        metrics.TotalLiabilities = mapped.TotalLiabilities;
+        metrics.TotalEquity = mapped.TotalEquity;
+        metrics.OutstandingDebt = mapped.OutstandingDebt;
+        metrics.OperatingCashFlow = mapped.OperatingCashFlow;
+        metrics.CurrentRatio = mapped.CurrentRatio;
+        metrics.DebtToAssets = mapped.DebtToAssets;
+        metrics.ProfitMargin = mapped.ProfitMargin;
+        metrics.RevenueGrowthYoY = mapped.RevenueGrowthYoY;
+        metrics.NetIncomeGrowthYoY = mapped.NetIncomeGrowthYoY;
+        metrics.AccountCount = mapped.AccountCount;
+        metrics.HasReportData = mapped.HasReportData;
+        metrics.PriorPeriodHasReportData = mapped.PriorPeriodHasReportData;
+    }
+
     private static FinancialProfileResponse Map(
         FinancialProfile profile,
         IReadOnlyList<IntegrationStatusDto> integrations,
         bool isOpenBankingConnected,
-        IReadOnlyList<EvidenceResponse> evidence) =>
+        IReadOnlyList<EvidenceResponse> evidence,
+        FinancialIntegrationMetricsDto? integrationMetrics) =>
         new(
             profile.ApplicationId,
             profile.AnnualRevenueBand,
@@ -133,6 +256,7 @@ internal sealed class FinancialProfileService
             isOpenBankingConnected,
             integrations,
             evidence,
+            integrationMetrics,
             profile.UpdatedAt);
 
     private static AnnualRevenueBand MapAnnualRevenue(decimal annualAmount) => annualAmount switch

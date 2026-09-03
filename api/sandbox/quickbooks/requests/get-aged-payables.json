@@ -1,0 +1,10 @@
+{
+  "_note": "Aged payables — creditor ageing as of report date.",
+  "method": "GET",
+  "url": "{QUICKBOOKS_API_BASE_URL}/{QUICKBOOKS_REALM_ID}/reports/AgedPayables?report_date={QUICKBOOKS_REPORT_END_DATE}&minorversion={QUICKBOOKS_MINOR_VERSION}",
+  "headers": {
+    "Accept": "application/json",
+    "Authorization": "Bearer {QUICKBOOKS_ACCESS_TOKEN}",
+    "Content-Type": "application/json"
+  }
+}

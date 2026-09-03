@@ -18,6 +18,8 @@ internal sealed class FundingDbContext : DbContext
 
     public DbSet<FinancialEvidence> FinancialEvidence => Set<FinancialEvidence>();
 
+    public DbSet<FinancialIntegrationMetrics> FinancialIntegrationMetrics => Set<FinancialIntegrationMetrics>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.HasDefaultSchema("funding");
@@ -25,5 +27,6 @@ internal sealed class FundingDbContext : DbContext
         modelBuilder.ApplyConfiguration(new FundingProfileEntityConfiguration());
         modelBuilder.ApplyConfiguration(new IntegrationConnectionEntityConfiguration());
         modelBuilder.ApplyConfiguration(new FinancialEvidenceEntityConfiguration());
+        modelBuilder.ApplyConfiguration(new FinancialIntegrationMetricsEntityConfiguration());
     }
 }

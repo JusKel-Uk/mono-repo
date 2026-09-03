@@ -20,11 +20,15 @@ internal sealed class FundingModule : IFundingModule
         if (profile is null)
             return false;
 
-        var openBankingConnected = await _db.IntegrationConnections
+        var integrationConnected = await _db.IntegrationConnections
             .AsNoTracking()
-            .AnyAsync(i => i.ApplicationId == applicationId && i.Provider == IntegrationProvider.OpenBanking, ct);
+            .AnyAsync(
+                i => i.ApplicationId == applicationId
+                    && (i.Provider == IntegrationProvider.OpenBanking
+                        || i.Provider == IntegrationProvider.QuickBooks),
+                ct);
 
-        if (openBankingConnected)
+        if (integrationConnected && profile.BandsLockedByIntegration)
             return true;
 
         return profile.AnnualRevenueBand.HasValue
