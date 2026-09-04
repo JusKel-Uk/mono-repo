@@ -37,6 +37,9 @@ import {
   EXISTING_DEBT_BAND,
   CASH_RESERVES_BAND,
   AVG_MONTHLY_REVENUE_BAND,
+  GROSS_MARGIN_BAND,
+  REVENUE_GROWTH_BAND,
+  RECEIVABLES_BAND,
 } from '@/lib/onboarding/enums';
 
 /* ---- Step 1: Company setup ---- */
@@ -93,10 +96,13 @@ export type BusinessProfileInput = z.infer<typeof businessProfileSchema>;
 // All bands are self-declared and optional; options come from /lookups.
 export const financialProfileSchema = z.object({
   annualRevenueBand: optionalEnumSelect(ANNUAL_REVENUE_BAND),
-  ebitdaBand: optionalEnumSelect(EBITDA_BAND),
-  existingDebtBand: optionalEnumSelect(EXISTING_DEBT_BAND),
-  cashReserves: optionalEnumSelect(CASH_RESERVES_BAND),
   avgMonthlyRevenue: optionalEnumSelect(AVG_MONTHLY_REVENUE_BAND),
+  grossMarginBand: optionalEnumSelect(GROSS_MARGIN_BAND),
+  ebitdaBand: optionalEnumSelect(EBITDA_BAND),
+  revenueGrowthBand: optionalEnumSelect(REVENUE_GROWTH_BAND),
+  existingDebtBand: optionalEnumSelect(EXISTING_DEBT_BAND),
+  receivablesBand: optionalEnumSelect(RECEIVABLES_BAND),
+  cashReserves: optionalEnumSelect(CASH_RESERVES_BAND),
 });
 export type FinancialProfileInput = z.infer<typeof financialProfileSchema>;
 

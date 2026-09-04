@@ -182,7 +182,52 @@ export type IntegrationProvider = 1 | 2 | 3; // OpenBanking · Xero · QuickBook
 
 export type FinancialIntegration = {
   provider: IntegrationProvider;
-  connected: boolean;
+  /** Matches the backend `IntegrationStatusDto.IsConnected` (camelCased). */
+  isConnected: boolean;
+  connectedAt?: string | null;
+  expiresAt?: string | null;
+};
+
+/**
+ * Verified financial figures from a connected accounting source (QuickBooks /
+ * Xero). This is the "gold-standard" metric set the bands are derived from —
+ * mirrors the backend `FinancialIntegrationMetricsDto`. All money fields are in
+ * `currency`.
+ */
+export type FinancialIntegrationMetrics = {
+  provider: IntegrationProvider;
+  currency: string;
+  periodStart: string;
+  periodEnd: string;
+  priorPeriodEnd?: string | null;
+  balanceSheetAsOf: string;
+  syncedAt: string;
+  annualRevenue?: number | null;
+  priorAnnualRevenue?: number | null;
+  grossProfit?: number | null;
+  operatingProfit?: number | null;
+  netIncome?: number | null;
+  priorNetIncome?: number | null;
+  ebitda?: number | null;
+  cashBalance?: number | null;
+  accountsReceivable?: number | null;
+  accountsPayable?: number | null;
+  currentAssets?: number | null;
+  currentLiabilities?: number | null;
+  workingCapital?: number | null;
+  totalAssets?: number | null;
+  totalLiabilities?: number | null;
+  totalEquity?: number | null;
+  outstandingDebt?: number | null;
+  operatingCashFlow?: number | null;
+  currentRatio?: number | null;
+  debtToAssets?: number | null;
+  profitMargin?: number | null;
+  revenueGrowthYoY?: number | null;
+  netIncomeGrowthYoY?: number | null;
+  accountCount?: number;
+  hasReportData?: boolean;
+  priorPeriodHasReportData?: boolean;
 };
 
 export type FinancialProfile = {
@@ -191,9 +236,16 @@ export type FinancialProfile = {
   existingDebtBand?: number | null;
   cashReserves?: number | null;
   avgMonthlyRevenue?: number | null;
+  // New bands — backend support pending; until then these arrive empty and are
+  // derived client-side from `integrationMetrics`.
+  grossMarginBand?: number | null;
+  revenueGrowthBand?: number | null;
+  receivablesBand?: number | null;
   /** When true, connected-source fields are read-only; skip them on PUT. */
   bandsLockedByIntegration?: boolean;
+  isOpenBankingConnected?: boolean;
   integrations?: FinancialIntegration[];
+  integrationMetrics?: FinancialIntegrationMetrics | null;
 };
 
 /** All bands are optional — the financial profile is self-declared. */
@@ -203,6 +255,9 @@ export type UpsertFinancialProfileRequest = {
   existingDebtBand?: number | null;
   cashReserves?: number | null;
   avgMonthlyRevenue?: number | null;
+  grossMarginBand?: number | null;
+  revenueGrowthBand?: number | null;
+  receivablesBand?: number | null;
 };
 
 export function getFinancialProfile() {

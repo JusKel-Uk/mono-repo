@@ -181,18 +181,66 @@ export function toFinancialProfileRequest(
     existingDebtBand: toInt(v.existingDebtBand) ?? null,
     cashReserves: toInt(v.cashReserves) ?? null,
     avgMonthlyRevenue: toInt(v.avgMonthlyRevenue) ?? null,
+    grossMarginBand: toInt(v.grossMarginBand) ?? null,
+    revenueGrowthBand: toInt(v.revenueGrowthBand) ?? null,
+    receivablesBand: toInt(v.receivablesBand) ?? null,
   };
 }
 
 export function fromFinancialProfile(
   d: FinancialProfile,
 ): FinancialProfileInput {
+  // The three new bands aren't derived server-side yet, so fall back to a
+  // client-side derivation from the verified integration metrics. Once the
+  // backend returns them, the server value (`d.*Band`) takes precedence.
+  const derived = deriveMetricBands(d.integrationMetrics);
   return {
     annualRevenueBand: toStr(d.annualRevenueBand),
+    avgMonthlyRevenue: toStr(d.avgMonthlyRevenue),
     ebitdaBand: toStr(d.ebitdaBand),
     existingDebtBand: toStr(d.existingDebtBand),
     cashReserves: toStr(d.cashReserves),
-    avgMonthlyRevenue: toStr(d.avgMonthlyRevenue),
+    grossMarginBand: toStr(d.grossMarginBand) || derived.grossMarginBand,
+    revenueGrowthBand: toStr(d.revenueGrowthBand) || derived.revenueGrowthBand,
+    receivablesBand: toStr(d.receivablesBand) || derived.receivablesBand,
+  };
+}
+
+/** First band whose upper bound the value falls under (bounds ascending). */
+function bandFor(
+  value: number | null | undefined,
+  bounds: number[],
+): string {
+  if (value == null) return '';
+  const idx = bounds.findIndex((b) => value < b);
+  return String(idx === -1 ? bounds.length + 1 : idx + 1);
+}
+
+/**
+ * Derive the three new bands from the verified metric set, mirroring the
+ * backend's own band thresholds (percentages as fractions, £ amounts raw).
+ */
+function deriveMetricBands(
+  m: FinancialProfile['integrationMetrics'],
+): {
+  grossMarginBand: string;
+  revenueGrowthBand: string;
+  receivablesBand: string;
+} {
+  if (!m) return { grossMarginBand: '', revenueGrowthBand: '', receivablesBand: '' };
+
+  const grossMargin =
+    m.annualRevenue && m.annualRevenue > 0 && m.grossProfit != null
+      ? m.grossProfit / m.annualRevenue
+      : null;
+
+  return {
+    // <10 / 10-25 / 25-50 / 50-75 / >75 %
+    grossMarginBand: bandFor(grossMargin, [0.1, 0.25, 0.5, 0.75]),
+    // Declining / 0-10 / 10-25 / 25-50 / >50 %
+    revenueGrowthBand: bandFor(m.revenueGrowthYoY, [0, 0.1, 0.25, 0.5]),
+    // None / <£50k / £50k-£250k / £250k-£1m / >£1m
+    receivablesBand: bandFor(m.accountsReceivable, [0.01, 50_000, 250_000, 1_000_000]),
   };
 }
 

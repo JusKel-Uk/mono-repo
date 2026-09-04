@@ -107,6 +107,32 @@ export const AVG_MONTHLY_REVENUE_BAND: EnumOption[] = [
   { value: 5, label: 'Over £1m' },
 ];
 
+// New bands added from the QuickBooks/Xero metric set (self-declared or
+// integration-derived). Backend support pending — see the PUT payload spec.
+export const GROSS_MARGIN_BAND: EnumOption[] = [
+  { value: 1, label: 'Under 10%' },
+  { value: 2, label: '10-25%' },
+  { value: 3, label: '25-50%' },
+  { value: 4, label: '50-75%' },
+  { value: 5, label: 'Over 75%' },
+];
+
+export const REVENUE_GROWTH_BAND: EnumOption[] = [
+  { value: 1, label: 'Declining' },
+  { value: 2, label: '0-10%' },
+  { value: 3, label: '10-25%' },
+  { value: 4, label: '25-50%' },
+  { value: 5, label: 'Over 50%' },
+];
+
+export const RECEIVABLES_BAND: EnumOption[] = [
+  { value: 1, label: 'None' },
+  { value: 2, label: 'Under £50k' },
+  { value: 3, label: '£50k-£250k' },
+  { value: 4, label: '£250k-£1m' },
+  { value: 5, label: 'Over £1m' },
+];
+
 export const FUNDING_PURPOSE: EnumOption[] = [
   { value: 1, label: 'Working capital' },
   { value: 2, label: 'Equipment' },
@@ -183,6 +209,9 @@ export const LOOKUP = {
   existingDebtBand: { key: 'existingDebtBand', fallback: EXISTING_DEBT_BAND },
   cashReserves: { key: 'cashReserves', fallback: CASH_RESERVES_BAND },
   avgMonthlyRevenue: { key: 'avgMonthlyRevenue', fallback: AVG_MONTHLY_REVENUE_BAND },
+  grossMarginBand: { key: 'grossMarginBand', fallback: GROSS_MARGIN_BAND },
+  revenueGrowthBand: { key: 'revenueGrowthBand', fallback: REVENUE_GROWTH_BAND },
+  receivablesBand: { key: 'receivablesBand', fallback: RECEIVABLES_BAND },
   fundingPurpose: { key: 'fundingPurpose', fallback: FUNDING_PURPOSE },
   fundingUrgency: { key: 'fundingUrgency', fallback: FUNDING_URGENCY },
   sustainabilityAnswer: { key: 'sustainabilityAnswer', fallback: SUSTAINABILITY_ANSWER },
