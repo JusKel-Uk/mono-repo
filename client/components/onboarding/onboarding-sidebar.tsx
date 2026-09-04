@@ -8,7 +8,7 @@ export function OnboardingSidebar({
 }) {
   return (
     <AppSidebar
-      locked
+      locked={false}
       context={{
         title: currentStepTitle,
         badge: 'ROLE',

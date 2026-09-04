@@ -9,12 +9,11 @@ import { DashboardShell } from '@/components/dashboard/dashboard-shell';
 import { ScoreGauge } from './score-gauge';
 
 const CARD = 'rounded-2xl border border-gray-200 bg-white';
-const W = 'w-[328px]';
 
 /* ---------- big number "80 / 100" ---------- */
 function BigScore({ value, max = 100 }: { value: number; max?: number }) {
   return (
-    <p className='font-semibold text-carbon-black'>
+    <p className='whitespace-nowrap font-semibold text-carbon-black'>
       <span className='text-[56px] leading-[72px]'>{value}</span>
       <span className='text-[40px] leading-[52px]'> </span>
       <span className='text-[20px] font-normal leading-[28px] text-gray-500'>
@@ -41,8 +40,8 @@ function ScoreCard({
   className?: string;
 }) {
   return (
-    <div className={cn(CARD, W, 'overflow-hidden p-[15px]', className)}>
-      <div className='flex flex-col gap-5'>
+    <div className={cn(CARD, 'w-full overflow-hidden p-[15px]', className)}>
+      <div className='flex h-full flex-col justify-between gap-5'>
         <div className='flex flex-col gap-0.5'>
           <p className='text-label-lg font-semibold text-carbon-black'>{label}</p>
           <p className='text-label-md text-gray-500'>{desc}</p>
@@ -132,118 +131,111 @@ export function DashboardOverview({ greeting }: { greeting: string }) {
       subtitle="Here’s what your Sustainability Finance score currently looks like."
       notifications={2}
     >
-      {/* ---------- Scores ---------- */}
-      <div className='flex flex-wrap gap-2'>
-        {/* Overall SFS + gauge */}
-        <div
-          className={cn(
-            W,
-            'relative h-[344px] overflow-hidden rounded-2xl border border-gray-200 bg-primary',
-          )}
-        >
-          <div className='absolute left-[15px] top-[19px] flex w-[296px] flex-col gap-5'>
-            <p className='w-full text-center text-label-md font-semibold text-mineral-white'>
-              OVERALL SUSTAINABILITY FINANCE SCORE
-            </p>
-            <div className='flex flex-col items-center gap-2'>
-              <ScoreGauge />
-              <div className='flex w-full flex-col items-center gap-2 text-center'>
-                <p className='font-semibold text-mineral-white'>
-                  <span className='text-[56px] leading-[72px]'>80</span>
-                  <span className='text-[40px] leading-[52px]'> </span>
-                  <span className='text-[20px] font-normal leading-[28px] text-gray-400'>
-                    / 100
-                  </span>
-                </p>
-                <div className='flex w-full flex-col items-center gap-1'>
-                  <p className='text-h6 font-semibold text-mineral-white'>
-                    ADVANCED
-                  </p>
-                  <p className='text-label-md text-gray-300'>
-                    Integrated assessment of sustainability capability, financial
-                    resilience, and banking behaviour.
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* ESG Intelligence + breakdown */}
-        <div className={cn(CARD, W, 'h-[344px] overflow-hidden p-[15px]')}>
-          <div className='flex flex-col gap-5'>
-            <div className='flex flex-col gap-0.5'>
-              <p className='text-label-lg font-semibold text-carbon-black'>
-                ESG INTELLIGENCE SCORE
+      {/* ---------- Scores ----------
+        Figma is a 4-column band: Overall | ESG | (Banking/Financial over
+        Funding/Confidence). Columns are fluid so it holds the layout below the
+        1336px design width, collapsing to 2 then 1 column on smaller screens. */}
+      <div className='grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-4'>
+        {/* Overall SFS + gauge (spans both rows on wide) */}
+        <div className='flex min-h-[344px] flex-col gap-5 overflow-hidden rounded-2xl border border-gray-200 bg-primary p-[15px] sm:col-span-2 xl:col-span-1 xl:row-span-2'>
+          <p className='text-center text-label-md font-semibold text-mineral-white'>
+            OVERALL SUSTAINABILITY FINANCE SCORE
+          </p>
+          <div className='mx-auto flex w-full max-w-[296px] flex-col items-center gap-2'>
+            <ScoreGauge />
+            <div className='flex w-full flex-col items-center gap-2 text-center'>
+              <p className='whitespace-nowrap font-semibold text-mineral-white'>
+                <span className='text-[56px] leading-[72px]'>80</span>
+                <span className='text-[40px] leading-[52px]'> </span>
+                <span className='text-[20px] font-normal leading-[28px] text-gray-400'>
+                  / 100
+                </span>
               </p>
-              <p className='text-label-md text-gray-500'>
-                Your ESG score is gotten from combining your Environmental +
-                Social + Governance scores together.
-              </p>
-            </div>
-            <div className='flex flex-col gap-7'>
-              <div className='flex items-end justify-between'>
-                <BigScore value={80} />
-                <p className='text-body-sm text-right text-success-600'>
+              <div className='flex w-full flex-col items-center gap-1'>
+                <p className='text-h6 font-semibold text-mineral-white'>
                   ADVANCED
                 </p>
-              </div>
-              <div className='flex flex-col gap-2 rounded-2xl border border-gray-700 bg-primary p-[15px]'>
-                {ESG_BREAKDOWN.map((r, i) => (
-                  <div key={r.label} className='flex flex-col gap-2'>
-                    {i > 0 && <div className='h-px w-full bg-gray-700' />}
-                    <div className='flex items-center justify-between text-label-md font-medium text-mineral-white'>
-                      <span>{r.label}</span>
-                      <span>{r.value}</span>
-                    </div>
-                  </div>
-                ))}
+                <p className='text-label-md text-gray-300'>
+                  Integrated assessment of sustainability capability, financial
+                  resilience, and banking behaviour.
+                </p>
               </div>
             </div>
           </div>
         </div>
 
-        {/* right 2×2 cluster */}
-        <div className='flex w-[664px] flex-col gap-2'>
-          <div className='flex flex-wrap gap-2'>
-            <ScoreCard
-              className='h-[159px]'
-              label='BANKING INTELLIGENCE SCORE'
-              desc='Banking Behaviour and Relationships.'
-              value={80}
-              tier='ADVANCED'
-            />
-            <ScoreCard
-              className='h-[159px]'
-              label='FINANCIAL INTELLIGENCE SCORE'
-              desc='Financial Health and Resilience.'
-              value={80}
-              tier='ADVANCED'
-            />
+        {/* ESG Intelligence + breakdown (spans both rows on wide) */}
+        <div
+          className={cn(
+            CARD,
+            'flex min-h-[344px] flex-col gap-5 overflow-hidden p-[15px] sm:col-span-2 xl:col-span-1 xl:row-span-2',
+          )}
+        >
+          <div className='flex flex-col gap-0.5'>
+            <p className='text-label-lg font-semibold text-carbon-black'>
+              ESG INTELLIGENCE SCORE
+            </p>
+            <p className='text-label-md text-gray-500'>
+              Your ESG score is gotten from combining your Environmental +
+              Social + Governance scores together.
+            </p>
           </div>
-          <div className='flex flex-wrap gap-2'>
-            <ScoreCard
-              className='h-[177px]'
-              label='FUNDING READINESS INDEX'
-              desc="Indicates your business’s preparedness to engage with lenders and investors."
-              value={78}
-              tier='READY'
-            />
-            <ScoreCard
-              className='h-[177px]'
-              label='SCORE CONFIDENCE'
-              desc='Your confidence level is based on the quality and completeness of your evidence.'
-              value={85}
-              tier='HIGH'
-            />
+          <div className='flex flex-1 flex-col justify-between gap-7'>
+            <div className='flex items-end justify-between'>
+              <BigScore value={80} />
+              <p className='text-body-sm text-right text-success-600'>
+                ADVANCED
+              </p>
+            </div>
+            <div className='flex flex-col gap-2 rounded-2xl border border-gray-700 bg-primary p-[15px]'>
+              {ESG_BREAKDOWN.map((r, i) => (
+                <div key={r.label} className='flex flex-col gap-2'>
+                  {i > 0 && <div className='h-px w-full bg-gray-700' />}
+                  <div className='flex items-center justify-between text-label-md font-medium text-mineral-white'>
+                    <span>{r.label}</span>
+                    <span>{r.value}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
+
+        {/* 2×2 compact cluster — each fills one grid cell */}
+        <ScoreCard
+          className='min-h-[159px]'
+          label='BANKING INTELLIGENCE SCORE'
+          desc='Banking Behaviour and Relationships.'
+          value={80}
+          tier='ADVANCED'
+        />
+        <ScoreCard
+          className='min-h-[159px]'
+          label='FINANCIAL INTELLIGENCE SCORE'
+          desc='Financial Health and Resilience.'
+          value={80}
+          tier='ADVANCED'
+        />
+        <ScoreCard
+          className='min-h-[177px]'
+          label='FUNDING READINESS INDEX'
+          desc="Indicates your business’s preparedness to engage with lenders and investors."
+          value={78}
+          tier='READY'
+        />
+        <ScoreCard
+          className='min-h-[177px]'
+          label='SCORE CONFIDENCE'
+          desc='Your confidence level is based on the quality and completeness of your evidence.'
+          value={85}
+          tier='HIGH'
+        />
       </div>
 
       {/* ---------- Recalc + Priority actions ---------- */}
-      <div className='flex flex-wrap gap-3'>
+      <div className='flex flex-col gap-3 xl:flex-row'>
         {/* Next recalculation */}
-        <div className={cn(CARD, 'min-h-[324px] w-full p-7 xl:w-[776px]')}>
+        <div className={cn(CARD, 'min-h-[324px] p-7 xl:flex-[1.4]')}>
           <div className='flex flex-col gap-6'>
             <div className='flex flex-col gap-2'>
               <p className='text-body-lg text-gray-400'>
@@ -275,7 +267,7 @@ export function DashboardOverview({ greeting }: { greeting: string }) {
         </div>
 
         {/* Priority actions */}
-        <div className={cn(CARD, 'flex min-h-[324px] w-full flex-col justify-between p-7 xl:flex-1')}>
+        <div className={cn(CARD, 'flex min-h-[324px] flex-col justify-between p-7 xl:flex-1')}>
           <div className='flex flex-col gap-5'>
             <div className='flex items-center justify-between gap-4'>
               <p className='text-body-md font-medium text-primary'>
@@ -323,9 +315,9 @@ export function DashboardOverview({ greeting }: { greeting: string }) {
       </div>
 
       {/* ---------- Top funding matches + Carbon ---------- */}
-      <div className='flex flex-wrap gap-3'>
+      <div className='flex flex-col gap-3 xl:flex-row'>
         {/* Top funding matches */}
-        <div className={cn(CARD, 'min-h-[334px] w-full p-7 xl:w-[888px]')}>
+        <div className={cn(CARD, 'min-h-[334px] p-7 xl:flex-[2]')}>
           <div className='flex flex-col gap-[18px]'>
             <div className='flex items-center justify-between'>
               <p className='text-h5 font-medium text-carbon-black'>
@@ -372,7 +364,7 @@ export function DashboardOverview({ greeting }: { greeting: string }) {
         {/* Carbon emissions */}
         <div
           className={cn(
-            'min-h-[334px] w-full overflow-hidden rounded-lg border border-gray-300 bg-primary p-6 xl:flex-1',
+            'min-h-[334px] overflow-hidden rounded-lg border border-gray-300 bg-primary p-6 xl:flex-1',
           )}
         >
           <div className='flex flex-col gap-5'>
