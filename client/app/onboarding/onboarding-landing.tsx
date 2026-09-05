@@ -1,10 +1,12 @@
 'use client';
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { ArrowRight, Circle, CircleCheck, Loader2, Send } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { cn } from '@/lib/utils';
+import { ROUTES } from '@/lib/routes';
 import { ONBOARDING_STEPS, stepRoute } from '@/lib/onboarding/steps';
 import {
   useApplication,
@@ -17,6 +19,7 @@ import { useMounted } from '@/lib/hooks/use-mounted';
 import { OnboardingShell } from '@/components/onboarding/onboarding-shell';
 
 export function OnboardingLanding() {
+  const router = useRouter();
   const { data: app } = useApplication();
   const submit = useSubmitApplication();
   const user = useAuthStore((s) => s.user);
@@ -39,7 +42,11 @@ export function OnboardingLanding() {
 
   const onSubmit = () => {
     submit.mutate(undefined, {
-      onSuccess: () => toast.success('Application submitted for review'),
+      onSuccess: () => {
+        toast.success('Application submitted for review');
+        // Submission unlocks the SME dashboard — take them straight there.
+        router.push(ROUTES.sme.dashboard);
+      },
       onError: (err) =>
         toast.error(
           err instanceof ApiError && err.status === 409
@@ -120,6 +127,29 @@ export function OnboardingLanding() {
                 <Send className='size-5' />
               )}
             </button>
+          </div>
+        )}
+
+        {/* Already submitted — the dashboard is unlocked; give them the way in. */}
+        {submitted && (
+          <div className='flex flex-col gap-6 rounded-2xl border border-primary/50 bg-primary p-6 text-mineral-white'>
+            <div className='flex items-start gap-3'>
+              <CircleCheck className='size-6 shrink-0' />
+              <div className='flex flex-col gap-1'>
+                <p className='text-lg font-semibold'>Submitted for review</p>
+                <p className='text-base'>
+                  Your application is with a JusKel Assessment Specialist. Track
+                  its status on your dashboard.
+                </p>
+              </div>
+            </div>
+            <Link
+              href={ROUTES.sme.dashboard}
+              className='inline-flex h-14 w-fit items-center justify-center gap-2 rounded-lg bg-white px-5 text-base font-semibold text-primary shadow-xs transition-opacity hover:opacity-90'
+            >
+              Go to your dashboard
+              <ArrowRight className='size-5' />
+            </Link>
           </div>
         )}
       </div>

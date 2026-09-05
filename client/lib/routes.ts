@@ -17,6 +17,14 @@ export const ROUTES = {
   sme: {
     root: '/sme',
     dashboard: '/sme/dashboard',
+    assessment: '/sme/assessment',
+    scorecard: '/sme/scorecard',
+    evidence: '/sme/evidence',
+    fundingMatches: '/sme/funding-matches',
+    recommendations: '/sme/recommendations',
+    integrations: '/sme/integrations',
+    reports: '/sme/reports',
+    settings: '/sme/settings',
   },
   lender: {
     root: '/lender',
