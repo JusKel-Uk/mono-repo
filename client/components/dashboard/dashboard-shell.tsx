@@ -70,7 +70,7 @@ export function DashboardShell({
 
       {/* Main */}
       <main className='flex-1 px-6 py-8 lg:px-10 lg:py-8'>
-        <div className='mx-auto flex max-w-[1336px] flex-col gap-8'>
+        <div className='mx-auto flex max-w-334 flex-col gap-8'>
           {/* Header */}
           <div className='flex flex-col gap-8'>
             <div className='flex items-start justify-between gap-6'>
