@@ -1,21 +1,36 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm, type Control } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 
 import { cn } from '@/lib/utils';
 import { getStep, nextStepRoute } from '@/lib/onboarding/steps';
-import { useOnboardingStore } from '@/stores/onboardingStore';
+import { onboardingKeys } from '@/lib/hooks/use-onboarding';
+import {
+  getSustainabilityProfile,
+  saveSustainabilityProfile,
+  uploadSustainabilityEvidence,
+  removeSustainabilityEvidence,
+  downloadSustainabilityEvidence,
+  type SustainabilityQuestionKey,
+} from '@/lib/api/onboarding';
+import {
+  toSustainabilityProfileRequest,
+  fromSustainabilityProfile,
+} from '@/lib/onboarding/mappers';
 import {
   sustainabilityProfileSchema,
   type SustainabilityProfileInput,
 } from '@/lib/validations/onboarding';
 import { OnboardingShell } from '@/components/onboarding/onboarding-shell';
 import { OnboardingActions } from '@/components/onboarding/onboarding-actions';
-import { EvidenceRow } from '@/components/onboarding/onboarding-fields';
+import { EvidenceAttach } from '@/components/onboarding/evidence-attach';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Textarea } from '@/components/ui/textarea';
 import {
   Form,
   FormControl,
@@ -29,7 +44,12 @@ const step = getStep('sustainability-profile')!;
 const FORM_ID = 'sustainability-profile-form';
 
 type QuestionName = keyof SustainabilityProfileInput;
-type Question = { name: QuestionName; label: string; options: string[] };
+type Question = {
+  name: QuestionName;
+  key: SustainabilityQuestionKey;
+  label: string;
+  options: string[];
+};
 type Section = { pillar: string; desc: string; questions: Question[] };
 
 const SECTIONS: Section[] = [
@@ -39,17 +59,20 @@ const SECTIONS: Section[] = [
     questions: [
       {
         name: 'ghgEmissions',
+        key: 1,
         label:
           'Do you measure greenhouse gas emissions (Scope 1, Scope 2 or Scope 3)?',
         options: ['Yes', 'No', 'In progress'],
       },
       {
         name: 'sustainabilityPolicy',
+        key: 2,
         label: 'Do you have a sustainability policy?',
         options: ['Yes', 'No', 'In progress'],
       },
       {
         name: 'resourceTracking',
+        key: 3,
         label: 'Do you track energy, water, or waste consumption?',
         options: ['Yes', 'No', 'Partially'],
       },
@@ -61,18 +84,21 @@ const SECTIONS: Section[] = [
     questions: [
       {
         name: 'wellbeing',
+        key: 4,
         label:
           'Do you provide regular health, safety, or wellbeing initiatives for employees?',
         options: ['Yes', 'No', 'In progress'],
       },
       {
         name: 'training',
+        key: 5,
         label:
           'Do you provide training or professional development opportunities for employees?',
         options: ['Yes', 'No', 'Occasionally'],
       },
       {
         name: 'dei',
+        key: 6,
         label:
           'Do you have policies that promote equality, diversity, and inclusion?',
         options: ['Yes', 'No', 'In progress'],
@@ -85,18 +111,21 @@ const SECTIONS: Section[] = [
     questions: [
       {
         name: 'continuity',
+        key: 7,
         label:
           'Does your business have a Business Continuity or Disaster Recovery Plan?',
         options: ['Yes', 'No', 'In progress'],
       },
       {
         name: 'governancePolicies',
+        key: 8,
         label:
           'Does your business have documented governance or risk management policies?',
         options: ['Yes', 'No', 'In progress'],
       },
       {
         name: 'riskReview',
+        key: 9,
         label:
           'Do you regularly review compliance, operational risks, or supplier risks?',
         options: ['Yes', 'No', 'Occasionally'],
@@ -105,13 +134,25 @@ const SECTIONS: Section[] = [
   },
 ];
 
+const SLUG = 'sustainability-profile';
+
+const QUESTION_NAMES = SECTIONS.flatMap((s) =>
+  s.questions.map((q) => q.name),
+);
+
+/** Answers that require backing evidence/justification (anything but "No"). */
+const needsSupport = (answer: string) => answer !== '' && answer !== 'No';
+
+type Support = { hasEvidence: boolean; justification: string };
+const EMPTY_SUPPORT: Support = { hasEvidence: false, justification: '' };
+
 export function SustainabilityProfileForm() {
   const router = useRouter();
-  const saveStep = useOnboardingStore((s) => s.saveStep);
-  const markComplete = useOnboardingStore((s) => s.markComplete);
+  const qc = useQueryClient();
 
   const form = useForm<SustainabilityProfileInput>({
     resolver: zodResolver(sustainabilityProfileSchema),
+    mode: 'onChange',
     defaultValues: {
       ghgEmissions: '',
       sustainabilityPolicy: '',
@@ -125,20 +166,107 @@ export function SustainabilityProfileForm() {
     },
   });
 
+  const { data: saved } = useQuery({
+    queryKey: onboardingKeys.step(SLUG),
+    queryFn: getSustainabilityProfile,
+  });
   useEffect(() => {
-    const saved = useOnboardingStore.getState().data.sustainabilityProfile;
-    if (saved) form.reset(saved);
-  }, [form]);
+    if (saved) form.reset(fromSustainabilityProfile(saved));
+  }, [saved, form]);
 
-  const onSubmit = form.handleSubmit((values) => {
-    saveStep('sustainabilityProfile', values);
-    markComplete('sustainability-profile');
-    const next = nextStepRoute('sustainability-profile');
-    router.push(next ?? '/onboarding');
+  // First uploaded file per question, to rehydrate the attach control on load.
+  const evidenceByKey = useMemo(() => {
+    const map = new Map<number, { evidenceId: string; fileName: string }>();
+    saved?.evidence?.forEach((e) => {
+      if (!map.has(e.questionKey)) {
+        map.set(e.questionKey, {
+          evidenceId: e.evidenceId,
+          fileName: e.fileName,
+        });
+      }
+    });
+    return map;
+  }, [saved]);
+
+  // Per-question support (evidence attached and/or justification text), and the
+  // questions that failed the on-submit "backed by evidence/justification" check.
+  const [support, setSupport] = useState<Record<string, Support>>({});
+  const [supportErrors, setSupportErrors] = useState<Set<QuestionName>>(
+    new Set(),
+  );
+
+  const clearSupportError = useCallback((name: QuestionName) => {
+    setSupportErrors((prev) => {
+      if (!prev.has(name)) return prev;
+      const next = new Set(prev);
+      next.delete(name);
+      return next;
+    });
+  }, []);
+
+  const setEvidence = useCallback(
+    (name: QuestionName, hasEvidence: boolean) => {
+      setSupport((s) => ({
+        ...s,
+        [name]: { ...(s[name] ?? EMPTY_SUPPORT), hasEvidence },
+      }));
+      if (hasEvidence) clearSupportError(name);
+    },
+    [clearSupportError],
+  );
+
+  const setJustification = useCallback(
+    (name: QuestionName, justification: string) => {
+      setSupport((s) => ({
+        ...s,
+        [name]: { ...(s[name] ?? EMPTY_SUPPORT), justification },
+      }));
+      if (justification.trim()) clearSupportError(name);
+    },
+    [clearSupportError],
+  );
+
+  const save = useMutation({
+    mutationFn: (values: SustainabilityProfileInput) =>
+      saveSustainabilityProfile(toSustainabilityProfileRequest(values)),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: onboardingKeys.application });
+      qc.invalidateQueries({ queryKey: onboardingKeys.step(SLUG) });
+    },
   });
 
-  const onSaveExit = () => {
-    saveStep('sustainabilityProfile', form.getValues());
+  const onSubmit = form.handleSubmit(async (values) => {
+    // Every answer that isn't "No" must be backed by evidence or a justification.
+    const missing = QUESTION_NAMES.filter((name) => {
+      if (!needsSupport(values[name])) return false;
+      const s = support[name];
+      return !(s?.hasEvidence || s?.justification.trim());
+    });
+    if (missing.length > 0) {
+      setSupportErrors(new Set(missing));
+      toast.error(
+        'Add evidence or a justification for each answer that isn’t “No”.',
+      );
+      return;
+    }
+    setSupportErrors(new Set());
+    try {
+      await save.mutateAsync(values);
+      const next = nextStepRoute(SLUG);
+      router.push(next ?? '/onboarding');
+    } catch {
+      toast.error('Could not save your answers. Please try again.');
+    }
+  });
+
+  const onSaveExit = async () => {
+    if (await form.trigger()) {
+      try {
+        await save.mutateAsync(form.getValues());
+      } catch {
+        toast.error('Could not save your answers. Please try again.');
+      }
+    }
     router.push('/onboarding');
   };
 
@@ -150,7 +278,8 @@ export function SustainabilityProfileForm() {
       actions={
         <OnboardingActions
           formId={FORM_ID}
-          loading={form.formState.isSubmitting}
+          loading={save.isPending}
+          disabled={!form.formState.isValid}
           onSaveExit={onSaveExit}
         />
       }
@@ -179,8 +308,15 @@ export function SustainabilityProfileForm() {
                     key={q.name}
                     control={form.control}
                     name={q.name}
+                    questionKey={q.key}
                     label={q.label}
                     options={q.options}
+                    initialEvidence={evidenceByKey.get(q.key)}
+                    support={support[q.name] ?? EMPTY_SUPPORT}
+                    error={supportErrors.has(q.name)}
+                    onEvidenceChange={setEvidence}
+                    onJustificationChange={setJustification}
+                    onAnswerChange={clearSupportError}
                   />
                 ))}
               </div>
@@ -195,47 +331,102 @@ export function SustainabilityProfileForm() {
 function RadioQuestion({
   control,
   name,
+  questionKey,
   label,
   options,
+  initialEvidence,
+  support,
+  error,
+  onEvidenceChange,
+  onJustificationChange,
+  onAnswerChange,
 }: {
   control: Control<SustainabilityProfileInput>;
   name: QuestionName;
+  questionKey: SustainabilityQuestionKey;
   label: string;
   options: string[];
+  initialEvidence?: { evidenceId: string; fileName: string };
+  support: Support;
+  error: boolean;
+  onEvidenceChange: (name: QuestionName, hasEvidence: boolean) => void;
+  onJustificationChange: (name: QuestionName, text: string) => void;
+  onAnswerChange: (name: QuestionName) => void;
 }) {
+  const [justifyOpen, setJustifyOpen] = useState(false);
+
   return (
     <FormField
       control={control}
       name={name}
-      render={({ field }) => (
-        <FormItem className='flex flex-col gap-2'>
-          <FormLabel className='text-base font-medium text-carbon-black'>
-            {label}
-          </FormLabel>
-          <FormControl>
-            <RadioGroup
-              onValueChange={field.onChange}
-              value={field.value}
-              className='flex flex-wrap gap-x-5 gap-y-2'
-            >
-              {options.map((opt) => (
-                <label
-                  key={opt}
-                  className='flex cursor-pointer items-center gap-2 text-base text-carbon-black'
-                >
-                  <RadioGroupItem value={opt} className='border-carbon-black' />
-                  {opt}
-                </label>
-              ))}
-            </RadioGroup>
-          </FormControl>
-          <EvidenceRow
-            attachLabel='Attach certification proof'
-            hint='Certificate PDF or link screenshot · max 10 MB'
-          />
-          <FormMessage />
-        </FormItem>
-      )}
+      render={({ field }) => {
+        // Evidence/justification are only relevant for a non-"No" answer.
+        const showSupport = needsSupport(field.value);
+        return (
+          <FormItem className='flex flex-col gap-2'>
+            <FormLabel className='text-base font-medium text-carbon-black'>
+              {label}
+            </FormLabel>
+            <FormControl>
+              <RadioGroup
+                onValueChange={(v) => {
+                  field.onChange(v);
+                  onAnswerChange(name);
+                }}
+                value={field.value}
+                className='flex flex-wrap gap-x-5 gap-y-2'
+              >
+                {options.map((opt) => (
+                  <label
+                    key={opt}
+                    className='flex cursor-pointer items-center gap-2 text-base text-carbon-black'
+                  >
+                    <RadioGroupItem
+                      value={opt}
+                      className='border-carbon-black cursor-pointer'
+                    />
+                    {opt}
+                  </label>
+                ))}
+              </RadioGroup>
+            </FormControl>
+
+            {showSupport && (
+              <div className='flex flex-col gap-2'>
+                <EvidenceAttach
+                  attachLabel='Attach certification proof'
+                  hint='PDF, DOC, PNG or JPG · max 10 MB'
+                  onUpload={(file) =>
+                    uploadSustainabilityEvidence(file, questionKey)
+                  }
+                  onRemove={removeSustainabilityEvidence}
+                  onView={downloadSustainabilityEvidence}
+                  initial={initialEvidence}
+                  onAttachedChange={(a) => onEvidenceChange(name, Boolean(a))}
+                  onAddJustification={() => setJustifyOpen((o) => !o)}
+                  justificationLabel={
+                    justifyOpen ? 'Hide justification' : 'Or add a justification'
+                  }
+                />
+                {justifyOpen && (
+                  <Textarea
+                    value={support.justification}
+                    onChange={(e) => onJustificationChange(name, e.target.value)}
+                    placeholder='Add a short justification for this answer…'
+                    rows={3}
+                  />
+                )}
+                {error && (
+                  <p className='text-label-sm text-destructive'>
+                    Attach evidence or add a justification for this answer.
+                  </p>
+                )}
+              </div>
+            )}
+            <FormMessage />
+          </FormItem>
+        );
+      }}
     />
   );
 }

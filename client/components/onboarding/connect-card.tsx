@@ -19,11 +19,14 @@ export function ConnectCard({
   status,
   onConnect,
   onDisconnect,
+  disconnecting = false,
 }: {
   connector: ConnectorConfig;
   status: ConnectionStatus;
   onConnect: () => void;
   onDisconnect: () => void;
+  /** Show a spinner on the Disconnect button while the request is in flight. */
+  disconnecting?: boolean;
 }) {
   const { icon: Icon, name, tag, cardDescription } = connector;
 
@@ -46,7 +49,17 @@ export function ConnectCard({
         </div>
 
         <div className='mt-auto'>
-          {status === 'connecting' ? (
+          {status === 'checking' ? (
+            <Button
+              type='button'
+              variant='secondary'
+              loading
+              disabled
+              className={BTN}
+            >
+              Checking…
+            </Button>
+          ) : status === 'connecting' ? (
             <Button
               type='button'
               variant='secondary'
@@ -61,10 +74,18 @@ export function ConnectCard({
               type='button'
               variant='secondary'
               onClick={onDisconnect}
+              loading={disconnecting}
+              disabled={disconnecting}
               className={BTN}
             >
-              <Unplug className='size-3' />
-              Disconnect
+              {disconnecting ? (
+                'Disconnecting…'
+              ) : (
+                <>
+                  <Unplug className='size-3' />
+                  Disconnect
+                </>
+              )}
             </Button>
           ) : status === 'error' ? (
             <Button

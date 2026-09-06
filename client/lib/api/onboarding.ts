@@ -12,7 +12,7 @@
  * a blank form instead of erroring.
  */
 
-import { request, ApiError } from './client';
+import { request, requestBlob, ApiError, type BlobResponse } from './client';
 
 /** Run a step `GET` and treat a 404 (empty step) as "no data yet". */
 async function getOrNull<T>(path: string): Promise<T | null> {
@@ -182,26 +182,82 @@ export type IntegrationProvider = 1 | 2 | 3; // OpenBanking · Xero · QuickBook
 
 export type FinancialIntegration = {
   provider: IntegrationProvider;
-  connected: boolean;
+  /** Matches the backend `IntegrationStatusDto.IsConnected` (camelCased). */
+  isConnected: boolean;
+  connectedAt?: string | null;
+  expiresAt?: string | null;
+};
+
+/**
+ * Verified financial figures from a connected accounting source (QuickBooks /
+ * Xero). This is the "gold-standard" metric set the bands are derived from —
+ * mirrors the backend `FinancialIntegrationMetricsDto`. All money fields are in
+ * `currency`.
+ */
+export type FinancialIntegrationMetrics = {
+  provider: IntegrationProvider;
+  currency: string;
+  periodStart: string;
+  periodEnd: string;
+  priorPeriodEnd?: string | null;
+  balanceSheetAsOf: string;
+  syncedAt: string;
+  annualRevenue?: number | null;
+  priorAnnualRevenue?: number | null;
+  grossProfit?: number | null;
+  operatingProfit?: number | null;
+  netIncome?: number | null;
+  priorNetIncome?: number | null;
+  ebitda?: number | null;
+  cashBalance?: number | null;
+  accountsReceivable?: number | null;
+  accountsPayable?: number | null;
+  currentAssets?: number | null;
+  currentLiabilities?: number | null;
+  workingCapital?: number | null;
+  totalAssets?: number | null;
+  totalLiabilities?: number | null;
+  totalEquity?: number | null;
+  outstandingDebt?: number | null;
+  operatingCashFlow?: number | null;
+  currentRatio?: number | null;
+  debtToAssets?: number | null;
+  profitMargin?: number | null;
+  revenueGrowthYoY?: number | null;
+  netIncomeGrowthYoY?: number | null;
+  accountCount?: number;
+  hasReportData?: boolean;
+  priorPeriodHasReportData?: boolean;
 };
 
 export type FinancialProfile = {
-  revenueBand?: number | null;
+  annualRevenueBand?: number | null;
   ebitdaBand?: number | null;
-  debtBand?: number | null;
-  cashReservesBand?: number | null;
-  monthlyRevenueBand?: number | null;
+  existingDebtBand?: number | null;
+  cashReserves?: number | null;
+  avgMonthlyRevenue?: number | null;
+  // New bands — backend support pending; until then these arrive empty and are
+  // derived client-side from `integrationMetrics`.
+  grossMarginBand?: number | null;
+  revenueGrowthBand?: number | null;
+  receivablesBand?: number | null;
   /** When true, connected-source fields are read-only; skip them on PUT. */
-  bandsLockedByIntegration: boolean;
-  integrations: FinancialIntegration[];
+  bandsLockedByIntegration?: boolean;
+  isOpenBankingConnected?: boolean;
+  integrations?: FinancialIntegration[];
+  integrationMetrics?: FinancialIntegrationMetrics | null;
 };
 
+/** All bands are optional — the financial profile is self-declared. */
 export type UpsertFinancialProfileRequest = {
-  revenueBand: number;
-  ebitdaBand: number;
-  debtBand: number;
-  cashReservesBand: number;
-  monthlyRevenueBand: number;
+  annualRevenueBand?: number | null;
+  ebitdaBand?: number | null;
+  existingDebtBand?: number | null;
+  cashReserves?: number | null;
+  avgMonthlyRevenue?: number | null;
+  grossMarginBand?: number | null;
+  revenueGrowthBand?: number | null;
+  receivablesBand?: number | null;
 };
 
 export function getFinancialProfile() {
@@ -246,6 +302,32 @@ export function disconnectIntegration(slug: IntegrationSlug) {
 
 export type Evidence = { evidenceId: string; fileName: string };
 
+/* ---- Evidence download / preview ----
+ * GET /{module}/evidence/{id}/download — private blob served via JWT.
+ *   download=false → inline (content-type set) for preview
+ *   download=true  → attachment (content-disposition filename) for save
+ */
+export type EvidenceModule = 'scoring' | 'funding';
+
+export function downloadEvidence(
+  module: EvidenceModule,
+  evidenceId: string,
+  download = false,
+): Promise<BlobResponse> {
+  return requestBlob(
+    `/${module}/evidence/${evidenceId}/download?download=${download}`,
+    { auth: true },
+  );
+}
+
+export const downloadSustainabilityEvidence = (
+  evidenceId: string,
+  download = false,
+) => downloadEvidence('scoring', evidenceId, download);
+
+export const downloadFundingEvidence = (evidenceId: string, download = false) =>
+  downloadEvidence('funding', evidenceId, download);
+
 export function uploadFundingEvidence(file: File) {
   const form = new FormData();
   form.append('file', file);
@@ -267,17 +349,17 @@ export function removeFundingEvidence(evidenceId: string) {
  * Step 4 — Sustainability profile  (/scoring)
  * ==================================================================== */
 
-/** Nine ESG questions; each is a SustainabilityAnswer (0–4). */
+/** Nine ESG questions; each is a SustainabilityAnswer (0–5). */
 export type SustainabilityProfile = {
-  energyEfficiency: number;
-  wasteReduction: number;
-  carbonFootprint: number;
-  sustainableSourcing: number;
-  waterConservation: number;
-  employeeWellbeing: number;
-  communityEngagement: number;
-  ethicalGovernance: number;
-  environmentalCertification: number;
+  ghgEmissions: number;
+  sustainabilityPolicy: number;
+  resourceTracking: number;
+  wellbeing: number;
+  training: number;
+  dei: number;
+  continuity: number;
+  governancePolicies: number;
+  riskReview: number;
 };
 
 export type UpsertSustainabilityProfileRequest = SustainabilityProfile;
@@ -285,8 +367,23 @@ export type UpsertSustainabilityProfileRequest = SustainabilityProfile;
 /** questionKey 1–9, matching the nine fields above in order. */
 export type SustainabilityQuestionKey = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9;
 
+/** One uploaded evidence file, as returned on the profile GET. */
+export type SustainabilityEvidenceItem = {
+  evidenceId: string;
+  questionKey: SustainabilityQuestionKey;
+  fileName: string;
+  contentType: string;
+  fileSizeBytes: number;
+  uploadedAt: string;
+};
+
+/** The GET response carries the saved answers plus any attached evidence. */
+export type SustainabilityProfileData = SustainabilityProfile & {
+  evidence?: SustainabilityEvidenceItem[];
+};
+
 export function getSustainabilityProfile() {
-  return getOrNull<SustainabilityProfile>(
+  return getOrNull<SustainabilityProfileData>(
     '/scoring/applications/current/sustainability-profile',
   );
 }
