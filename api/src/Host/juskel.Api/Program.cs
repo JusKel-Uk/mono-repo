@@ -1,5 +1,6 @@
 using funding.Core;
 using funding.Core.Examples;
+using identity.Contracts;
 using identity.Core;
 using identity.Core.Examples;
 using juskel.Api;
@@ -20,12 +21,16 @@ using onboarding.Core.Examples;
 using scoring.Core;
 using scoring.Core.Examples;
 using Swashbuckle.AspNetCore.Filters;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 using System.Text;
 using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddFieldEncryption(builder.Configuration);
+builder.Services.Configure<JuskelAppOptions>(options =>
+    options.FrontendUrl = builder.Configuration[JuskelAppOptions.FrontendUrlKey] ?? string.Empty);
 builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection(JwtOptions.SectionName));
 builder.Logging.AddFilter("Microsoft", LogLevel.Warning);
 builder.Logging.AddFilter("System", LogLevel.Warning);
@@ -109,6 +114,24 @@ builder.Services
             IssuerSigningKey = new SymmetricSecurityKey(
                 Encoding.UTF8.GetBytes(jwtOptions.Secret)),
             ClockSkew = TimeSpan.Zero,
+        };
+        options.Events = new JwtBearerEvents
+        {
+            OnTokenValidated = async context =>
+            {
+                var jti = context.Principal?.FindFirstValue(JwtRegisteredClaimNames.Jti);
+                if (string.IsNullOrWhiteSpace(jti))
+                {
+                    context.Fail("Session is not valid.");
+                    return;
+                }
+
+                var validator = context.HttpContext.RequestServices
+                    .GetRequiredService<IAuthSessionValidator>();
+
+                if (!await validator.IsActiveAsync(jti, context.HttpContext.RequestAborted))
+                    context.Fail("Session is not valid.");
+            }
         };
     });
 

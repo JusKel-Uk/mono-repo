@@ -3,9 +3,11 @@ using System.Security.Claims;
 using funding.Contracts;
 using funding.Core.Examples;
 using funding.Core.Services;
+using juskel.Shared;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
 using Swashbuckle.AspNetCore.Filters;
 
 namespace funding.Core;
@@ -142,17 +144,26 @@ public static class FundingEndpoints
             [FromQuery] string code,
             [FromQuery] string state,
             IntegrationService service,
+            IOptions<JuskelAppOptions> juskelOptions,
             CancellationToken ct) =>
         {
             if (string.IsNullOrWhiteSpace(code) || string.IsNullOrWhiteSpace(state))
                 return Results.BadRequest();
 
-            await service.HandleOpenBankingCallbackAsync(code, state, ct);
-            return Results.Ok(new { status = "connected", provider = "open-banking" });
+            try
+            {
+                await service.HandleOpenBankingCallbackAsync(code, state, ct);
+                return IntegrationCallbackResults.Connected(juskelOptions.Value, "open-banking");
+            }
+            catch (Exception ex) when (ex is InvalidOperationException or HttpRequestException)
+            {
+                return IntegrationCallbackResults.Failed(juskelOptions.Value, "open-banking", ex.Message);
+            }
         })
         .AllowAnonymous()
         .WithName("OpenBankingCallback")
         .Produces(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status302Found)
         .Produces(StatusCodes.Status400BadRequest)
         .Produces<ProblemDetails>(StatusCodes.Status500InternalServerError);
 
@@ -195,17 +206,26 @@ public static class FundingEndpoints
             [FromQuery] string code,
             [FromQuery] string state,
             IntegrationService service,
+            IOptions<JuskelAppOptions> juskelOptions,
             CancellationToken ct) =>
         {
             if (string.IsNullOrWhiteSpace(code) || string.IsNullOrWhiteSpace(state))
                 return Results.BadRequest();
 
-            await service.HandleXeroCallbackAsync(code, state, ct);
-            return Results.Ok(new { status = "connected", provider = "xero" });
+            try
+            {
+                await service.HandleXeroCallbackAsync(code, state, ct);
+                return IntegrationCallbackResults.Connected(juskelOptions.Value, "xero");
+            }
+            catch (Exception ex) when (ex is InvalidOperationException or HttpRequestException)
+            {
+                return IntegrationCallbackResults.Failed(juskelOptions.Value, "xero", ex.Message);
+            }
         })
         .AllowAnonymous()
         .WithName("XeroCallback")
         .Produces(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status302Found)
         .Produces(StatusCodes.Status400BadRequest)
         .Produces<ProblemDetails>(StatusCodes.Status500InternalServerError);
 
@@ -250,18 +270,27 @@ public static class FundingEndpoints
             [FromQuery] string? realmId,
             [FromQuery(Name = "realmID")] string? realmIdLegacy,
             IntegrationService service,
+            IOptions<JuskelAppOptions> juskelOptions,
             CancellationToken ct) =>
         {
             if (string.IsNullOrWhiteSpace(code) || string.IsNullOrWhiteSpace(state))
                 return Results.BadRequest();
 
-            var resolvedRealmId = string.IsNullOrWhiteSpace(realmId) ? realmIdLegacy : realmId;
-            await service.HandleQuickBooksCallbackAsync(code, state, resolvedRealmId, ct);
-            return Results.Ok(new { status = "connected", provider = "quickbooks" });
+            try
+            {
+                var resolvedRealmId = string.IsNullOrWhiteSpace(realmId) ? realmIdLegacy : realmId;
+                await service.HandleQuickBooksCallbackAsync(code, state, resolvedRealmId, ct);
+                return IntegrationCallbackResults.Connected(juskelOptions.Value, "quickbooks");
+            }
+            catch (Exception ex) when (ex is InvalidOperationException or HttpRequestException)
+            {
+                return IntegrationCallbackResults.Failed(juskelOptions.Value, "quickbooks", ex.Message);
+            }
         })
         .AllowAnonymous()
         .WithName("QuickBooksCallback")
         .Produces(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status302Found)
         .Produces(StatusCodes.Status400BadRequest)
         .Produces<ProblemDetails>(StatusCodes.Status500InternalServerError);
 

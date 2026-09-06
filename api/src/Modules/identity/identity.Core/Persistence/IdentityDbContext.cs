@@ -12,9 +12,15 @@ internal sealed class IdentityDbContext : DbContext
 
     public DbSet<User> Users => Set<User>();
 
+    public DbSet<NotificationPreferences> NotificationPreferences => Set<NotificationPreferences>();
+
+    public DbSet<AuthSession> AuthSessions => Set<AuthSession>();
+
+    public DbSet<PasswordResetRequest> PasswordResetRequests => Set<PasswordResetRequest>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.HasDefaultSchema("identity");
-        modelBuilder.ApplyConfiguration(new UserEntityConfiguration());
+        modelBuilder.ApplyConfigurationsFromAssembly(typeof(IdentityDbContext).Assembly);
     }
 }

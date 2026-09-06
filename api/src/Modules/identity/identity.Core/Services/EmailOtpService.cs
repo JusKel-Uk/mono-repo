@@ -1,5 +1,3 @@
-using System.Globalization;
-using System.Security.Cryptography;
 using identity.Core.Entities;
 using Microsoft.AspNetCore.Identity;
 
@@ -25,23 +23,19 @@ internal enum EmailOtpVerifyResult
 
 internal sealed class EmailOtpService : IEmailOtpService
 {
-    private const int OtpLength = 6;
-    private const int MaxAttempts = 5;
-    private static readonly TimeSpan OtpLifetime = TimeSpan.FromMinutes(10);
-
     private readonly PasswordHasher<User> _passwordHasher = new();
 
     public EmailOtpIssueResult IssueOtp(User user)
     {
-        var plainCode = GenerateOtpCode();
+        var plainCode = OtpCodes.Generate();
         var now = DateTime.UtcNow;
 
         user.EmailOtpHash = _passwordHasher.HashPassword(user, plainCode);
-        user.EmailOtpExpiresAt = now.Add(OtpLifetime);
+        user.EmailOtpExpiresAt = now.Add(OtpCodes.Lifetime);
         user.EmailOtpAttempts = 0;
         user.UpdatedAt = now;
 
-        return new EmailOtpIssueResult(plainCode, FormatOtpForDisplay(plainCode));
+        return new EmailOtpIssueResult(plainCode, OtpCodes.FormatForDisplay(plainCode));
     }
 
     public EmailOtpVerifyResult VerifyOtp(User user, string submittedOtp)
@@ -52,12 +46,12 @@ internal sealed class EmailOtpService : IEmailOtpService
         if (user.EmailOtpExpiresAt < DateTime.UtcNow)
             return EmailOtpVerifyResult.Expired;
 
-        if (user.EmailOtpAttempts >= MaxAttempts)
+        if (user.EmailOtpAttempts >= OtpCodes.MaxAttempts)
             return EmailOtpVerifyResult.TooManyAttempts;
 
-        var normalized = NormalizeOtp(submittedOtp);
+        var normalized = OtpCodes.Normalize(submittedOtp);
 
-        if (normalized.Length != OtpLength)
+        if (normalized.Length != OtpCodes.Length)
             return EmailOtpVerifyResult.InvalidCode;
 
         user.EmailOtpAttempts++;
@@ -81,23 +75,4 @@ internal sealed class EmailOtpService : IEmailOtpService
 
         return EmailOtpVerifyResult.Success;
     }
-
-    private static string GenerateOtpCode()
-    {
-        Span<byte> bytes = stackalloc byte[4];
-        RandomNumberGenerator.Fill(bytes);
-        var value = BitConverter.ToUInt32(bytes) % 1_000_000;
-        return value.ToString("D6", CultureInfo.InvariantCulture);
-    }
-
-    public static string FormatOtpForDisplay(string plainCode)
-    {
-        var normalized = NormalizeOtp(plainCode);
-        return normalized.Length == 6
-            ? $"{normalized[..3]} {normalized[3..]}"
-            : normalized;
-    }
-
-    private static string NormalizeOtp(string otp) =>
-        new string(otp.Where(char.IsDigit).ToArray());
 }

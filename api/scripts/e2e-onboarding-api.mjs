@@ -292,7 +292,13 @@ async function testOAuthProvider(token, label, authorizePath, callbackPath) {
   log(`POST ${authorizePath}`, okAuth, { status: auth.status, hasUrl: !!auth.data?.authorizationUrl });
 
   const cb = await oauthCallback(callbackPath, 'e2e-stub-auth-code', auth.data.state);
-  log(`GET ${callbackPath}`, cb.status === 200, { status: cb.status, provider: cb.data?.provider });
+  const okCb = (cb.status === 200 && cb.data?.provider) || (cb.ok && cb.data?.redirected);
+  log(`GET ${callbackPath}`, okCb, {
+    status: cb.status,
+    provider: cb.data?.provider,
+    redirected: cb.data?.redirected,
+    location: cb.data?.location,
+  });
 
   const del = await apiDelete(callbackPath.replace('/callback', ''), token);
   log(`DELETE ${callbackPath.replace('/callback', '')}`, del.status === 204, { status: del.status });
@@ -451,9 +457,11 @@ async function runFullCoverage(token) {
     'e2e-stub-auth-code',
     qbAuth.data.state,
   );
-  log('GET /funding/integrations/quickbooks/callback', qbCb.status === 200, {
+  log('GET /funding/integrations/quickbooks/callback', qbCb.status === 200 || qbCb.ok, {
     status: qbCb.status,
     provider: qbCb.data?.provider,
+    redirected: qbCb.data?.redirected,
+    location: qbCb.data?.location,
   });
 
   const financialAfterQb = await apiGet('/funding/applications/current/financial-profile', token);
@@ -470,6 +478,13 @@ async function runFullCoverage(token) {
     qbConnected: financialAfterQb.data?.integrations?.some(
       (i) => i.provider === 3 && i.isConnected,
     ),
+  });
+
+  const financialPutWhileLocked = await api('PUT', '/funding/applications/current/financial-profile', token, financialProfileBody);
+  log('PUT /funding/.../financial-profile (while QB locked)', financialPutWhileLocked.status === 200
+    && financialPutWhileLocked.data?.bandsLockedByIntegration === true, {
+    status: financialPutWhileLocked.status,
+    bandsLocked: financialPutWhileLocked.data?.bandsLockedByIntegration,
   });
 
   const qbDel = await apiDelete('/funding/integrations/quickbooks', token);

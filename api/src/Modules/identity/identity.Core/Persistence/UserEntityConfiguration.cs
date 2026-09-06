@@ -31,6 +31,13 @@ internal sealed class UserEntityConfiguration : IEntityTypeConfiguration<User>
             .HasMaxLength(1024)
             .IsRequired();
 
+        entity.Property(u => u.JobTitle)
+            .HasMaxLength(200);
+
+        entity.Property(u => u.Phone)
+            .HasConversion(new EncryptedNullableStringConverter(IdentityEncryptionPurposes.Phone))
+            .HasMaxLength(1024);
+
         entity.Property(u => u.PasswordHash)
             .HasMaxLength(512)
             .IsRequired();

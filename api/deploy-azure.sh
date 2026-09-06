@@ -258,9 +258,11 @@ deploy_app() {
   local qb_api_base="${INTEGRATIONS__QUICKBOOKS__APIBASEURL:-https://sandbox-quickbooks.api.intuit.com/v3/company}"
   local qb_report_start="${INTEGRATIONS__QUICKBOOKS__REPORTSTARTDATE:-2026-01-01}"
   local qb_report_end="${INTEGRATIONS__QUICKBOOKS__REPORTENDDATE:-2026-12-31}"
+  local juskel_frontend_url="${JUSKEL_FRONTEND_URL:-https://mono-repo-n96q.vercel.app}"
 
   local env_vars=(
     "ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT}"
+    "JUSKEL_FRONTEND_URL=${juskel_frontend_url}"
     "Email__Provider=${EMAIL__PROVIDER:-Resend}"
     "Email__DefaultFrom=${EMAIL__DEFAULTFROM:-juskel <hello@juskel.co.uk>}"
     "Email__AssetsBaseUrl=${EMAIL__ASSETSBASEURL:-https://cdn.juskel.com/email}"

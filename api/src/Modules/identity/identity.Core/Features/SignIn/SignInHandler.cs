@@ -56,15 +56,37 @@ internal sealed class SignInHandler
         if (!user.EmailVerified)
             throw new EmailNotVerifiedException(user.Email);
 
-        user.LastLoginAt = DateTime.UtcNow;
-        await _db.SaveChangesAsync(ct);
-        var accessToken = _jwtTokenService.GenerateAccessToken(user.Id, user.Email);
+        var now = DateTime.UtcNow;
+        user.LastLoginAt = now;
 
-        
+        var token = _jwtTokenService.GenerateAccessToken(user.Id, user.Email);
+        _db.AuthSessions.Add(new AuthSession
+        {
+            Id = Guid.NewGuid(),
+            UserId = user.Id,
+            Jti = token.Jti,
+            DeviceLabel = DeviceLabelFormatter.FromUserAgent(command.UserAgent),
+            UserAgent = Truncate(command.UserAgent, 512),
+            IpAddress = Truncate(command.IpAddress, 64),
+            CreatedAt = now,
+            ExpiresAt = token.ExpiresAtUtc
+        });
+
+        await _db.SaveChangesAsync(ct);
+
         return new SignInResponse(
             UserId: user.Id,
-            AccessToken: accessToken,
+            AccessToken: token.AccessToken,
             FirstName: user.FirstName,
             LastName: user.LastName);
+    }
+
+    private static string? Truncate(string? value, int maxLength)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            return null;
+
+        var trimmed = value.Trim();
+        return trimmed.Length <= maxLength ? trimmed : trimmed[..maxLength];
     }
 }

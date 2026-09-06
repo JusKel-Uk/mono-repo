@@ -15,6 +15,26 @@ Maps each onboarding Figma screen to the exact REST endpoints the frontend shoul
 | Local | `http://localhost:5242` |
 | Azure dev | `https://juskel-api.livelydune-575d8971.uksouth.azurecontainerapps.io` |
 
+### Post-OAuth redirect (`JUSKEL_FRONTEND_URL`)
+
+API config key: **`JUSKEL_FRONTEND_URL`** — Next.js base URL (no trailing slash), e.g. `http://localhost:3000`.
+
+After Open Banking / Xero / QuickBooks OAuth, Intuit/TrueLayer redirect to the **API** callback. The API saves data, then **302 redirects the browser** to:
+
+```text
+{JUSKEL_FRONTEND_URL}/onboarding/financial-profile?integration=<slug>&status=connected
+```
+
+| `integration` | Provider |
+|---------------|----------|
+| `open-banking` | TrueLayer |
+| `xero` | Xero |
+| `quickbooks` | QuickBooks |
+
+On failure: `status=error`. Frontend should read query params on load and `GET /funding/applications/current/financial-profile` to refresh bands/metrics.
+
+If `JUSKEL_FRONTEND_URL` is empty, callbacks return JSON `{ status, provider }` instead (Swagger / e2e).
+
 ---
 
 ## Conventions every page uses
@@ -55,7 +75,7 @@ Not in the onboarding Figma folder, but required before any wizard call.
 | Verify email | `POST` | `/identity/verification` | Body: `email`, `otpCode` |
 | Resend OTP | `POST` | `/identity/verification/resend` | Body: `email` |
 | Login | `POST` | `/identity/sessions` | Body: `email`, `password` → returns `accessToken`, `firstName`, `lastName` |
-| Dashboard greeting | `GET` | `/identity/me` | Returns `id`, `email`, `firstName`, `lastName` — use for “Hello, {firstName}” |
+| Dashboard greeting | `GET` | `/identity/me` | Returns `id`, `email`, `firstName`, `lastName`, plus settings fields `jobTitle`, `phone`, `accountClosureRequestedAt`. See [Settings API](SETTINGS_FRONTEND_API.md). |
 
 Store `accessToken` and attach to all subsequent requests.
 
@@ -218,15 +238,15 @@ Store `accessToken` and attach to all subsequent requests.
 | When | Method | Endpoint | Notes |
 |------|--------|----------|-------|
 | Open step | `GET` | `/funding/applications/current/financial-profile` | Check `bandsLockedByIntegration`, `integrations[]`, `evidence[]` |
-| Save manual bands | `PUT` | `/funding/applications/current/financial-profile` | Skip locked fields when `bandsLockedByIntegration: true` |
+| Save manual bands | `PUT` | `/funding/applications/current/financial-profile` | When `bandsLockedByIntegration: true`, PUT is a **no-op** on bands (returns **200** + current profile) and marks the financial step complete — use for **Save and continue** after QuickBooks/Open Banking |
 | Connect Open Banking | `POST` | `/funding/integrations/open-banking/authorize` | No body → `{ authorizationUrl, state }` — redirect user |
-| OAuth return | Browser | `GET` | `/funding/integrations/open-banking/callback?code=...&state=...` | Backend handles; then refresh financial profile |
+| OAuth return | Browser | `GET` | `/funding/integrations/open-banking/callback?code=...&state=...` | Backend saves connection, then **302** to `{JUSKEL_FRONTEND_URL}/onboarding/financial-profile?integration=open-banking&status=connected` (or `status=error`) |
 | Disconnect OB | `DELETE` | `/funding/integrations/open-banking` | |
 | Connect Xero | `POST` | `/funding/integrations/xero/authorize` | Same pattern |
-| Xero callback | `GET` | `/funding/integrations/xero/callback` | |
+| Xero callback | `GET` | `/funding/integrations/xero/callback` | Same post-auth redirect with `integration=xero` |
 | Disconnect Xero | `DELETE` | `/funding/integrations/xero` | |
 | Connect QuickBooks | `POST` | `/funding/integrations/quickbooks/authorize` | Returns `{ authorizationUrl, state }` — open URL in browser |
-| QB callback | `GET` | `/funding/integrations/quickbooks/callback?code=...&state=...&realmId=...` | Backend syncs QB reports (P&amp;L, balance sheet, AR/AP, cash flow, accounts), persists **integration metrics** + 5 bands + `bandsLockedByIntegration: true`; refresh financial profile |
+| QB callback | `GET` | `/funding/integrations/quickbooks/callback?code=...&state=...&realmId=...` | Backend syncs QB data, then **302** to `{JUSKEL_FRONTEND_URL}/onboarding/financial-profile?integration=quickbooks&status=connected` |
 | Disconnect QB | `DELETE` | `/funding/integrations/quickbooks` | Unlocks bands (same as Open Banking) |
 | Upload file | `POST` | `/funding/evidence` | `multipart/form-data`, field `file` |
 | Preview / download file | `GET` | `/funding/evidence/{evidenceId}/download` | Optional query `download=true` for attachment |
@@ -567,6 +587,17 @@ POST   /identity/verification
 POST   /identity/verification/resend
 POST   /identity/sessions
 GET    /identity/me
+PATCH  /identity/me
+GET    /identity/me/notification-preferences
+PUT    /identity/me/notification-preferences
+POST   /identity/me/password-reset
+POST   /identity/password-reset
+POST   /identity/password-reset/verify
+POST   /identity/password-reset/confirm
+GET    /identity/me/sessions
+DELETE /identity/me/sessions/current
+DELETE /identity/me/sessions/{id}
+POST   /identity/me/account-closure
 
 # Lookups (no auth — dropdown labels)
 GET    /lookups

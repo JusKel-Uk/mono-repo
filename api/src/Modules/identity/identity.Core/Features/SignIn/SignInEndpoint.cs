@@ -14,10 +14,15 @@ internal static class SignInEndpoint
     {
         app.MapPost("/identity/sessions", async (
             SignInRequest request,
+            HttpContext http,
             SignInHandler handler,
             CancellationToken ct) =>
         {
-            var command = new SignInCommand(request.Email, request.Password);
+            var command = new SignInCommand(
+                request.Email,
+                request.Password,
+                http.Request.Headers.UserAgent.ToString(),
+                http.Connection.RemoteIpAddress?.ToString());
             var response = await handler.HandleAsync(command, ct);
             return Results.Created($"/identity/users/{response.UserId}", response);
         })

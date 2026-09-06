@@ -8,6 +8,12 @@ internal sealed class User
 
     public string LastName { get; set; } = string.Empty;
 
+    public string? JobTitle { get; set; }
+
+    public string? Phone { get; set; }
+
+    public DateTime? AccountClosureRequestedAt { get; set; }
+
     public string Email { get; set; } = string.Empty;
 
     public string EmailLookupHash { get; set; } = string.Empty;

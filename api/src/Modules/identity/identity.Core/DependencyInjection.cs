@@ -1,14 +1,25 @@
 using identity.Contracts;
+using identity.Core.Features.ConfirmPasswordReset;
+using identity.Core.Features.GetMe;
+using identity.Core.Features.GetNotificationPreferences;
 using identity.Core.Features.GetUserById;
+using identity.Core.Features.ListSessions;
+using identity.Core.Features.PutNotificationPreferences;
+using identity.Core.Features.RegisterUser;
+using identity.Core.Features.RequestAccountClosure;
+using identity.Core.Features.RequestPasswordReset;
+using identity.Core.Features.ResendOtp;
+using identity.Core.Features.RevokeCurrentSession;
+using identity.Core.Features.RevokeSession;
 using identity.Core.Features.SignIn;
+using identity.Core.Features.UpdateMe;
+using identity.Core.Features.VerifyEmail;
+using identity.Core.Features.VerifyPasswordReset;
 using identity.Core.Persistence;
+using identity.Core.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using identity.Core.Features.RegisterUser;
-using identity.Core.Features.VerifyEmail;
-using identity.Core.Features.ResendOtp;
-using identity.Core.Services;
 
 namespace identity.Core;
 
@@ -26,12 +37,26 @@ public static class DependencyInjection
                 sql.MigrationsHistoryTable("__EFMigrationsHistory", "identity")));
 
         services.AddScoped<IIdentityModule, IdentityModule>();
+        services.AddScoped<IAuthSessionValidator, AuthSessionValidator>();
         services.AddScoped<VerifyEmailHandler>();
         services.AddSingleton<IEmailOtpService, EmailOtpService>();
+        services.AddSingleton<IPasswordResetOtpService, PasswordResetOtpService>();
         services.AddScoped<IEmailVerificationNotifier, EmailVerificationNotifier>();
+        services.AddScoped<IPasswordResetNotifier, PasswordResetNotifier>();
         services.AddScoped<RegisterUserHandler>();
         services.AddSingleton<IJwtTokenService, JwtTokenService>();
         services.AddScoped<GetUserByIdHandler>();
+        services.AddScoped<GetMeHandler>();
+        services.AddScoped<UpdateMeHandler>();
+        services.AddScoped<GetNotificationPreferencesHandler>();
+        services.AddScoped<PutNotificationPreferencesHandler>();
+        services.AddScoped<RequestPasswordResetHandler>();
+        services.AddScoped<VerifyPasswordResetHandler>();
+        services.AddScoped<ConfirmPasswordResetHandler>();
+        services.AddScoped<ListSessionsHandler>();
+        services.AddScoped<RevokeSessionHandler>();
+        services.AddScoped<RevokeCurrentSessionHandler>();
+        services.AddScoped<RequestAccountClosureHandler>();
         services.AddScoped<SignInHandler>();
         services.AddScoped<ResendOtpHandler>();
         return services;

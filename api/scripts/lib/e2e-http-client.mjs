@@ -22,6 +22,7 @@ export function createApiClient(baseUrl) {
       },
       body: body ? JSON.stringify(body) : undefined,
     });
+    if (res.status === 204) return { status: 204, data: null };
     return parseResponse(res);
   }
 
@@ -67,8 +68,16 @@ export function createApiClient(baseUrl) {
     const url = new URL(`${baseUrl}${path}`);
     url.searchParams.set('code', code);
     url.searchParams.set('state', state);
-    const res = await fetch(url.toString());
-    return parseResponse(res);
+    const res = await fetch(url.toString(), { redirect: 'manual' });
+    if (res.status === 302 || res.status === 301) {
+      const location = res.headers.get('location');
+      return {
+        status: res.status,
+        data: { redirected: true, location },
+        ok: true,
+      };
+    }
+    return { ...(await parseResponse(res)), ok: res.ok };
   }
 
   return { api, apiGet, apiDelete, apiMultipart, apiDownload, oauthCallback };

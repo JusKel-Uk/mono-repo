@@ -55,6 +55,7 @@ Copy from `api/sandbox/quickbooks/secrets.env` into `Integrations:QuickBooks`:
 In `deploy-azure.env` (from `deploy-azure.env.example`):
 
 ```bash
+JUSKEL_FRONTEND_URL=https://mono-repo-n96q.vercel.app
 INTEGRATIONS__QUICKBOOKS__CLIENTID='your-intuit-sandbox-client-id'
 INTEGRATIONS__QUICKBOOKS__CLIENTSECRET='your-intuit-sandbox-client-secret'
 INTEGRATIONS__QUICKBOOKS__APIBASEURL=https://sandbox-quickbooks.api.intuit.com/v3/company
@@ -89,8 +90,8 @@ Run: `node api/scripts/e2e-onboarding-api.mjs` — asserts `bandsLockedByIntegra
    - Response: `{ "authorizationUrl": "...", "state": "..." }`
 6. Open `authorizationUrl` in a browser → sign in to Intuit sandbox → pick sandbox company → approve
 7. Intuit redirects to your callback with `code`, `state`, `realmId` (or `realmID`)
-8. API exchanges code, fetches company info + P&amp;L (current + prior) + balance sheet + aged AR/AP + cash flow + paginated accounts, maps bands + persists `FinancialIntegrationMetrics`, saves DB
-9. **Verify** → `GET /funding/applications/current/financial-profile`
+8. API exchanges code, fetches reports, saves DB, then **redirects the browser** to `{JUSKEL_FRONTEND_URL}/onboarding/financial-profile?integration=quickbooks&status=connected`
+9. **Verify** → `GET /funding/applications/current/financial-profile` (from frontend after redirect, or Swagger if `JUSKEL_FRONTEND_URL` is unset)
    - Expect: `bandsLockedByIntegration: true`, populated bands, `integrations` includes QuickBooks (`provider: 3`) connected
 10. **Disconnect** (optional) → `DELETE /funding/integrations/quickbooks` unlocks bands
 
@@ -113,7 +114,7 @@ Share with frontend:
 | API base (local) | `http://localhost:5242` |
 | API base (staging) | `https://juskel-api.livelydune-575d8971.uksouth.azurecontainerapps.io` |
 | Authorize endpoint | `POST /funding/integrations/quickbooks/authorize` (JWT required) |
-| Callback (browser redirect) | Handled by API — frontend opens `authorizationUrl` from authorize response |
+| Callback (browser redirect) | API handles OAuth, then 302 to frontend financial profile page |
 | Financial profile GET | `GET /funding/applications/current/financial-profile` |
 | Provider enum | `IntegrationProvider.QuickBooks = 3` |
 
@@ -161,7 +162,7 @@ WHERE TABLE_SCHEMA = 'funding' AND TABLE_NAME = 'FinancialIntegrationMetrics';
 | Bands empty / only cash mapped | Set `ReportStartDate`/`ReportEndDate` to include company start year |
 | `401` from Intuit API | Token expired — reconnect; refresh handled on sync |
 | Callback 400 | Missing `code` or `state` |
-| PUT financial-profile 400 after connect | Expected — bands locked while QB connected |
+| PUT financial-profile 409 after QB connect | Fixed — PUT returns **200** (bands unchanged) and marks step complete; frontend can Save and continue |
 
 ## Related docs
 

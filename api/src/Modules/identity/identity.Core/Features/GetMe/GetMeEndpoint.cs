@@ -1,13 +1,12 @@
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
 using identity.Contracts;
 using identity.Core.Examples;
-using identity.Core.Features.GetUserById;
+using identity.Core.Http;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
 using Swashbuckle.AspNetCore.Filters;
+using System.Security.Claims;
 
 namespace identity.Core.Features.GetMe;
 
@@ -17,26 +16,23 @@ internal static class GetMeEndpoint
     {
         app.MapGet("/identity/me", async (
             ClaimsPrincipal user,
-            GetUserByIdHandler handler,
+            GetMeHandler handler,
             CancellationToken ct) =>
         {
-            var userIdValue = user.FindFirstValue(JwtRegisteredClaimNames.Sub)
-                ?? user.FindFirstValue(ClaimTypes.NameIdentifier);
-
-            if (!Guid.TryParse(userIdValue, out var userId))
+            if (!IdentityHttpUser.TryGetUserId(user, out var userId))
                 return Results.Unauthorized();
 
-            var summary = await handler.HandleAsync(new GetUserByIdQuery(userId), ct);
-            return summary is null ? Results.NotFound() : Results.Ok(summary);
+            var profile = await handler.HandleAsync(new GetMeQuery(userId), ct);
+            return profile is null ? Results.NotFound() : Results.Ok(profile);
         })
         .RequireAuthorization()
         .WithName("GetMe")
         .WithTags("identity")
-        .Produces<UserSummaryDto>(StatusCodes.Status200OK)
+        .Produces<MeProfileDto>(StatusCodes.Status200OK)
         .Produces(StatusCodes.Status401Unauthorized)
         .Produces(StatusCodes.Status404NotFound)
         .Produces<ProblemDetails>(StatusCodes.Status500InternalServerError)
-        .WithMetadata(new SwaggerResponseExampleAttribute(StatusCodes.Status200OK, typeof(UserSummaryExample)));
+        .WithMetadata(new SwaggerResponseExampleAttribute(StatusCodes.Status200OK, typeof(MeProfileExample)));
 
         return app;
     }

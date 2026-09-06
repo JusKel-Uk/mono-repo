@@ -71,7 +71,7 @@ internal sealed class FinancialProfileService
         profile ??= new FinancialProfile { ApplicationId = applicationId };
 
         if (profile.BandsLockedByIntegration || integrationLocked)
-            throw new InvalidOperationException("Financial bands are locked by an active integration.");
+            return await AcknowledgeLockedProfileAsync(applicationId, profile, ct);
 
         profile.AnnualRevenueBand = request.AnnualRevenueBand;
         profile.EbitdaBand = request.EbitdaBand;
@@ -85,6 +85,28 @@ internal sealed class FinancialProfileService
 
         await _db.SaveChangesAsync(ct);
 
+        var status = await _funding.IsFinancialStepCompleteAsync(applicationId, ct)
+            ? StepStatus.Complete
+            : StepStatus.InProgress;
+        await _onboarding.MarkStepAsync(applicationId, OnboardingStep.Financial, status, ct);
+
+        var integrations = await _funding.GetIntegrationStatusAsync(applicationId, ct);
+        var isOpenBankingConnected = integrations.Any(i =>
+            i.Provider == IntegrationProvider.OpenBanking && i.IsConnected);
+        var evidence = await LoadEvidenceAsync(applicationId, ct);
+        var integrationMetrics = await LoadIntegrationMetricsAsync(applicationId, ct);
+        return Map(profile, integrations, isOpenBankingConnected, evidence, integrationMetrics);
+    }
+
+    /// <summary>
+    /// Integration-owned bands cannot be edited via PUT. Acknowledge "Save and continue"
+    /// by re-marking onboarding progress and returning the current profile unchanged.
+    /// </summary>
+    private async Task<FinancialProfileResponse> AcknowledgeLockedProfileAsync(
+        Guid applicationId,
+        FinancialProfile profile,
+        CancellationToken ct)
+    {
         var status = await _funding.IsFinancialStepCompleteAsync(applicationId, ct)
             ? StepStatus.Complete
             : StepStatus.InProgress;

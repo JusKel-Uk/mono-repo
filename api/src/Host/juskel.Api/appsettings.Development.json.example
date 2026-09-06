@@ -1,4 +1,6 @@
 {
+  "JUSKEL_FRONTEND_URL": "http://localhost:3000",
+
   "ConnectionStrings": {
     "Identity": "Server=tcp:devtestjuskel01.database.windows.net,1433;Database=free-sql-db-0501288;User ID=devprovision;Password=YOUR_PASSWORD;Encrypt=True;TrustServerCertificate=False;Connection Timeout=60;",
     "Onboarding": "Server=tcp:devtestjuskel01.database.windows.net,1433;Database=free-sql-db-0501288;User ID=devprovision;Password=YOUR_PASSWORD;Encrypt=True;TrustServerCertificate=False;Connection Timeout=60;",
