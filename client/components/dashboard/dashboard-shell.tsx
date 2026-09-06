@@ -1,10 +1,14 @@
 'use client';
 
 import type { ReactNode } from 'react';
+import Link from 'next/link';
 import { Bell, Menu } from 'lucide-react';
 
+import { cn } from '@/lib/utils';
+import { ROUTES } from '@/lib/routes';
 import { useAuthStore, displayName, initials } from '@/stores/authStore';
 import { useMounted } from '@/lib/hooks/use-mounted';
+import { useUnreadCount } from '@/lib/dashboard/notifications';
 import { JusKelLogo } from '@/components/brand/juskel-logo';
 import { DashboardSidebar } from '@/components/dashboard/dashboard-sidebar';
 import {
@@ -14,25 +18,56 @@ import {
   SheetTrigger,
 } from '@/components/ui/sheet';
 
+/** Bell that links to the Notifications page, with an unread-count badge. */
+function NotificationBell({
+  boxClass,
+  iconClass,
+  unread,
+}: {
+  boxClass: string;
+  iconClass: string;
+  unread: number;
+}) {
+  return (
+    <Link
+      href={ROUTES.sme.notifications}
+      aria-label='Notifications'
+      className={cn(
+        'relative flex items-center justify-center rounded-xl bg-muted-foreground/10 transition-colors hover:bg-muted-foreground/20',
+        boxClass,
+      )}
+    >
+      <Bell className={cn(iconClass, 'text-carbon-black')} />
+      {unread > 0 && (
+        <span className='absolute -right-1 -top-1 flex min-w-5 items-center justify-center rounded-full bg-destructive px-1 text-xs font-semibold text-white'>
+          {unread}
+        </span>
+      )}
+    </Link>
+  );
+}
+
 /**
  * Shared frame for every SME dashboard screen: sidebar (desktop) / hamburger
- * drawer (mobile), a title + supporting-text header with bell + avatar.
+ * drawer (mobile), a title + supporting-text header with an optional action,
+ * bell + avatar.
  */
 export function DashboardShell({
   title,
   subtitle,
-  notifications = 0,
+  action,
   children,
 }: {
   title: string;
   subtitle: string;
-  /** Unread count shown as a badge on the bell. */
-  notifications?: number;
+  /** Optional header action, shown left of the bell (desktop only). */
+  action?: ReactNode;
   children: ReactNode;
 }) {
   const user = useAuthStore((s) => s.user);
   const mounted = useMounted();
   const avatar = mounted && user ? initials(displayName(user)) : '';
+  const unread = useUnreadCount();
 
   return (
     <div className='min-h-screen bg-mineral-white lg:flex'>
@@ -40,14 +75,7 @@ export function DashboardShell({
       <header className='flex items-center justify-between border-b border-border bg-white px-6 py-4 lg:hidden'>
         <JusKelLogo className='text-carbon-black' />
         <div className='flex items-center gap-3'>
-          <span className='relative flex size-11 items-center justify-center rounded-xl bg-muted-foreground/10'>
-            <Bell className='size-5 text-carbon-black' />
-            {notifications > 0 && (
-              <span className='absolute -right-1 -top-1 flex min-w-5 items-center justify-center rounded-full bg-destructive px-1 text-xs font-semibold text-white'>
-                {notifications}
-              </span>
-            )}
-          </span>
+          <NotificationBell boxClass='size-11' iconClass='size-5' unread={unread} />
           <Sheet>
             <SheetTrigger
               aria-label='Open menu'
@@ -84,14 +112,8 @@ export function DashboardShell({
               </div>
               {/* Desktop-only header actions */}
               <div className='hidden items-center gap-6 lg:flex'>
-                <span className='relative flex size-12 items-center justify-center rounded-xl bg-muted-foreground/10'>
-                  <Bell className='size-6 text-carbon-black' />
-                  {notifications > 0 && (
-                    <span className='absolute -right-1 -top-1 flex min-w-5 items-center justify-center rounded-full bg-destructive px-1 text-xs font-semibold text-white'>
-                      {notifications}
-                    </span>
-                  )}
-                </span>
+                {action}
+                <NotificationBell boxClass='size-12' iconClass='size-6' unread={unread} />
                 <span className='flex size-14 items-center justify-center rounded-full bg-muted text-base font-semibold text-carbon-black'>
                   {avatar || '—'}
                 </span>

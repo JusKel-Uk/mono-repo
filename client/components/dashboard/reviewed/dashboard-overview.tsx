@@ -136,7 +136,6 @@ export function DashboardOverview({ greeting }: { greeting: string }) {
     <DashboardShell
       title={greeting}
       subtitle={`Here's what your Sustainability Finance score currently looks like.`}
-      notifications={2}
     >
       <div className='grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-4'>
         <div className='flex min-h-86 flex-col gap-5 overflow-hidden rounded-2xl border border-gray-200 bg-primary p-3.75 sm:col-span-2 xl:col-span-1 xl:row-span-2'>

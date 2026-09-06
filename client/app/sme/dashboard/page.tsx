@@ -99,7 +99,6 @@ export default function SmeDashboardPage() {
     <DashboardShell
       title={greeting}
       subtitle="Here’s what your Sustainability Finance assessment status currently looks like."
-      notifications={state.requests.items.length}
     >
       {/* Assessment status card */}
       <section className='rounded-2xl border border-gray-200 bg-primary p-7 text-mineral-white'>

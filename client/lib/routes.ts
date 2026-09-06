@@ -25,6 +25,7 @@ export const ROUTES = {
     integrations: '/sme/integrations',
     reports: '/sme/reports',
     settings: '/sme/settings',
+    notifications: '/sme/notifications',
   },
   lender: {
     root: '/lender',
