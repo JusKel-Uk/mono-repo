@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm, type Control } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -30,6 +30,7 @@ import { OnboardingShell } from '@/components/onboarding/onboarding-shell';
 import { OnboardingActions } from '@/components/onboarding/onboarding-actions';
 import { EvidenceAttach } from '@/components/onboarding/evidence-attach';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Textarea } from '@/components/ui/textarea';
 import {
   Form,
   FormControl,
@@ -135,6 +136,16 @@ const SECTIONS: Section[] = [
 
 const SLUG = 'sustainability-profile';
 
+const QUESTION_NAMES = SECTIONS.flatMap((s) =>
+  s.questions.map((q) => q.name),
+);
+
+/** Answers that require backing evidence/justification (anything but "No"). */
+const needsSupport = (answer: string) => answer !== '' && answer !== 'No';
+
+type Support = { hasEvidence: boolean; justification: string };
+const EMPTY_SUPPORT: Support = { hasEvidence: false, justification: '' };
+
 export function SustainabilityProfileForm() {
   const router = useRouter();
   const qc = useQueryClient();
@@ -177,6 +188,44 @@ export function SustainabilityProfileForm() {
     return map;
   }, [saved]);
 
+  // Per-question support (evidence attached and/or justification text), and the
+  // questions that failed the on-submit "backed by evidence/justification" check.
+  const [support, setSupport] = useState<Record<string, Support>>({});
+  const [supportErrors, setSupportErrors] = useState<Set<QuestionName>>(
+    new Set(),
+  );
+
+  const clearSupportError = useCallback((name: QuestionName) => {
+    setSupportErrors((prev) => {
+      if (!prev.has(name)) return prev;
+      const next = new Set(prev);
+      next.delete(name);
+      return next;
+    });
+  }, []);
+
+  const setEvidence = useCallback(
+    (name: QuestionName, hasEvidence: boolean) => {
+      setSupport((s) => ({
+        ...s,
+        [name]: { ...(s[name] ?? EMPTY_SUPPORT), hasEvidence },
+      }));
+      if (hasEvidence) clearSupportError(name);
+    },
+    [clearSupportError],
+  );
+
+  const setJustification = useCallback(
+    (name: QuestionName, justification: string) => {
+      setSupport((s) => ({
+        ...s,
+        [name]: { ...(s[name] ?? EMPTY_SUPPORT), justification },
+      }));
+      if (justification.trim()) clearSupportError(name);
+    },
+    [clearSupportError],
+  );
+
   const save = useMutation({
     mutationFn: (values: SustainabilityProfileInput) =>
       saveSustainabilityProfile(toSustainabilityProfileRequest(values)),
@@ -187,6 +236,20 @@ export function SustainabilityProfileForm() {
   });
 
   const onSubmit = form.handleSubmit(async (values) => {
+    // Every answer that isn't "No" must be backed by evidence or a justification.
+    const missing = QUESTION_NAMES.filter((name) => {
+      if (!needsSupport(values[name])) return false;
+      const s = support[name];
+      return !(s?.hasEvidence || s?.justification.trim());
+    });
+    if (missing.length > 0) {
+      setSupportErrors(new Set(missing));
+      toast.error(
+        'Add evidence or a justification for each answer that isn’t “No”.',
+      );
+      return;
+    }
+    setSupportErrors(new Set());
     try {
       await save.mutateAsync(values);
       const next = nextStepRoute(SLUG);
@@ -249,6 +312,11 @@ export function SustainabilityProfileForm() {
                     label={q.label}
                     options={q.options}
                     initialEvidence={evidenceByKey.get(q.key)}
+                    support={support[q.name] ?? EMPTY_SUPPORT}
+                    error={supportErrors.has(q.name)}
+                    onEvidenceChange={setEvidence}
+                    onJustificationChange={setJustification}
+                    onAnswerChange={clearSupportError}
                   />
                 ))}
               </div>
@@ -267,6 +335,11 @@ function RadioQuestion({
   label,
   options,
   initialEvidence,
+  support,
+  error,
+  onEvidenceChange,
+  onJustificationChange,
+  onAnswerChange,
 }: {
   control: Control<SustainabilityProfileInput>;
   name: QuestionName;
@@ -274,47 +347,86 @@ function RadioQuestion({
   label: string;
   options: string[];
   initialEvidence?: { evidenceId: string; fileName: string };
+  support: Support;
+  error: boolean;
+  onEvidenceChange: (name: QuestionName, hasEvidence: boolean) => void;
+  onJustificationChange: (name: QuestionName, text: string) => void;
+  onAnswerChange: (name: QuestionName) => void;
 }) {
+  const [justifyOpen, setJustifyOpen] = useState(false);
+
   return (
     <FormField
       control={control}
       name={name}
-      render={({ field }) => (
-        <FormItem className='flex flex-col gap-2'>
-          <FormLabel className='text-base font-medium text-carbon-black'>
-            {label}
-          </FormLabel>
-          <FormControl>
-            <RadioGroup
-              onValueChange={field.onChange}
-              value={field.value}
-              className='flex flex-wrap gap-x-5 gap-y-2'
-            >
-              {options.map((opt) => (
-                <label
-                  key={opt}
-                  className='flex cursor-pointer items-center gap-2 text-base text-carbon-black'
-                >
-                  <RadioGroupItem
-                    value={opt}
-                    className='border-carbon-black cursor-pointer'
+      render={({ field }) => {
+        // Evidence/justification are only relevant for a non-"No" answer.
+        const showSupport = needsSupport(field.value);
+        return (
+          <FormItem className='flex flex-col gap-2'>
+            <FormLabel className='text-base font-medium text-carbon-black'>
+              {label}
+            </FormLabel>
+            <FormControl>
+              <RadioGroup
+                onValueChange={(v) => {
+                  field.onChange(v);
+                  onAnswerChange(name);
+                }}
+                value={field.value}
+                className='flex flex-wrap gap-x-5 gap-y-2'
+              >
+                {options.map((opt) => (
+                  <label
+                    key={opt}
+                    className='flex cursor-pointer items-center gap-2 text-base text-carbon-black'
+                  >
+                    <RadioGroupItem
+                      value={opt}
+                      className='border-carbon-black cursor-pointer'
+                    />
+                    {opt}
+                  </label>
+                ))}
+              </RadioGroup>
+            </FormControl>
+
+            {showSupport && (
+              <div className='flex flex-col gap-2'>
+                <EvidenceAttach
+                  attachLabel='Attach certification proof'
+                  hint='PDF, DOC, PNG or JPG · max 10 MB'
+                  onUpload={(file) =>
+                    uploadSustainabilityEvidence(file, questionKey)
+                  }
+                  onRemove={removeSustainabilityEvidence}
+                  onView={downloadSustainabilityEvidence}
+                  initial={initialEvidence}
+                  onAttachedChange={(a) => onEvidenceChange(name, Boolean(a))}
+                  onAddJustification={() => setJustifyOpen((o) => !o)}
+                  justificationLabel={
+                    justifyOpen ? 'Hide justification' : 'Or add a justification'
+                  }
+                />
+                {justifyOpen && (
+                  <Textarea
+                    value={support.justification}
+                    onChange={(e) => onJustificationChange(name, e.target.value)}
+                    placeholder='Add a short justification for this answer…'
+                    rows={3}
                   />
-                  {opt}
-                </label>
-              ))}
-            </RadioGroup>
-          </FormControl>
-          <EvidenceAttach
-            attachLabel='Attach certification proof'
-            hint='PDF, DOC, PNG or JPG · max 10 MB'
-            onUpload={(file) => uploadSustainabilityEvidence(file, questionKey)}
-            onRemove={removeSustainabilityEvidence}
-            onView={downloadSustainabilityEvidence}
-            initial={initialEvidence}
-          />
-          <FormMessage />
-        </FormItem>
-      )}
+                )}
+                {error && (
+                  <p className='text-label-sm text-destructive'>
+                    Attach evidence or add a justification for this answer.
+                  </p>
+                )}
+              </div>
+            )}
+            <FormMessage />
+          </FormItem>
+        );
+      }}
     />
   );
 }

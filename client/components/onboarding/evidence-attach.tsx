@@ -31,6 +31,9 @@ export function EvidenceAttach({
   onUpload,
   onRemove,
   onView,
+  onAttachedChange,
+  onAddJustification,
+  justificationLabel = 'Or add a justification',
   initial,
 }: {
   attachLabel: string;
@@ -39,6 +42,11 @@ export function EvidenceAttach({
   onRemove: (evidenceId: string) => Promise<void>;
   /** Fetch the file (authenticated) for inline preview. */
   onView?: (evidenceId: string) => Promise<BlobResponse>;
+  /** Notified whenever the attached file changes (for parent-side validation). */
+  onAttachedChange?: (attached: Attached | null) => void;
+  /** Click handler for the justification link (e.g. toggles a text field). */
+  onAddJustification?: () => void;
+  justificationLabel?: string;
   /** A file already on the server (from the profile GET) to show on load. */
   initial?: Attached;
 }) {
@@ -55,6 +63,21 @@ export function EvidenceAttach({
     seeded.current = true;
     setAttached({ evidenceId: initial.evidenceId, fileName: initial.fileName });
   }, [initial]);
+
+  // Mirror the attached state up to the parent (for parent-side validation).
+  // The callback is held in a ref, updated in an effect (not during render), so
+  // a changing callback identity doesn't re-fire the sync effect below.
+  const notifyRef = useRef(onAttachedChange);
+  useEffect(() => {
+    notifyRef.current = onAttachedChange;
+  });
+  useEffect(() => {
+    notifyRef.current?.(
+      attached
+        ? { evidenceId: attached.evidenceId, fileName: attached.fileName }
+        : null,
+    );
+  }, [attached]);
 
   // Revoke the object URL when it's replaced or the component unmounts.
   useEffect(() => {
@@ -179,12 +202,12 @@ export function EvidenceAttach({
         </button>
       )}
 
-      {/* Justification has no backend yet — kept as a non-functional link. */}
       <button
         type='button'
+        onClick={onAddJustification}
         className='text-label-sm font-normal text-gray-700 underline hover:no-underline cursor-pointer'
       >
-        Or add a justification
+        {justificationLabel}
       </button>
       <span className='ml-auto text-label-sm font-normal text-gray-700'>
         {hint}
