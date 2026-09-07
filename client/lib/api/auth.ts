@@ -24,6 +24,8 @@ export type RegisterResponse = {
   userId: string;
   email: string;
   emailVerified: boolean;
+  /** Each new user gets a default org (Owner); solo users never need the header. */
+  defaultOrganisationId?: string;
 };
 
 export type LoginCredentials = { email: string; password: string };
@@ -46,6 +48,18 @@ export type MeResponse = {
   email: string;
   firstName?: string;
   lastName?: string;
+  /** Job title (e.g. "Founder & Managing Director") — not the org role. */
+  jobTitle?: string | null;
+  phone?: string | null;
+  accountClosureRequestedAt?: string | null;
+};
+
+/** Editable profile fields (email is not changeable). */
+export type UpdateProfileInput = {
+  firstName: string;
+  lastName: string;
+  jobTitle: string;
+  phone: string;
 };
 
 /* ---- Calls ---- */
@@ -87,8 +101,27 @@ export function getMe() {
   return request<MeResponse>('/identity/me', { method: 'GET', auth: true });
 }
 
-/** Clear the stored token (no server-side logout endpoint). */
+/** Update the signed-in user's profile (empty jobTitle/phone store null). */
+export function updateMe(input: UpdateProfileInput) {
+  return request<MeResponse>('/identity/me', {
+    method: 'PATCH',
+    body: input,
+    auth: true,
+  });
+}
+
+/**
+ * Sign out: best-effort server logout of THIS session, then clear the JWT.
+ * Stays synchronous — the DELETE captures the token synchronously (before
+ * `clearToken`), so callers don't need to await it.
+ */
 export function logout(): void {
+  void request<void>('/identity/me/sessions/current', {
+    method: 'DELETE',
+    auth: true,
+  }).catch(() => {
+    /* best-effort — the local token clear below is what signs the user out */
+  });
   clearToken();
 }
 

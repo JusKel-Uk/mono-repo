@@ -200,6 +200,12 @@
   body {
     @apply bg-background text-foreground;
   }
+  /* Tailwind v4 dropped the default pointer cursor on buttons — restore it for
+   * every enabled button. In the base layer, so an explicit `cursor-*` utility
+   * still wins, and disabled buttons keep their (not-allowed/default) cursor. */
+  button:not(:disabled) {
+    cursor: pointer;
+  }
 }
 
 .c-border {

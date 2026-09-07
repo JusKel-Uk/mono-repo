@@ -221,7 +221,7 @@ export function CompanySetupForm() {
                       <Button
                         type='button'
                         onClick={handleChangeCompany}
-                        className='h-14 shrink-0 gap-3 rounded-xl border border-gray-300 px-5 text-base font-medium cursor-pointer'
+                        className='h-14 shrink-0 gap-3 rounded-xl border border-gray-300 px-5 text-base font-medium'
                       >
                         <X className='size-5' />
                         Change Company
@@ -231,7 +231,7 @@ export function CompanySetupForm() {
                         type='button'
                         onClick={handleVerify}
                         disabled={verify.isPending}
-                        className='h-14 shrink-0 gap-3 rounded-xl border border-gray-300 px-5 text-base font-medium cursor-pointer'
+                        className='h-14 shrink-0 gap-3 rounded-xl border border-gray-300 px-5 text-base font-medium'
                       >
                         {verify.isPending ? (
                           <Loader2 className='size-5 animate-spin' />

@@ -7,7 +7,7 @@ import type {
 import { Button } from '@/components/ui/button';
 
 const BTN =
-  'h-7 w-full gap-2 rounded border border-gray-300 bg-white py-0 text-label-sm font-medium text-gray-700 shadow-xs hover:bg-white/90 cursor-pointer';
+  'h-7 w-full gap-2 rounded border border-gray-300 bg-white py-0 text-label-sm font-medium text-gray-700 shadow-xs hover:bg-white/90';
 
 /**
  * Dark integration card for a financial data source (194px on desktop). Its

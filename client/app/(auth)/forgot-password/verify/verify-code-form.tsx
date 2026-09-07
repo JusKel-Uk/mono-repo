@@ -107,7 +107,7 @@ export function VerifyCodeForm({ email }: { email: string }) {
             type='submit'
             loading={mutation.isPending}
             disabled={mutation.isPending || !form.formState.isValid}
-            className='h-14 w-full rounded-lg text-base font-semibold cursor-pointer'
+            className='h-14 w-full rounded-lg text-base font-semibold'
           >
             {mutation.isPending ? 'Verifying…' : 'Verify Code'}
           </Button>

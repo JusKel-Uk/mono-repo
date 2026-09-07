@@ -166,7 +166,7 @@ export function EvidenceAttach({
             onClick={handleView}
             disabled={viewing}
             title='View file'
-            className='inline-flex items-center gap-2 hover:underline disabled:opacity-60 cursor-pointer'
+            className='inline-flex items-center gap-2 hover:underline disabled:opacity-60'
           >
             <Paperclip className='size-3' />
             <span className='max-w-40 truncate'>{attached.fileName}</span>
@@ -181,7 +181,7 @@ export function EvidenceAttach({
             onClick={handleRemove}
             disabled={busy}
             aria-label='Remove file'
-            className='text-gray-500 hover:text-carbon-black disabled:opacity-60 cursor-pointer'
+            className='text-gray-500 hover:text-carbon-black disabled:opacity-60'
           >
             <X className='size-3.5' />
           </button>
@@ -191,7 +191,7 @@ export function EvidenceAttach({
           type='button'
           onClick={() => inputRef.current?.click()}
           disabled={busy}
-          className='inline-flex h-7 items-center gap-2 rounded-lg bg-primary px-5 text-label-sm font-medium text-gray-200 shadow-xs transition-opacity hover:opacity-90 disabled:opacity-70 cursor-pointer'
+          className='inline-flex h-7 items-center gap-2 rounded-lg bg-primary px-5 text-label-sm font-medium text-gray-200 shadow-xs transition-opacity hover:opacity-90 disabled:opacity-70'
         >
           {busy ? (
             <Loader2 className='size-3 animate-spin' />
@@ -205,7 +205,7 @@ export function EvidenceAttach({
       <button
         type='button'
         onClick={onAddJustification}
-        className='text-label-sm font-normal text-gray-700 underline hover:no-underline cursor-pointer'
+        className='text-label-sm font-normal text-gray-700 underline hover:no-underline'
       >
         {justificationLabel}
       </button>

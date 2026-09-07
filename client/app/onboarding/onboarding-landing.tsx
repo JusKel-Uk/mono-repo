@@ -118,7 +118,7 @@ export function OnboardingLanding() {
               type='button'
               onClick={onSubmit}
               disabled={submit.isPending}
-              className='inline-flex h-14 w-fit cursor-pointer items-center justify-center gap-2 rounded-lg bg-white px-5 text-base font-semibold text-primary shadow-xs transition-opacity hover:opacity-90 disabled:opacity-70'
+              className='inline-flex h-14 w-fit items-center justify-center gap-2 rounded-lg bg-white px-5 text-base font-semibold text-primary shadow-xs transition-opacity hover:opacity-90 disabled:opacity-70'
             >
               {submit.isPending ? 'Submitting…' : 'Submit for review'}
               {submit.isPending ? (

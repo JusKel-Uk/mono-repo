@@ -383,7 +383,7 @@ function RadioQuestion({
                   >
                     <RadioGroupItem
                       value={opt}
-                      className='border-carbon-black cursor-pointer'
+                      className='border-carbon-black'
                     />
                     {opt}
                   </label>

@@ -19,7 +19,7 @@ export function OnboardingActions({
         type='button'
         variant='outline'
         onClick={onSaveExit}
-        className='h-14 w-full lg:w-55 cursor-pointer rounded-lg border-gray-300 text-base font-semibold text-gray-700'
+        className='h-14 w-full lg:w-55 rounded-lg border-gray-300 text-base font-semibold text-gray-700'
       >
         Save and Exit
       </Button>
@@ -28,7 +28,7 @@ export function OnboardingActions({
         form={formId}
         loading={loading}
         disabled={disabled}
-        className='h-14 w-full lg:w-55 cursor-pointer rounded-lg text-base font-semibold'
+        className='h-14 w-full lg:w-55 rounded-lg text-base font-semibold'
       >
         Save and Continue
       </Button>

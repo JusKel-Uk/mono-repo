@@ -188,7 +188,7 @@ export function AppSidebar({
             type='button'
             onClick={handleLogout}
             aria-label='Log out'
-            className='rounded-lg p-2 text-muted-foreground hover:bg-muted hover:text-carbon-black cursor-pointer'
+            className='rounded-lg p-2 text-muted-foreground hover:bg-muted hover:text-carbon-black'
           >
             <LogOut className='size-5 text-destructive' />
           </button>
