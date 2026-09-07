@@ -12,7 +12,7 @@ using System.Security.Claims;
 
 namespace identity.Core.Features.Organisations;
 
-internal static class OrganisationsEndpoints
+internal static partial class OrganisationsEndpoints
 {
     internal static IEndpointRouteBuilder MapOrganisationsEndpoints(this IEndpointRouteBuilder app)
     {
@@ -263,6 +263,8 @@ internal static class OrganisationsEndpoints
         .WithName("RemoveOrganisationMember")
         .WithTags("identity-organisations")
         .Produces(StatusCodes.Status204NoContent);
+
+        MapInviteListAndResend(app);
 
         app.MapPost("/identity/organisations/{organisationId:guid}/closure", async (
             ClaimsPrincipal user,

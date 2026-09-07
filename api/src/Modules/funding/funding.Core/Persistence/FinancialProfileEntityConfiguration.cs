@@ -99,3 +99,47 @@ internal sealed class FinancialIntegrationMetricsEntityConfiguration
         System.Linq.Expressions.Expression<Func<FinancialIntegrationMetrics, decimal?>> property) =>
         entity.Property(property).HasPrecision(18, 4);
 }
+
+internal sealed class OpenBankingConnectionEntityConfiguration : IEntityTypeConfiguration<OpenBankingConnection>
+{
+    public void Configure(EntityTypeBuilder<OpenBankingConnection> entity)
+    {
+        entity.ToTable("OpenBankingConnections");
+        entity.HasKey(c => c.Id);
+        entity.Property(c => c.InstitutionId).HasMaxLength(128).IsRequired();
+        entity.Property(c => c.InstitutionName).HasMaxLength(256).IsRequired();
+        entity.Property(c => c.ExternalConnectionId).HasMaxLength(128);
+        entity.Property(c => c.AccessTokenEncrypted).HasMaxLength(4000).IsRequired();
+        entity.Property(c => c.RefreshTokenEncrypted).HasMaxLength(4000);
+        entity.Property(c => c.AccountsJson).HasMaxLength(8000).IsRequired();
+        entity.HasIndex(c => new { c.ApplicationId, c.InstitutionId }).IsUnique();
+    }
+}
+
+internal sealed class BankingIntegrationMetricsEntityConfiguration : IEntityTypeConfiguration<BankingIntegrationMetrics>
+{
+    public void Configure(EntityTypeBuilder<BankingIntegrationMetrics> entity)
+    {
+        entity.ToTable("BankingIntegrationMetrics");
+        entity.HasKey(m => m.ApplicationId);
+        entity.Property(m => m.Currency).HasMaxLength(3).IsRequired();
+        entity.Property(m => m.SyncedAt).IsRequired();
+        entity.Property(m => m.TotalCashBalance).HasPrecision(18, 2);
+        entity.Property(m => m.TotalCredits).HasPrecision(18, 2);
+        entity.Property(m => m.TotalDebits).HasPrecision(18, 2);
+        entity.Property(m => m.NetCashFlow).HasPrecision(18, 2);
+        entity.Property(m => m.AvgMonthlyInflow).HasPrecision(18, 2);
+        entity.Property(m => m.AvgMonthlyOutflow).HasPrecision(18, 2);
+    }
+}
+
+internal sealed class BankingCompletenessAttestationEntityConfiguration
+    : IEntityTypeConfiguration<BankingCompletenessAttestation>
+{
+    public void Configure(EntityTypeBuilder<BankingCompletenessAttestation> entity)
+    {
+        entity.ToTable("BankingCompletenessAttestations");
+        entity.HasKey(a => a.ApplicationId);
+        entity.Property(a => a.AttestedAt).IsRequired();
+    }
+}

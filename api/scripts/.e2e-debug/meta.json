@@ -1,0 +1,9 @@
+{
+  "url": "https://login.truelayer-sandbox.com/consent?session_id=afss-PQpjEl37lbAMeGRl50ymeVW2SJn74q2Yc7bz2tCYJBg",
+  "title": "juskel - Connect your bank account",
+  "text": "Testing mode active\nThis application has not been authorised for production use. Please do not enter your bank credentials if you are not testing this application. To remove this banner, please reach out to sales@truelayer.com\nBack\nConnect your account\n\njuskel’s data partner, TrueLayer, would like 90-day access to your Mock account details.\n\nWhat details am I sharing?\n\nTo provide its services, TrueLayer needs permission to access the following information and share it with juskel:\n\nFull name\nAccount number and sort code\nBalance\nTransactions\n\n\n\nTrueLayer is FCA-regulated, and won’t share or use your personal data for anything else.\n\nTo keep your information secure, TrueLayer connects to your account using bank-grade encryption.\n\nCANCEL\nALLOW\nBy tapping ‘Allow’, you agree to TrueLayer's Terms of Service and Privacy Policy",
+  "frames": [
+    "https://login.truelayer-sandbox.com/consent?session_id=afss-PQpjEl37lbAMeGRl50ymeVW2SJn74q2Yc7bz2tCYJBg"
+  ],
+  "inputs": []
+}

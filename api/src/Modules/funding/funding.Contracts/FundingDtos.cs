@@ -53,7 +53,45 @@ public sealed record FinancialProfileResponse(
     IReadOnlyList<IntegrationStatusDto> Integrations,
     IReadOnlyList<EvidenceResponse> Evidence,
     FinancialIntegrationMetricsDto? IntegrationMetrics,
+    IReadOnlyList<OpenBankingConnectionDto> ConnectedBanks,
+    BankingIntegrationMetricsDto? BankingIntegrationMetrics,
+    BankingCompletenessAttestationDto? BankingCompleteness,
     DateTime UpdatedAt);
+
+public sealed record OpenBankingConnectionDto(
+    Guid ConnectionId,
+    string InstitutionId,
+    string InstitutionName,
+    int AccountCount,
+    DateTime ConnectedAt,
+    DateTime? ExpiresAt);
+
+public sealed record OpenBankingConnectionsResponse(
+    IReadOnlyList<OpenBankingConnectionDto> Connections);
+
+public sealed record BankingIntegrationMetricsDto(
+    string Currency,
+    DateOnly PeriodStart,
+    DateOnly PeriodEnd,
+    DateTime SyncedAt,
+    int ConnectionCount,
+    int AccountCount,
+    decimal TotalCashBalance,
+    decimal TotalCredits,
+    decimal TotalDebits,
+    decimal NetCashFlow,
+    decimal AvgMonthlyInflow,
+    decimal AvgMonthlyOutflow,
+    int TransactionCount,
+    bool HasNonGbpAccounts);
+
+public sealed record BankingCompletenessAttestationDto(
+    bool AllRelevantAccountsConnected,
+    DateTime AttestedAt,
+    Guid AttestedByUserId);
+
+public sealed record UpsertBankingCompletenessRequest(
+    bool AllRelevantAccountsConnected);
 
 public sealed record UpsertFinancialProfileRequest(
     AnnualRevenueBand? AnnualRevenueBand,

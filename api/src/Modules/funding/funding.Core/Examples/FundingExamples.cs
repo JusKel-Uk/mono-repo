@@ -13,11 +13,11 @@ public sealed class FinancialProfileResponseExample : IExamplesProvider<Financia
         CashReservesMonthsBand.From3To6Months,
         AvgMonthlyRevenueBand.From20KTo80K,
         true,
-        false,
+        true,
         [
-            new IntegrationStatusDto(IntegrationProvider.OpenBanking, false, null, null),
+            new IntegrationStatusDto(IntegrationProvider.OpenBanking, true, DateTime.UtcNow, DateTime.UtcNow.AddHours(1)),
             new IntegrationStatusDto(IntegrationProvider.Xero, false, null, null),
-            new IntegrationStatusDto(IntegrationProvider.QuickBooks, true, DateTime.UtcNow, DateTime.UtcNow.AddHours(1)),
+            new IntegrationStatusDto(IntegrationProvider.QuickBooks, false, null, null),
         ],
         [
             new EvidenceResponse(
@@ -28,40 +28,32 @@ public sealed class FinancialProfileResponseExample : IExamplesProvider<Financia
                 512_000,
                 DateTime.UtcNow),
         ],
-        new FinancialIntegrationMetricsDto(
-            IntegrationProvider.QuickBooks,
+        null,
+        [
+            new OpenBankingConnectionDto(
+                Guid.Parse("33333333-3333-3333-3333-333333333333"),
+                "mock-a",
+                "Mock Bank",
+                1,
+                DateTime.UtcNow,
+                DateTime.UtcNow.AddHours(1)),
+        ],
+        new BankingIntegrationMetricsDto(
             "GBP",
-            new DateOnly(2026, 1, 1),
-            new DateOnly(2026, 12, 31),
-            new DateOnly(2025, 12, 31),
-            new DateOnly(2026, 12, 31),
+            new DateOnly(2026, 6, 9),
+            new DateOnly(2026, 9, 7),
             DateTime.UtcNow,
-            750_000m,
-            680_000m,
-            180_000m,
-            120_000m,
-            95_000m,
-            88_000m,
-            110_000m,
-            12_500m,
-            42_000m,
+            1,
+            1,
+            125_000m,
+            84_000m,
+            66_000m,
             18_000m,
-            180_000m,
-            60_000m,
-            120_000m,
-            320_000m,
-            45_000m,
-            275_000m,
-            35_000m,
-            72_000m,
-            3.0m,
-            0.14m,
-            0.127m,
-            0.103m,
-            0.08m,
-            24,
-            true,
-            true),
+            28_000m,
+            22_000m,
+            26,
+            false),
+        new BankingCompletenessAttestationDto(true, DateTime.UtcNow, Guid.Parse("44444444-4444-4444-4444-444444444444")),
         DateTime.UtcNow);
 }
 
@@ -111,4 +103,30 @@ public sealed class EvidenceResponseExample : IExamplesProvider<EvidenceResponse
         "application/pdf",
         512_000,
         DateTime.UtcNow);
+}
+
+public sealed class OpenBankingConnectionsResponseExample : IExamplesProvider<OpenBankingConnectionsResponse>
+{
+    public OpenBankingConnectionsResponse GetExamples() => new(
+    [
+        new OpenBankingConnectionDto(
+            Guid.Parse("33333333-3333-3333-3333-333333333333"),
+            "mock-a",
+            "Mock Bank",
+            1,
+            DateTime.UtcNow,
+            DateTime.UtcNow.AddHours(1)),
+        new OpenBankingConnectionDto(
+            Guid.Parse("55555555-5555-5555-5555-555555555555"),
+            "mock-b",
+            "Second Mock Bank",
+            1,
+            DateTime.UtcNow,
+            DateTime.UtcNow.AddHours(1)),
+    ]);
+}
+
+public sealed class UpsertBankingCompletenessRequestExample : IExamplesProvider<UpsertBankingCompletenessRequest>
+{
+    public UpsertBankingCompletenessRequest GetExamples() => new(true);
 }

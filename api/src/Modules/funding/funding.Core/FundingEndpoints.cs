@@ -200,6 +200,13 @@ public static class FundingEndpoints
             {
                 return IntegrationCallbackResults.Failed(juskelOptions.Value, "open-banking", ex.Message);
             }
+            catch (Exception ex)
+            {
+                return IntegrationCallbackResults.Failed(
+                    juskelOptions.Value,
+                    "open-banking",
+                    ex.InnerException?.Message ?? ex.Message);
+            }
         })
         .AllowAnonymous()
         .WithName("OpenBankingCallback")
@@ -233,6 +240,93 @@ public static class FundingEndpoints
         .Produces(StatusCodes.Status401Unauthorized)
         .Produces(StatusCodes.Status404NotFound)
         .Produces<ProblemDetails>(StatusCodes.Status500InternalServerError);
+
+        group.MapGet("/integrations/open-banking/connections", async (
+            ClaimsPrincipal user,
+            HttpRequest request,
+            IIdentityModule identity,
+            IntegrationService service,
+            CancellationToken ct) =>
+        {
+            if (!TryGetUserId(user, out var userId))
+                return Results.Unauthorized();
+
+            var (access, error) = await OrganisationEndpointHelper.ResolveAsync(identity, userId, request, ct);
+            if (error is not null)
+                return error;
+
+            var response = await service.GetOpenBankingConnectionsAsync(access!.OrganisationId, ct);
+            return response is null ? Results.NotFound() : Results.Ok(response);
+        })
+        .WithName("GetOpenBankingConnections")
+        .Produces<OpenBankingConnectionsResponse>(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status401Unauthorized)
+        .Produces(StatusCodes.Status404NotFound)
+        .Produces<ProblemDetails>(StatusCodes.Status500InternalServerError)
+        .WithMetadata(new SwaggerResponseExampleAttribute(StatusCodes.Status200OK, typeof(OpenBankingConnectionsResponseExample)));
+
+        group.MapDelete("/integrations/open-banking/connections/{connectionId:guid}", async (
+            ClaimsPrincipal user,
+            HttpRequest request,
+            Guid connectionId,
+            IIdentityModule identity,
+            IntegrationService service,
+            CancellationToken ct) =>
+        {
+            if (!TryGetUserId(user, out var userId))
+                return Results.Unauthorized();
+
+            var (access, error) = await OrganisationEndpointHelper.ResolveAsync(identity, userId, request, ct);
+            if (error is not null)
+                return error;
+
+            if (!access!.CanWrite)
+                return OrganisationApiResults.Forbidden();
+
+            var disconnected = await service.DisconnectOpenBankingConnectionAsync(
+                access.OrganisationId,
+                connectionId,
+                ct);
+            return disconnected ? Results.NoContent() : Results.NotFound();
+        })
+        .WithName("DisconnectOpenBankingConnection")
+        .Produces(StatusCodes.Status204NoContent)
+        .Produces(StatusCodes.Status401Unauthorized)
+        .Produces(StatusCodes.Status404NotFound)
+        .Produces<ProblemDetails>(StatusCodes.Status500InternalServerError);
+
+        group.MapPut("/integrations/open-banking/completeness", async (
+            ClaimsPrincipal user,
+            HttpRequest request,
+            UpsertBankingCompletenessRequest requestBody,
+            IIdentityModule identity,
+            IntegrationService service,
+            CancellationToken ct) =>
+        {
+            if (!TryGetUserId(user, out var userId))
+                return Results.Unauthorized();
+
+            var (access, error) = await OrganisationEndpointHelper.ResolveAsync(identity, userId, request, ct);
+            if (error is not null)
+                return error;
+
+            if (!access!.CanWrite)
+                return OrganisationApiResults.Forbidden();
+
+            var saved = await service.UpsertBankingCompletenessAsync(
+                userId,
+                access.OrganisationId,
+                requestBody,
+                ct);
+            return saved ? Results.NoContent() : Results.NotFound();
+        })
+        .WithName("UpsertBankingCompleteness")
+        .Accepts<UpsertBankingCompletenessRequest>("application/json")
+        .Produces(StatusCodes.Status204NoContent)
+        .Produces(StatusCodes.Status401Unauthorized)
+        .Produces(StatusCodes.Status404NotFound)
+        .Produces<ProblemDetails>(StatusCodes.Status500InternalServerError)
+        .WithMetadata(new SwaggerRequestExampleAttribute(typeof(UpsertBankingCompletenessRequest), typeof(UpsertBankingCompletenessRequestExample)));
 
         group.MapPost("/integrations/xero/authorize", async (
             ClaimsPrincipal user,

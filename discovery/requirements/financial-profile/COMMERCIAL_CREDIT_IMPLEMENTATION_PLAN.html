@@ -1,0 +1,1181 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>COMMERCIAL_CREDIT_IMPLEMENTATION_PLAN</title>
+  <style>
+    /* Default styles provided by pandoc.
+    ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+    */
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: min(4vw, 1.5em);}
+    div.column{flex: auto; overflow-x: auto;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+  </style>
+  <link rel="stylesheet" href="research-pdf.css" />
+</head>
+<body>
+<section id="credit-bureau-implementation" class="cover">
+<h1>Credit Bureau Implementation</h1>
+<p class="subtitle">
+Costs, Compliance, Feasibility &amp; Action Plan
+</p>
+<dl class="cover-meta">
+<dt>
+Date
+</dt>
+<dd>
+7 September 2026
+</dd>
+<dt>
+Version
+</dt>
+<dd>
+1.0
+</dd>
+<dt>
+Prepared for
+</dt>
+<dd>
+juskel leadership, product, engineering, and compliance
+</dd>
+<dt>
+Companion doc
+</dt>
+<dd>
+Commercial Credit &amp; Banking Intelligence — Tech Lead Research Report
+</dd>
+<dt>
+Basis
+</dt>
+<dd>
+Public vendor/industry data + juskel MVP budget constraints (£5–15/mo
+infra is separate from bureau fees)
+</dd>
+</dl>
+</section>
+<div class="callout">
+<p><strong>Realistic headline:</strong> Implementing <strong>production
+credit bureau enrichment</strong> for juskel is feasible, but it is
+<strong>not a £500 side project</strong>. A honest <strong>Year 1
+budget</strong> for a regulated, consent-gated bureau integration starts
+around <strong>£8,000–£15,000</strong> on the <strong>lean path</strong>
+(Creditsafe + legal + engineering), or <strong>£40,000–£80,000+</strong>
+on the <strong>enterprise path</strong> (Experian/Equifax + FCA/CIGB
+depth). <strong>Timeline: 3–4 months minimum</strong> on the lean path;
+<strong>6–9 months</strong> if FCA authorisation and reciprocity
+reporting are required.</p>
+</div>
+<section id="contents" class="toc">
+<h2>Contents</h2>
+<ol type="1">
+<li>Executive decision summary</li>
+<li>Three implementation paths (with costs)</li>
+<li>Year 1 cost model by SME volume</li>
+<li>Compliance — what applies to juskel</li>
+<li>Compliance action checklist &amp; timeline</li>
+<li>Feasibility — will it work for our SMEs?</li>
+<li>What we need to do — phased action plan</li>
+<li>Engineering effort &amp; internal cost</li>
+<li>Vendor cost comparison (realistic ranges)</li>
+<li>Risks that change cost or timeline</li>
+<li>Recommended path for juskel</li>
+<li>Sign-off checklist before spending money</li>
+</ol>
+</section>
+<h2 id="executive-decision-summary">1. Executive decision summary</h2>
+<p>juskel is <strong>not a lender today</strong>. The Financial Profile
+spec wants <strong>Commercial Credit Data Enrichment</strong> to
+supplement Open Banking — showing SMEs a consolidated view of
+borrowing/commitments and enriching Banking Intelligence (BIS)
+<strong>without</strong> juskel becoming a credit reference agency.</p>
+<p>This document answers three practical questions:</p>
+<table>
+<colgroup>
+<col style="width: 41%" />
+<col style="width: 58%" />
+</colgroup>
+<thead>
+<tr>
+<th>Question</th>
+<th>Short answer</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Can we afford it?</strong></td>
+<td>Yes on a <strong>lean path</strong> (~£8–15k Year 1) if pulls are
+consent-gated and volume is controlled. <strong>No</strong> if we treat
+it like free API data at scale.</td>
+</tr>
+<tr>
+<td><strong>Are we allowed to?</strong></td>
+<td><strong>Maybe</strong> — depends on FCA role, permissible purpose,
+and whether we access <strong>CCDS reciprocal</strong> data. Legal
+sign-off required <strong>before</strong> first production pull.</td>
+</tr>
+<tr>
+<td><strong>Will it work for average SMEs?</strong></td>
+<td><strong>Partially</strong> — bureau files are often thin for sole
+traders and new companies; product must treat gaps as normal.</td>
+</tr>
+</tbody>
+</table>
+<div class="callout success">
+<p><strong>Recommendation:</strong> Pursue <strong>Path B (Creditsafe
+lean integration)</strong> in parallel with <strong>Path A (no bureau
+MVP)</strong>. Do <strong>not</strong> commit to <strong>Path C
+(Experian/Equifax enterprise)</strong> until legal confirms eligibility
+and a lender/partner funds the cost — or juskel obtains FCA credit
+broking/CIS authorisation.</p>
+</div>
+<hr />
+<h2 id="three-implementation-paths-with-costs">2. Three implementation
+paths (with costs)</h2>
+<p>All figures are <strong>planning estimates</strong> in GBP, excluding
+VAT. Vendor quotes may differ. Assumes UK Ltd-focused SME
+onboarding.</p>
+<h3 id="path-a-no-bureau-mvp-baseline">Path A — No bureau (MVP
+baseline)</h3>
+<p><strong>What you get:</strong> Manual financial baseline + QuickBooks
+metrics + TrueLayer Open Banking + banking/borrowing
+<strong>self-attestation</strong> (no bureau pull).</p>
+<table>
+<colgroup>
+<col style="width: 31%" />
+<col style="width: 48%" />
+<col style="width: 20%" />
+</colgroup>
+<thead>
+<tr>
+<th>Cost item</th>
+<th>Year 1 estimate</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Credit bureau fees</td>
+<td><strong>£0</strong></td>
+<td>None</td>
+</tr>
+<tr>
+<td>Legal / compliance review</td>
+<td><strong>£2,000 – £5,000</strong></td>
+<td>One-off: GDPR consent copy, onboarding terms, OB consent</td>
+</tr>
+<tr>
+<td>External engineering</td>
+<td><strong>£0</strong> (internal)</td>
+<td>~2–3 person-weeks internal</td>
+</tr>
+<tr>
+<td>TrueLayer (existing)</td>
+<td><strong>£500 – £2,000/yr</strong></td>
+<td>Volume-dependent SaaS — separate from Azure infra</td>
+</tr>
+<tr>
+<td><strong>Path A total (Year 1)</strong></td>
+<td><strong>£2,500 – £7,000</strong></td>
+<td>Excludes internal salary</td>
+</tr>
+</tbody>
+</table>
+<table>
+<colgroup>
+<col style="width: 47%" />
+<col style="width: 52%" />
+</colgroup>
+<thead>
+<tr>
+<th>Timeline</th>
+<th>Milestone</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Weeks 1–4</strong></td>
+<td>Banking metrics entity, multi-bank UX, completeness attestation</td>
+</tr>
+<tr>
+<td><strong>Weeks 5–8</strong></td>
+<td>Provenance/confidence flags, align manual baseline to spec</td>
+</tr>
+<tr>
+<td><strong>Week 8</strong></td>
+<td>MVP Financial Profile shippable <strong>without bureau</strong></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Feasibility:</strong> <strong>High</strong> — no CRA
+contract, no reciprocity.</p>
+<hr />
+<h3 id="path-b-lean-bureau-creditsafe-connect-recommended-probe">Path B
+— Lean bureau (Creditsafe Connect) — <strong>recommended
+probe</strong></h3>
+<p><strong>What you get:</strong> SME-consented <strong>UK company
+credit report</strong> + CCDS finance agreement slice where available;
+reconciliation UI (corroborated / missing / discrepancy); <strong>no CRA
+score displayed</strong>.</p>
+<table>
+<colgroup>
+<col style="width: 31%" />
+<col style="width: 48%" />
+<col style="width: 20%" />
+</colgroup>
+<thead>
+<tr>
+<th>Cost item</th>
+<th>Year 1 estimate</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Creditsafe subscription</td>
+<td><strong>£1,200 – £3,500/yr</strong></td>
+<td>Tier depends on report credits bundled</td>
+</tr>
+<tr>
+<td>Connect API integration fee</td>
+<td><strong>£800 – £1,200/yr</strong></td>
+<td>Third-party integrators cite ~€1,000; confirm with Creditsafe</td>
+</tr>
+<tr>
+<td>Per-report credits (variable)</td>
+<td><strong>£3 – £12 per pull</strong></td>
+<td>Planning midpoint <strong>~£6/report</strong></td>
+</tr>
+<tr>
+<td>Legal / compliance</td>
+<td><strong>£3,000 – £8,000</strong></td>
+<td>Bureau consent step, permissible purpose memo, DPIA update</td>
+</tr>
+<tr>
+<td>CIGB subscription</td>
+<td><strong>£0 – £2,500/yr</strong></td>
+<td><strong>TBC with legal</strong> — may apply if accessing shared
+performance data</td>
+</tr>
+<tr>
+<td>Engineering (internal)</td>
+<td><strong>4–6 person-weeks</strong></td>
+<td>API client, storage, reconciliation UI contract, e2e</td>
+</tr>
+<tr>
+<td>Sandbox / test pulls</td>
+<td><strong>£0 – £200</strong></td>
+<td>Creditsafe sandbox free; limited live test credits</td>
+</tr>
+<tr>
+<td><strong>Path B fixed (Year 1)</strong></td>
+<td><strong>£5,000 – £13,200</strong></td>
+<td>Before variable pulls</td>
+</tr>
+<tr>
+<td><strong>Variable at volume</strong></td>
+<td>See Section 3</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<table>
+<colgroup>
+<col style="width: 47%" />
+<col style="width: 52%" />
+</colgroup>
+<thead>
+<tr>
+<th>Timeline</th>
+<th>Milestone</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Weeks 1–2</strong></td>
+<td>Legal scoping call; Creditsafe sandbox account</td>
+</tr>
+<tr>
+<td><strong>Weeks 3–4</strong></td>
+<td>Sandbox spike: company lookup + CCDS endpoint for test Ltd</td>
+</tr>
+<tr>
+<td><strong>Weeks 5–8</strong></td>
+<td>Legal sign-off on consent UX + permissible purpose</td>
+</tr>
+<tr>
+<td><strong>Weeks 9–12</strong></td>
+<td>Production contract signed; API integrated behind consent gate</td>
+</tr>
+<tr>
+<td><strong>Weeks 13–16</strong></td>
+<td>Reconciliation UI + e2e tests; soft launch to % of Ltd SMEs</td>
+</tr>
+<tr>
+<td><strong>Month 4</strong></td>
+<td><strong>Production bureau enrichment live (limited
+scope)</strong></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Feasibility:</strong> <strong>Medium–High</strong> for
+<strong>Ltd companies</strong>; <strong>Low</strong> for sole traders
+(thin files).</p>
+<p><strong>Reciprocity risk:</strong> If Creditsafe classifies juskel as
+a CCDS finance provider receiving reciprocal pool data, <strong>12-month
+reporting obligation</strong> may apply — legal must confirm
+<strong>before contract</strong>.</p>
+<hr />
+<h3 id="path-c-enterprise-bureau-experian-or-equifax">Path C —
+Enterprise bureau (Experian or Equifax)</h3>
+<p><strong>What you get:</strong> Full commercial credit API, optional
+OB+bureau bundle (Equifax OBaaS / Experian Commercial Acumen),
+decisioning-grade data, CATO/CCDS depth, BIAM enrichment at scale.</p>
+<table>
+<colgroup>
+<col style="width: 31%" />
+<col style="width: 48%" />
+<col style="width: 20%" />
+</colgroup>
+<thead>
+<tr>
+<th>Cost item</th>
+<th>Year 1 estimate</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Vendor setup / onboarding</td>
+<td><strong>£8,000 – £25,000</strong></td>
+<td>Integration, IP allowlisting, UAT</td>
+</tr>
+<tr>
+<td>Annual platform / minimum commit</td>
+<td><strong>£15,000 – £45,000/yr</strong></td>
+<td>Enterprise sales; often minimum search commits</td>
+</tr>
+<tr>
+<td>Per-search / per-account (variable)</td>
+<td><strong>£5 – £25+ per event</strong></td>
+<td>Product-dependent</td>
+</tr>
+<tr>
+<td>CIGB subscription</td>
+<td><strong>£1,500 – £5,000/yr</strong></td>
+<td>Typical for data subscribers — confirm with CIGB</td>
+</tr>
+<tr>
+<td>FCA authorisation (if required)</td>
+<td><strong>£1,500 application + £500–£2k/yr</strong></td>
+<td>Credit broking or CIS — <strong>3–6 month</strong> process</td>
+</tr>
+<tr>
+<td>Legal / compliance programme</td>
+<td><strong>£8,000 – £20,000</strong></td>
+<td>Ongoing advisory, policies, audits</td>
+</tr>
+<tr>
+<td>Reciprocity reporting build</td>
+<td><strong>8–12 person-weeks</strong></td>
+<td>If CCDS contributor — pipeline + ops</td>
+</tr>
+<tr>
+<td><strong>Path C total (Year 1)</strong></td>
+<td><strong>£40,000 – £80,000+</strong></td>
+<td>Excludes internal salary</td>
+</tr>
+</tbody>
+</table>
+<table>
+<thead>
+<tr>
+<th>Timeline</th>
+<th>Milestone</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Month 1</strong></td>
+<td>Vendor RFP, legal feasibility, FCA strategy decision</td>
+</tr>
+<tr>
+<td><strong>Months 2–3</strong></td>
+<td>Contract negotiation, sandbox/ UAT access</td>
+</tr>
+<tr>
+<td><strong>Months 4–5</strong></td>
+<td>Integration + reciprocity reporting (if required)</td>
+</tr>
+<tr>
+<td><strong>Month 6–9</strong></td>
+<td>Production go-live, monitoring, lender-facing BIS</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Feasibility:</strong> <strong>Medium</strong> — eligibility
+uncertain for non-lender platform; <strong>high cost</strong> for
+MVP-stage juskel.</p>
+<hr />
+<h2 id="year-1-cost-model-by-sme-volume">3. Year 1 cost model by SME
+volume</h2>
+<p>Assumes <strong>Path B (Creditsafe)</strong> with <strong>opt-in
+bureau step</strong> — not every SME triggers a pull.</p>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 30%" />
+<col style="width: 35%" />
+</colgroup>
+<thead>
+<tr>
+<th>SMEs completing bureau step (Year 1)</th>
+<th>Variable report cost (@ £6/pull)</th>
+<th>Path B Year 1 total (fixed + variable)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>100</strong></td>
+<td>£600</td>
+<td><strong>£5,600 – £13,800</strong></td>
+</tr>
+<tr>
+<td><strong>500</strong></td>
+<td>£3,000</td>
+<td><strong>£8,000 – £16,200</strong></td>
+</tr>
+<tr>
+<td><strong>2,000</strong></td>
+<td>£12,000</td>
+<td><strong>£17,000 – £25,200</strong></td>
+</tr>
+<tr>
+<td><strong>10,000</strong></td>
+<td>£60,000</td>
+<td><strong>£65,000 – £73,200</strong></td>
+</tr>
+</tbody>
+</table>
+<div class="callout warn">
+<p>At <strong>10,000+ pulls/year</strong>, per-report pricing dominates.
+Negotiate <strong>annual credit bundles</strong> or move cost to
+<strong>lenders post-match</strong> (commercial model), not juskel infra
+budget.</p>
+</div>
+<p><strong>Azure infra (£5–15/mo)</strong> covers hosting only —
+<strong>bureau fees are a separate budget line</strong>.</p>
+<hr />
+<h2 id="compliance-what-applies-to-juskel">4. Compliance — what applies
+to juskel</h2>
+<p>This is not legal advice. Use this as a <strong>briefing for your
+solicitor/compliance adviser</strong>.</p>
+<h3 id="regulations-and-schemes">4.1 Regulations and schemes</h3>
+<table>
+<colgroup>
+<col style="width: 27%" />
+<col style="width: 35%" />
+<col style="width: 37%" />
+</colgroup>
+<thead>
+<tr>
+<th>Framework</th>
+<th>Applies when</th>
+<th>juskel impact</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>UK GDPR / Data Protection Act 2018</strong></td>
+<td>Any personal or business data processing</td>
+<td>Privacy notice, DPIA, consent records, retention</td>
+</tr>
+<tr>
+<td><strong>CCDS Regulations 2015</strong></td>
+<td>Accessing government-mandated SME credit sharing pool</td>
+<td>Reciprocity within 12 months if juskel is a <strong>finance
+provider</strong> receiving data</td>
+</tr>
+<tr>
+<td><strong>Principles of Reciprocity (CIGB)</strong></td>
+<td>Accessing shared credit <strong>performance</strong> data</td>
+<td>Permitted purposes: responsible lending, fraud, debt recovery — not
+generic analytics</td>
+</tr>
+<tr>
+<td><strong>FCA FSMA authorisation</strong></td>
+<td>Credit broking, credit information services, certain
+introductions</td>
+<td><strong>TBC</strong> — depends whether juskel <strong>facilitates
+credit decisions</strong> with bureau data</td>
+</tr>
+<tr>
+<td><strong>Consumer Credit Act / CRA 1974</strong></td>
+<td>Consumer (director) credit searches</td>
+<td>If searching individuals (sole traders, PG) — stricter rules</td>
+</tr>
+<tr>
+<td><strong>PSD2 / Open Banking</strong></td>
+<td>Already in scope via TrueLayer</td>
+<td>Separate consent from bureau step</td>
+</tr>
+</tbody>
+</table>
+<h3 id="what-juskel-must-not-do-per-spec-regulation">4.2 What juskel
+must <strong>not</strong> do (per spec + regulation)</h3>
+<ul>
+<li>Display a bureau <strong>credit score</strong> as if juskel issued
+it</li>
+<li>Add an 8th BIS dimension that is effectively a CRA score</li>
+<li>Pull bureau data <strong>without</strong> SME consent and documented
+permissible purpose</li>
+<li>Access CCDS reciprocal pool <strong>without</strong> understanding
+reciprocity obligations</li>
+<li>Present bureau data as <strong>complete</strong> when coverage is
+partial (~25% national CCDS consent rate on designated bank
+accounts)</li>
+</ul>
+<h3 id="permissible-purpose-working-positions-confirm-with-legal">4.3
+Permissible purpose — working positions (confirm with legal)</h3>
+<table>
+<colgroup>
+<col style="width: 37%" />
+<col style="width: 46%" />
+<col style="width: 15%" />
+</colgroup>
+<thead>
+<tr>
+<th>juskel use case</th>
+<th>Likely permissible?</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SME views <strong>own</strong> company report summary during
+onboarding</td>
+<td><strong>Strongest case</strong></td>
+<td>SME-initiated, transparency</td>
+</tr>
+<tr>
+<td>juskel enriches <strong>internal</strong> BIS without showing raw
+bureau to lenders</td>
+<td><strong>Plausible</strong></td>
+<td>Still needs purpose documentation</td>
+</tr>
+<tr>
+<td>juskel shows bureau-derived flags to <strong>lenders</strong> on
+marketplace</td>
+<td><strong>Higher bar</strong></td>
+<td>Likely CIS or broking authorisation</td>
+</tr>
+<tr>
+<td>Hard search affecting company credit file</td>
+<td><strong>Avoid for MVP</strong></td>
+<td>Soft/report products preferred</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="compliance-action-checklist-timeline">5. Compliance action
+checklist &amp; timeline</h2>
+<table>
+<colgroup>
+<col style="width: 8%" />
+<col style="width: 22%" />
+<col style="width: 20%" />
+<col style="width: 31%" />
+<col style="width: 17%" />
+</colgroup>
+<thead>
+<tr>
+<th>#</th>
+<th>Action</th>
+<th>Owner</th>
+<th>Cost est.</th>
+<th>When</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td><strong>Compliance scoping workshop</strong> — define juskel’s FCA
+status and bureau use case</td>
+<td>Legal + Product</td>
+<td>£500 – £1,500</td>
+<td><strong>Week 1</strong></td>
+</tr>
+<tr>
+<td>2</td>
+<td><strong>Permissible purpose memo</strong> — document why each data
+field is pulled</td>
+<td>Legal</td>
+<td>£1,500 – £3,000</td>
+<td><strong>Weeks 2–3</strong></td>
+</tr>
+<tr>
+<td>3</td>
+<td><strong>DPIA update</strong> — bureau data flows, retention,
+subprocessors</td>
+<td>Legal / DPO</td>
+<td>£1,000 – £2,500</td>
+<td><strong>Weeks 3–4</strong></td>
+</tr>
+<tr>
+<td>4</td>
+<td><strong>SME consent copy</strong> — separate step for commercial
+credit (not bundled with OB)</td>
+<td>Legal + Product</td>
+<td>£800 – £2,000</td>
+<td><strong>Weeks 4–5</strong></td>
+</tr>
+<tr>
+<td>5</td>
+<td><strong>Terms of service update</strong> — data sharing, third-party
+CRAs</td>
+<td>Legal</td>
+<td>£500 – £1,500</td>
+<td><strong>Weeks 5–6</strong></td>
+</tr>
+<tr>
+<td>6</td>
+<td><strong>CIGB subscriber assessment</strong> — required?</td>
+<td>Legal</td>
+<td>£0 – £500 review</td>
+<td><strong>Week 4</strong></td>
+</tr>
+<tr>
+<td>7</td>
+<td><strong>FCA authorisation decision</strong> — proceed, defer, or
+partner model</td>
+<td>Leadership + Legal</td>
+<td>£0 (decision)</td>
+<td><strong>Week 6</strong></td>
+</tr>
+<tr>
+<td>8</td>
+<td><strong>Vendor contract review</strong> — reciprocity clauses,
+permitted use, SLAs</td>
+<td>Legal</td>
+<td>£1,000 – £3,000</td>
+<td><strong>Before signature</strong></td>
+</tr>
+<tr>
+<td>9</td>
+<td><strong>Go/no-go gate</strong> — no production API key until 1–8
+complete</td>
+<td>Engineering</td>
+<td>£0</td>
+<td><strong>Before Week 9</strong></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Compliance timeline summary:</strong> Allow <strong>6–8
+weeks</strong> from kickoff to <strong>safe production bureau
+pull</strong>, assuming legal resource is available.</p>
+<hr />
+<h2 id="feasibility-will-it-work-for-our-smes">6. Feasibility — will it
+work for our SMEs?</h2>
+<h3 id="expected-hit-rate-planning-assumptions">6.1 Expected hit rate
+(planning assumptions)</h3>
+<table>
+<colgroup>
+<col style="width: 17%" />
+<col style="width: 36%" />
+<col style="width: 46%" />
+</colgroup>
+<thead>
+<tr>
+<th>SME type</th>
+<th>Bureau file useful?</th>
+<th>Expected enrichment value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Ltd, 2+ years, B2B credit</strong></td>
+<td><strong>60–75%</strong></td>
+<td>Facilities, limits, performance flags</td>
+</tr>
+<tr>
+<td><strong>Ltd, &lt; 12 months</strong></td>
+<td><strong>20–35%</strong></td>
+<td>Often thin file</td>
+</tr>
+<tr>
+<td><strong>Sole trader / partnership</strong></td>
+<td><strong>10–25%</strong></td>
+<td>Commercial file weak; consumer leg separate</td>
+</tr>
+<tr>
+<td><strong>No prior commercial borrowing</strong></td>
+<td><strong>5–15%</strong></td>
+<td>“Insufficient coverage” normal</td>
+</tr>
+<tr>
+<td><strong>CCDS-enriched slice (all types)</strong></td>
+<td><strong>~25% of eligible bank accounts nationally</strong></td>
+<td>Government PIR 2024 — consent bottleneck</td>
+</tr>
+</tbody>
+</table>
+<h3 id="product-feasibility-rules">6.2 Product feasibility rules</h3>
+<ol type="1">
+<li><strong>Gate bureau step to Ltd + Companies House number</strong>
+for MVP — reduces wasted pulls.</li>
+<li><strong>Charge pulls to opt-in</strong> — “Strengthen my profile
+with commercial credit data.”</li>
+<li><strong>Always show coverage status</strong> — corroborated /
+additional / discrepancy / insufficient.</li>
+<li><strong>Never block onboarding</strong> on empty bureau
+response.</li>
+<li><strong>Cache report 90 days</strong> per application to control
+cost.</li>
+</ol>
+<p><strong>Overall feasibility verdict:</strong> Bureau enrichment is
+<strong>worth doing on Path B</strong> for funding readiness
+<strong>if</strong> expectations are set correctly. It is <strong>not
+feasible</strong> to promise complete borrowing visibility for every
+average SME.</p>
+<hr />
+<h2 id="what-we-need-to-do-phased-action-plan">7. What we need to do —
+phased action plan</h2>
+<h3 id="phase-0-decide-de-risk-weeks-16">Phase 0 — Decide &amp; de-risk
+(Weeks 1–6)</h3>
+<p><strong>Goal:</strong> Know if we can legally pull data and which
+vendor fits budget.</p>
+<table style="width:100%;">
+<colgroup>
+<col style="width: 12%" />
+<col style="width: 26%" />
+<col style="width: 18%" />
+<col style="width: 14%" />
+<col style="width: 28%" />
+</colgroup>
+<thead>
+<tr>
+<th>Week</th>
+<th>Engineering</th>
+<th>Product</th>
+<th>Legal</th>
+<th>Commercial</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Read research PDF; spike Creditsafe sandbox signup</td>
+<td>Confirm Path A vs B for MVP scope</td>
+<td>Scoping call</td>
+<td>—</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Sandbox: authenticate, lookup test Ltd, log response shape</td>
+<td>Draft consent UX wireframe</td>
+<td>Permissible purpose draft</td>
+<td>Email Creditsafe sales</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Map API fields → juskel reconciliation model</td>
+<td>Review hit-rate assumptions</td>
+<td>DPIA draft</td>
+<td>Email Experian + Equifax (optional)</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Estimate eng tasks for Path B</td>
+<td>Gate rules (Ltd only?)</td>
+<td>CIGB assessment</td>
+<td>Compare quotes</td>
+</tr>
+<tr>
+<td>5</td>
+<td>—</td>
+<td>Sign-off Path B budget band (£8–15k Y1)</td>
+<td>Consent copy v1</td>
+<td>Creditsafe proposal</td>
+</tr>
+<tr>
+<td>6</td>
+<td><strong>Go/no-go</strong> meeting</td>
+<td></td>
+<td><strong>Legal gate document</strong></td>
+<td>Contract negotiation start</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Phase 0 cost:</strong> <strong>£2,000 – £6,000</strong>
+(legal) + internal time.</p>
+<hr />
+<h3 id="phase-1-ship-mvp-without-bureau-weeks-18-parallel">Phase 1 —
+Ship MVP without bureau (Weeks 1–8, parallel)</h3>
+<p><strong>Goal:</strong> Spec-aligned Financial Profile without waiting
+for CRA contract.</p>
+<table>
+<colgroup>
+<col style="width: 61%" />
+<col style="width: 38%" />
+</colgroup>
+<thead>
+<tr>
+<th>Deliverable</th>
+<th>Effort</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>BankingIntegrationMetrics</code> + stop balance→revenue band
+hack</td>
+<td>1.5 weeks</td>
+</tr>
+<tr>
+<td>Multi-bank connection + completeness attestation</td>
+<td>1.5 weeks</td>
+</tr>
+<tr>
+<td>Manual baseline alignment (8 questions or band map)</td>
+<td>1 week</td>
+</tr>
+<tr>
+<td>Provenance + confidence on GET responses</td>
+<td>1 week</td>
+</tr>
+<tr>
+<td>Borrowing completeness attestation (manual, no bureau)</td>
+<td>0.5 week</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Phase 1 incremental cost:</strong> <strong>£0 bureau</strong>
+(internal engineering only).</p>
+<hr />
+<h3 id="phase-2-creditsafe-production-weeks-716">Phase 2 — Creditsafe
+production (Weeks 7–16)</h3>
+<p><strong>Goal:</strong> Consent-gated bureau pull for eligible Ltd
+SMEs.</p>
+<table>
+<thead>
+<tr>
+<th>Week</th>
+<th>Deliverable</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>7–8</td>
+<td>Production API credentials; <code>CommercialCreditSnapshot</code>
+entity</td>
+</tr>
+<tr>
+<td>9–10</td>
+<td>Consent middleware + audit log; pull on opt-in only</td>
+</tr>
+<tr>
+<td>11–12</td>
+<td>Reconciliation service (4 outcomes); API GET fields</td>
+</tr>
+<tr>
+<td>13–14</td>
+<td>Swagger + <code>ONBOARDING_FRONTEND_API.md</code>; e2e script</td>
+</tr>
+<tr>
+<td>15–16</td>
+<td>Soft launch; monitor cost per pull; tune gating</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Phase 2 incremental cost:</strong> <strong>£3,000 – £7,200
+fixed</strong> + <strong>£6 × opt-in pulls</strong>.</p>
+<hr />
+<h3 id="phase-3-scale-or-upgrade-month-6-optional">Phase 3 — Scale or
+upgrade (Month 6+, optional)</h3>
+<p>Only if Path B proves value <strong>and</strong> legal confirms Path
+C eligibility:</p>
+<ul>
+<li>Negotiate Experian Commercial Credit or Equifax EBI/CCDS enterprise
+tier</li>
+<li>FCA authorisation if introducing to lenders with bureau-enriched
+BIS</li>
+<li>Reciprocity reporting pipeline if CCDS contributor status
+triggered</li>
+<li>BIAM dimension weighting from bureau fields in scoring module</li>
+</ul>
+<p><strong>Phase 3 cost:</strong> See Path C — <strong>£40k–£80k+ Year
+1</strong>.</p>
+<hr />
+<h2 id="engineering-effort-internal-cost">8. Engineering effort &amp;
+internal cost</h2>
+<p>Planning rates assume <strong>internal</strong> delivery (no agency).
+For budgeting internal time at a notional <strong>£500/day</strong>
+fully loaded:</p>
+<table>
+<thead>
+<tr>
+<th>Phase</th>
+<th>Person-weeks</th>
+<th>Notional internal value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Phase 0 spike</td>
+<td>1 week</td>
+<td>£2,500</td>
+</tr>
+<tr>
+<td>Phase 1 (no bureau MVP)</td>
+<td>3 weeks</td>
+<td>£7,500</td>
+</tr>
+<tr>
+<td>Phase 2 (Creditsafe)</td>
+<td>5 weeks</td>
+<td>£12,500</td>
+</tr>
+<tr>
+<td>Phase 3 (enterprise)</td>
+<td>10+ weeks</td>
+<td>£25,000+</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Total internal engineering (Path A + B):</strong> ~<strong>9
+person-weeks</strong> over <strong>4 months</strong>.</p>
+<hr />
+<h2 id="vendor-cost-comparison-realistic-ranges">9. Vendor cost
+comparison (realistic ranges)</h2>
+<table>
+<colgroup>
+<col style="width: 12%" />
+<col style="width: 10%" />
+<col style="width: 21%" />
+<col style="width: 15%" />
+<col style="width: 13%" />
+<col style="width: 26%" />
+</colgroup>
+<thead>
+<tr>
+<th>Vendor</th>
+<th>Setup</th>
+<th>Annual fixed</th>
+<th>Per pull</th>
+<th>Sandbox</th>
+<th>Best for juskel</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Creditsafe Connect</strong></td>
+<td>Low</td>
+<td><strong>£2–4k</strong></td>
+<td><strong>£3–12</strong></td>
+<td><strong>Free</strong></td>
+<td><strong>Path B — MVP probe</strong></td>
+</tr>
+<tr>
+<td><strong>Experian Commercial Credit API</strong></td>
+<td><strong>£8–25k</strong></td>
+<td><strong>£15–40k</strong></td>
+<td><strong>£5–25</strong></td>
+<td>Login-gated</td>
+<td>Path C — lender-grade</td>
+</tr>
+<tr>
+<td><strong>Experian Commercial Acumen</strong></td>
+<td>High</td>
+<td><strong>£20k+</strong></td>
+<td>Bundled</td>
+<td>Sales-led</td>
+<td>OB+bureau bundle (replaces TrueLayer?)</td>
+</tr>
+<tr>
+<td><strong>Equifax OB Commercial + EBI</strong></td>
+<td><strong>£5–15k</strong></td>
+<td><strong>£12–35k</strong></td>
+<td>Bundled</td>
+<td>Login-gated</td>
+<td>Path C — single vendor OB+bureau</td>
+</tr>
+<tr>
+<td><strong>D&amp;B</strong></td>
+<td><strong>£5–20k</strong></td>
+<td><strong>£10–30k</strong></td>
+<td>Variable</td>
+<td>Sales-led</td>
+<td>Alternative CRA</td>
+</tr>
+<tr>
+<td><strong>TransUnion (commercial)</strong></td>
+<td>N/A</td>
+<td>N/A</td>
+<td>N/A</td>
+<td>Via reseller</td>
+<td><strong>Not primary</strong> for commercial CCDS</td>
+</tr>
+</tbody>
+</table>
+<p><strong>All vendor figures are estimates until written quotes are
+received.</strong></p>
+<hr />
+<h2 id="risks-that-change-cost-or-timeline">10. Risks that change cost
+or timeline</h2>
+<table>
+<colgroup>
+<col style="width: 16%" />
+<col style="width: 36%" />
+<col style="width: 47%" />
+</colgroup>
+<thead>
+<tr>
+<th>Risk</th>
+<th>Cost impact</th>
+<th>Timeline impact</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Legal says FCA authorisation required</td>
+<td><strong>+£5–15k; +3–6 months</strong></td>
+<td>Delays Phase 2 production</td>
+</tr>
+<tr>
+<td>CCDS reciprocity triggered</td>
+<td><strong>+8–12 eng weeks ongoing ops</strong></td>
+<td>+2–3 months</td>
+</tr>
+<tr>
+<td>Creditsafe contract minimum above budget</td>
+<td>May force defer or Path A only</td>
+<td>+4–8 weeks renegotiation</td>
+</tr>
+<tr>
+<td>Low opt-in rate (&lt;10% SMEs)</td>
+<td>Low variable cost but weak ROI</td>
+<td>May question Phase 2 value</td>
+</tr>
+<tr>
+<td>High opt-in without caching</td>
+<td><strong>Variable cost spike</strong></td>
+<td>Need pricing change mid-year</td>
+</tr>
+<tr>
+<td>Sole traders expected to use bureau</td>
+<td>Wasted pulls</td>
+<td>Product fix — Ltd gate</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="recommended-path-for-juskel">11. Recommended path for
+juskel</h2>
+<section id="recommended-path-a-now-path-b-in-parallel"
+class="callout success">
+<h3>Recommended: Path A now + Path B in parallel</h3>
+<table>
+<colgroup>
+<col style="width: 37%" />
+<col style="width: 62%" />
+</colgroup>
+<thead>
+<tr>
+<th>Item</th>
+<th>Decision</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Now (Weeks 1–8)</strong></td>
+<td>Ship Financial Profile MVP <strong>without</strong> bureau —
+TrueLayer + QuickBooks + attestations</td>
+</tr>
+<tr>
+<td><strong>Parallel (Weeks 1–6)</strong></td>
+<td>Legal scoping + Creditsafe sandbox — <strong>£2–6k
+legal</strong></td>
+</tr>
+<tr>
+<td><strong>Month 3–4</strong></td>
+<td>If legal go: Creditsafe production — <strong>£5–13k fixed Year
+1</strong> + opt-in pulls</td>
+</tr>
+<tr>
+<td><strong>Defer</strong></td>
+<td>Experian/Equifax enterprise until funded or FCA path clear</td>
+</tr>
+<tr>
+<td><strong>Budget ask (Year 1)</strong></td>
+<td><strong>£10,000 – £18,000</strong> all-in for Path A + B (100–500
+opt-in SMEs)</td>
+</tr>
+<tr>
+<td><strong>Timeline</strong></td>
+<td><strong>4 months</strong> to bureau live; <strong>2 months</strong>
+to MVP without bureau</td>
+</tr>
+</tbody>
+</table>
+</section>
+<h3 id="what-leadership-should-approve">What leadership should
+approve</h3>
+<ol type="1">
+<li><strong>£2,000 – £6,000</strong> legal budget for Phase 0 compliance
+(immediate)</li>
+<li><strong>£5,000 – £8,000</strong> Creditsafe fixed costs (after legal
+go, ~Month 2)</li>
+<li><strong>£3,000</strong> variable buffer for Year 1 report pulls (500
+SMEs × £6)</li>
+<li><strong>9 person-weeks</strong> engineering capacity over 4 months
+(internal)</li>
+<li>Explicit <strong>no production bureau pull</strong> rule until legal
+sign-off document exists</li>
+</ol>
+<hr />
+<h2 id="sign-off-checklist-before-spending-money">12. Sign-off checklist
+before spending money</h2>
+<p>Before paying any CRA or signing a bureau contract:</p>
+<ul class="task-list">
+<li><label><input type="checkbox" />Written <strong>permissible
+purpose</strong> opinion from legal</label></li>
+<li><label><input type="checkbox" />Confirmed whether juskel triggers
+<strong>CCDS reciprocity</strong></label></li>
+<li><label><input type="checkbox" />Confirmed whether <strong>CIGB
+subscription</strong> is required</label></li>
+<li><label><input type="checkbox" />Confirmed whether <strong>FCA
+authorisation</strong> is required for chosen UX</label></li>
+<li><label><input type="checkbox" />SME <strong>consent screen</strong>
+approved by legal (separate from OB)</label></li>
+<li><label><input type="checkbox" /><strong>DPIA</strong> updated with
+CRA subprocessor</label></li>
+<li><label><input type="checkbox" />Written <strong>vendor
+quote</strong> with per-pull pricing and minimum commit</label></li>
+<li><label><input type="checkbox" />Product rule: <strong>Ltd-only
+gate</strong> (or documented exception)</label></li>
+<li><label><input type="checkbox" />Engineering: <strong>cache + audit
+log</strong> design approved</label></li>
+<li><label><input type="checkbox" />Budget owner sign-off on
+<strong>Year 1 £10–18k band</strong></label></li>
+</ul>
+<hr />
+<footer class="doc-footer">
+<p><strong>juskel</strong> — Internal planning document. Version 1.0, 7
+September 2026.<br />
+Cost figures are estimates for budgeting only, not vendor quotes or
+legal advice. Update decision log after Creditsafe / legal
+engagements.</p>
+</footer>
+</body>
+</html>

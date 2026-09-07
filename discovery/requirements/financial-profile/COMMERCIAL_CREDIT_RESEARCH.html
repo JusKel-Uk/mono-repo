@@ -1,0 +1,1679 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>COMMERCIAL_CREDIT_RESEARCH</title>
+  <style>
+    /* Default styles provided by pandoc.
+    ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+    */
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: min(4vw, 1.5em);}
+    div.column{flex: auto; overflow-x: auto;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+  </style>
+  <link rel="stylesheet" href="research-pdf.css" />
+</head>
+<body>
+<section id="commercial-credit-banking-intelligence" class="cover">
+<h1>Commercial Credit &amp; Banking Intelligence</h1>
+<p class="subtitle">
+Tech Lead Research Report — Financial Profile enrichment layer
+</p>
+<dl class="cover-meta">
+<dt>
+Date
+</dt>
+<dd>
+7 September 2026
+</dd>
+<dt>
+Version
+</dt>
+<dd>
+1.1
+</dd>
+<dt>
+Prepared for
+</dt>
+<dd>
+juskel product, engineering, and compliance stakeholders
+</dd>
+<dt>
+Trigger
+</dt>
+<dd>
+Financial Profile specification update (September 2026) — Tech Lead
+Tasks section
+</dd>
+<dt>
+Status
+</dt>
+<dd>
+Desk research complete. Vendor pricing and legal sign-off still required
+before production integration.
+</dd>
+</dl>
+</section>
+<section id="contents" class="toc">
+<h2>Contents</h2>
+<ol type="1">
+<li>Why this research exists</li>
+<li>What changed in the Financial Profile spec</li>
+<li>What juskel already has today</li>
+<li>Glossary of terms</li>
+<li>The business problem in plain English</li>
+<li>UK regulatory landscape</li>
+<li>Provider research — Experian</li>
+<li>Provider research — Equifax</li>
+<li>Provider research — TransUnion</li>
+<li>Provider research — Creditsafe</li>
+<li>Provider research — Dun &amp; Bradstreet</li>
+<li>Buy vs build — Open Banking overlap</li>
+<li>What data is realistically available from an average SME</li>
+<li>Cost, budget, and commercial model</li>
+<li>juskel eligibility assessment</li>
+<li>Accounting integration gap analysis</li>
+<li>Recommended strategy and phased roadmap</li>
+<li>Vendor engagement pack</li>
+<li>Risks, mitigations, and open questions</li>
+<li>Appendices — sources and spec mapping</li>
+</ol>
+</section>
+<h2 id="why-this-research-exists">1. Why this research exists</h2>
+<p>The September 2026 update to the <strong>Financial Profile</strong>
+specification adds a major new capability: <strong>Commercial Credit
+Data Enrichment &amp; Reconciliation</strong> within the <strong>Banking
+Intelligence</strong> layer. That layer produces the <strong>Banking
+Intelligence Score (BIS)</strong> and feeds the wider
+<strong>Sustainable Finance Score (SFS)</strong> and <strong>Funding
+Readiness Index (FRI)</strong>.</p>
+<p>The spec explicitly assigns Tech Lead research:</p>
+<blockquote>
+<p><em>Investigate Experian, Equifax, TransUnion, and potentially other
+commercial-data providers on coverage, API availability, licensing,
+permissible use, reciprocity requirements, cost and whether juskel’s
+specific use case is eligible.</em></p>
+</blockquote>
+<p>This report answers that brief in full. It is written for humans
+making product and engineering decisions — not as a checklist of links.
+Every recommendation is tied back to what juskel is building, what the
+law allows, and what a typical UK SME can actually supply.</p>
+<div class="callout">
+<p><strong>Bottom line up front:</strong> Commercial credit enrichment
+is <strong>valuable but not MVP-blocking</strong>. juskel can ship a
+strong Financial Profile using manual baseline questions, accounting
+integrations (QuickBooks), and Open Banking (TrueLayer) while vendor and
+legal work proceeds in parallel. Full bureau integration is
+<strong>expensive, regulated, and may require reciprocity</strong> if
+juskel accesses government-mandated CCDS data as a finance provider.</p>
+</div>
+<hr />
+<h2 id="what-changed-in-the-financial-profile-spec">2. What changed in
+the Financial Profile spec</h2>
+<p>The original Financial Profile document (September 2026, earlier
+version) defined:</p>
+<ul>
+<li>Minimum <strong>8-question</strong> manual baseline for SMEs without
+integrations</li>
+<li><strong>Accounting dataset</strong> baseline (performance, position,
+ratios derived by juskel)</li>
+<li><strong>Open Banking dataset</strong> baseline (liquidity, cash
+flow, behavioural signals)</li>
+<li><strong>Four-layer internal architecture:</strong> raw data →
+standardised metrics → derived intelligence → juskel outputs</li>
+<li>Design principle: <strong>collect facts, derive
+intelligence</strong></li>
+</ul>
+<p>The <strong>updated</strong> document adds an entire second half
+focused on <strong>Banking Intelligence architecture</strong>:</p>
+<table>
+<colgroup>
+<col style="width: 46%" />
+<col style="width: 53%" />
+</colgroup>
+<thead>
+<tr>
+<th>New concept</th>
+<th>What it means</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Banking Intelligence</strong></td>
+<td>Combines Open Banking + commercial credit + reconciliation</td>
+</tr>
+<tr>
+<td><strong>Commercial Credit Enrichment</strong></td>
+<td>Bureau data (facilities, commitments, payment performance)
+supplements OB</td>
+</tr>
+<tr>
+<td><strong>Reconciliation layer</strong></td>
+<td>Compare OB vs bureau; outcomes: corroborated, additional info,
+discrepancy, insufficient coverage</td>
+</tr>
+<tr>
+<td><strong>Multi-bank UX</strong></td>
+<td>Connect bank → auth → select accounts → connect another bank →
+completeness attestation</td>
+</tr>
+<tr>
+<td><strong>Two completeness attestations</strong></td>
+<td>(A) all relevant bank accounts connected; (B) all borrowing/credit
+commitments represented</td>
+</tr>
+<tr>
+<td><strong>15-step Banking Intelligence journey</strong></td>
+<td>End-to-end flow from intro through BIS calculation</td>
+</tr>
+<tr>
+<td><strong>FIAM canonical accounting model</strong></td>
+<td>Five groups of accounting fields with provenance metadata</td>
+</tr>
+<tr>
+<td><strong>Explicit FIS vs BIS boundary</strong></td>
+<td>Accounting cash flow → FIS; observed banking behaviour → BIS</td>
+</tr>
+<tr>
+<td><strong>No 8th “credit score” BIS dimension</strong></td>
+<td>Bureau data enriches existing BIAM dimensions, juskel must not look
+like a CRA</td>
+</tr>
+</tbody>
+</table>
+<p>The Reference Note in the spec points to <strong>Experian Commercial
+Acumen</strong>, <strong>Equifax commercial Open Banking</strong>, and
+<strong>Experian Commercial CAIS / CCDS</strong> as real-world
+comparators.</p>
+<hr />
+<h2 id="what-juskel-already-has-today">3. What juskel already has
+today</h2>
+<p>Before adding commercial credit, understand the existing foundation
+in the <code>api/</code> codebase:</p>
+<h3 id="manual-financial-profile-layer-1">3.1 Manual financial profile
+(Layer 1)</h3>
+<ul>
+<li>Entity: <code>FinancialProfile</code> with five band fields (annual
+revenue, EBITDA, debt, cash reserves, avg monthly revenue)</li>
+<li>API:
+<code>GET/PUT /funding/applications/current/financial-profile</code></li>
+<li>Step completion: all five bands filled <strong>or</strong>
+integration connected with <code>bandsLockedByIntegration</code></li>
+</ul>
+<p><strong>Gap vs spec:</strong> The spec’s 8-question baseline includes
+profit/loss amount, yes/no borrowing, 3-month cash-flow direction, and
+financial year end — not all modelled in the API yet.</p>
+<h3 id="accounting-integration-layer-2-fis-path">3.2 Accounting
+integration (Layer 2 — FIS path)</h3>
+<ul>
+<li><strong>QuickBooks OAuth</strong> syncs into
+<code>FinancialIntegrationMetrics</code> (revenue, P&amp;L lines,
+balance sheet, derived ratios, YoY trends)</li>
+<li>Exposed on GET as read-only <code>integrationMetrics</code></li>
+<li>Sandbox documented in
+<code>api/sandbox/quickbooks/SPEC-MAP.md</code></li>
+<li>Known gap: P&amp;L can return <code>NoReportData: true</code> when
+report dates don’t match company start date</li>
+</ul>
+<h3 id="open-banking-partial-bis-path">3.3 Open Banking (partial BIS
+path)</h3>
+<ul>
+<li><strong>TrueLayer OAuth</strong> connects; callback applies
+<code>ApplyOpenBankingBands()</code> — maps account balances into
+revenue/debt bands</li>
+<li><strong>Limitation:</strong> No separate
+<code>BankingIntegrationMetrics</code> store; no transactional/cashflow
+analytics yet</li>
+<li>Multi-bank constraints documented:
+<code>api/sandbox/truelayer/docs/Open_Banking_Consent_And_Multi_Bank_Limits.pdf</code></li>
+<li>One <code>IntegrationConnection</code> row per provider (reconnect
+overwrites; not true multi-bank)</li>
+</ul>
+<h3 id="evidence-upload">3.4 Evidence upload</h3>
+<ul>
+<li>Financial evidence files on GET <code>evidence[]</code></li>
+<li>Supports manual attestation with uploaded accounts</li>
+</ul>
+<h3 id="not-built-yet">3.5 Not built yet</h3>
+<ul>
+<li>Commercial credit / bureau integration</li>
+<li>Reconciliation engine</li>
+<li>BIS / FIS / SFS scoring in <code>scoring</code> module</li>
+<li>Per-field provenance and confidence metadata</li>
+<li>Multi-bank connection model</li>
+</ul>
+<hr />
+<h2 id="glossary-of-terms">4. Glossary of terms</h2>
+<table>
+<colgroup>
+<col style="width: 28%" />
+<col style="width: 71%" />
+</colgroup>
+<thead>
+<tr>
+<th>Term</th>
+<th>Plain English</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>CRA</strong></td>
+<td>Credit Reference Agency — holds and shares credit information
+(Experian, Equifax, etc.)</td>
+</tr>
+<tr>
+<td><strong>CCDS</strong></td>
+<td>Commercial Credit Data Sharing — UK government scheme forcing major
+banks to share SME credit data (with consent) via four designated
+CRAs</td>
+</tr>
+<tr>
+<td><strong>Designated CRA</strong></td>
+<td>One of four Treasury-approved CRAs for CCDS: <strong>Experian,
+Equifax, Creditsafe, Dun &amp; Bradstreet</strong></td>
+</tr>
+<tr>
+<td><strong>CATO</strong></td>
+<td>Current Account Turnover — summary of credits/debits through
+business current accounts (from credit sharing)</td>
+</tr>
+<tr>
+<td><strong>Commercial CAIS</strong></td>
+<td>Experian’s large database of commercial credit accounts (~18M
+accounts cited in spec)</td>
+</tr>
+<tr>
+<td><strong>PoR</strong></td>
+<td>Principles of Reciprocity — industry rules: you share data to access
+shared data</td>
+</tr>
+<tr>
+<td><strong>CIGB</strong></td>
+<td>Credit Industry Governing Body — administers PoR; subscribers need
+direct contract</td>
+</tr>
+<tr>
+<td><strong>Reciprocity (CCDS)</strong></td>
+<td>Non-bank finance providers accessing CCDS must share their own SME
+lending data within 12 months</td>
+</tr>
+<tr>
+<td><strong>FIS / BIS / EIS / SFS / FRI</strong></td>
+<td>juskel intelligence scores: Financial, Banking, Environmental (ESG),
+combined Sustainable Finance, Funding Readiness</td>
+</tr>
+<tr>
+<td><strong>FIAM / BIAM</strong></td>
+<td>Methodologies behind FIS and BIS dimension scoring</td>
+</tr>
+<tr>
+<td><strong>OBaaS</strong></td>
+<td>Open Banking as a Service — hosted consent journey (Equifax product
+pattern)</td>
+</tr>
+<tr>
+<td><strong>ASPSP</strong></td>
+<td>Account Servicing Payment Service Provider — the bank the SME
+authorises</td>
+</tr>
+<tr>
+<td><strong>Permissible purpose</strong></td>
+<td>Legal reason you are allowed to pull credit data (lending, fraud,
+etc.)</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="the-business-problem-in-plain-english">5. The business problem
+in plain English</h2>
+<h3 id="why-open-banking-alone-is-not-enough">5.1 Why Open Banking alone
+is not enough</h3>
+<p>When an SME connects a business bank account, juskel sees
+<strong>transactions, balances, and cash behaviour</strong>. That is
+excellent for liquidity and cash-flow stability (BIS dimensions).</p>
+<p>It does <strong>not</strong> reliably reveal:</p>
+<ul>
+<li>Term loans held at another bank</li>
+<li>Asset finance or lease commitments</li>
+<li>Trade credit facilities with limits not visible in current account
+flows</li>
+<li>Historical payment performance on commercial credit facilities</li>
+<li>Adverse indicators (arrears, defaults) on bureau files</li>
+</ul>
+<p>The spec’s reconciliation layer exists because <strong>banking data
+and credit bureau data can disagree</strong> — and juskel’s value is
+surfacing that honestly to the SME and to downstream funding
+readiness.</p>
+<h3 id="what-juskel-must-not-become">5.2 What juskel must not
+become</h3>
+<p>The spec is explicit:</p>
+<ul>
+<li>Commercial credit <strong>does not</strong> feed FIS (accounting
+intelligence)</li>
+<li>It <strong>does not</strong> create a fourth intelligence
+domain</li>
+<li>juskel <strong>must not</strong> add an eighth BIS dimension that
+looks like a “credit score” from a CRA</li>
+<li>Bureau information <strong>enriches</strong> existing BIAM
+dimensions (payment behaviour, cash runway, banking resilience)</li>
+</ul>
+<h3 id="what-success-looks-like">5.3 What success looks like</h3>
+<p>For an SME going through onboarding:</p>
+<ol type="1">
+<li>They complete the <strong>short manual baseline</strong> (or connect
+integrations)</li>
+<li>They connect <strong>one or more banks</strong> via TrueLayer
+(multi-bank flow)</li>
+<li>They confirm <strong>banking completeness</strong> (“have you
+connected all relevant accounts?”)</li>
+<li><em>(Future phase)</em> juskel retrieves <strong>permitted
+commercial credit data</strong> with SME consent</li>
+<li>juskel shows a <strong>consolidated commitments view</strong> with
+clear flags where data is missing or inconsistent</li>
+<li>SME confirms <strong>borrowing completeness</strong></li>
+<li>juskel calculates <strong>BIS with confidence</strong> reflecting
+coverage — not pretending completeness</li>
+</ol>
+<hr />
+<h2 id="uk-regulatory-landscape">6. UK regulatory landscape</h2>
+<p>This section explains the rules that determine whether juskel
+<strong>can</strong> integrate bureau data — and at what cost.</p>
+<h3 id="commercial-credit-data-sharing-ccds">6.1 Commercial Credit Data
+Sharing (CCDS)</h3>
+<p><strong>Legal basis:</strong> Small and Medium Sized Business (Credit
+Information) Regulations 2015.</p>
+<p><strong>Who shares data:</strong></p>
+<ul>
+<li><strong>9 designated banks</strong> (major UK banks with large SME
+market share) must share in-scope SME credit information with designated
+CRAs — <strong>when the SME consents</strong></li>
+</ul>
+<p><strong>Who holds and redistributes:</strong></p>
+<ul>
+<li><strong>4 designated CRAs:</strong> Experian, Equifax, Creditsafe,
+Dun &amp; Bradstreet</li>
+</ul>
+<p><strong>Which businesses are in scope:</strong></p>
+<ul>
+<li>SMEs with turnover up to <strong>£25 million</strong> (covers over
+99% of UK businesses)</li>
+</ul>
+<p><strong>What data includes:</strong></p>
+<ul>
+<li>Summary <strong>business current account</strong> information
+(balances, credit/debit turnover)</li>
+<li><strong>Performance</strong> on business loans and corporate credit
+cards</li>
+<li>Not a full raw bank statement — regulated summary and performance
+fields</li>
+</ul>
+<p><strong>Who can receive it:</strong></p>
+<ul>
+<li>Other <strong>finance providers</strong> (lenders, etc.) via a
+designated CRA, when:
+<ul>
+<li>The finance provider requests it</li>
+<li>The <strong>SME consents</strong></li>
+<li>The provider agrees to CRA standard terms</li>
+<li>Non-bank providers agree to <strong>reciprocal sharing within 12
+months</strong> of first receiving data</li>
+</ul></li>
+</ul>
+<p><strong>Critical coverage reality (Government Post-Implementation
+Review, 2024):</strong></p>
+<ul>
+<li>Only around <strong>25%</strong> of eligible business current
+accounts at designated banks are in the CCDS database</li>
+<li><strong>SME consent</strong> is the main bottleneck — many
+businesses never opt in</li>
+<li>Growth of <strong>non-designated banks</strong> (challengers,
+specialists) means a growing share of lending sits outside mandatory
+bank reporting</li>
+</ul>
+<p><strong>Implication:</strong> Even with perfect integration, bureau
+enrichment will often return <strong>thin or empty</strong> files.
+Product must handle “insufficient coverage” as normal.</p>
+<h3 id="reciprocity-what-it-means-for-juskel">6.2 Reciprocity — what it
+means for juskel</h3>
+<p>If juskel accesses CCDS as a <strong>finance provider</strong>, it
+likely must:</p>
+<ol type="1">
+<li>Within <strong>12 months</strong> of first receiving CCDS data,
+begin sharing equivalent in-scope SME credit data it holds</li>
+<li>Only share data for SMEs who have <strong>consented</strong> in
+juskel’s terms</li>
+<li>Choose <strong>one or more</strong> designated CRAs to reciprocate
+with (non-banks are not required to share with all four)</li>
+</ol>
+<p><strong>Problem for juskel today:</strong> juskel is a
+<strong>funding readiness platform</strong>, not a lender. It may not
+hold lending performance data to reciprocate. That makes full CCDS
+membership <strong>legally and operationally awkward</strong> unless
+juskel becomes FCA-authorised and originates or brokers credit.</p>
+<h3 id="principles-of-reciprocity-por-and-cigb">6.3 Principles of
+Reciprocity (PoR) and CIGB</h3>
+<p>Separate from CCDS, the wider <strong>shared credit
+performance</strong> ecosystem (including Experian CAIS and consumer
+files) is governed by <strong>PoR</strong> via
+<strong>CIGB</strong>.</p>
+<p>Permitted uses of shared credit data centre on:</p>
+<ul>
+<li>Preventing over-commitment and bad debt</li>
+<li>Fraud and money laundering prevention</li>
+<li>Debt recovery and tracing</li>
+<li><strong>Responsible lending</strong></li>
+</ul>
+<p>Uses <strong>outside</strong> these purposes (e.g. generic SME
+dashboards, marketing analytics) require <strong>CIGB review and
+ratification</strong>.</p>
+<p>Entities accessing shared data should hold a <strong>direct CIGB
+subscriber agreement</strong>, even when pulling data through a CRA.</p>
+<h3 id="fca-considerations">6.4 FCA considerations</h3>
+<p>Depending on how juskel uses bureau data, potential FCA roles
+include:</p>
+<table>
+<colgroup>
+<col style="width: 29%" />
+<col style="width: 70%" />
+</colgroup>
+<thead>
+<tr>
+<th>Activity</th>
+<th>Possible FCA relevance</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Showing SMEs their own aggregated financial picture</td>
+<td>Lower risk if SME-initiated and no credit decision</td>
+</tr>
+<tr>
+<td>Enriching scores shown to <strong>lenders</strong> on juskel’s
+platform</td>
+<td>May trigger <strong>credit information services</strong> or
+<strong>credit broking</strong> rules</td>
+</tr>
+<tr>
+<td>Hard/soft credit searches on companies or directors</td>
+<td>Permissible purpose and consent rules apply</td>
+</tr>
+<tr>
+<td>Passing bureau scores that look like lending decisions</td>
+<td>High regulatory risk — spec explicitly avoids this</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Action required:</strong> Legal review before any production
+credit pull. This report does not constitute legal advice.</p>
+<h3 id="sme-consent-and-lawful-basis">6.5 SME consent and lawful
+basis</h3>
+<p>Every bureau and CCDS access requires <strong>clear SME
+consent</strong> aligned with UK GDPR and credit industry rules. The
+spec’s enrichment step (step 8 in the 15-step journey) must include:</p>
+<ul>
+<li>Plain-language explanation of what data is retrieved and why</li>
+<li>Provider-specific notices where required</li>
+<li>Separate consent from Open Banking consent (different lawful basis
+and scope)</li>
+</ul>
+<hr />
+<h2 id="provider-research-experian-uk">7. Provider research — Experian
+UK</h2>
+<h3 id="overview">7.1 Overview</h3>
+<p>Experian is the <strong>most cited vendor in the Financial Profile
+spec</strong> (Commercial Acumen, Commercial CAIS, Commercial Credit
+API). It is a <strong>designated CCDS CRA</strong> and dominates UK
+commercial credit reporting.</p>
+<p>Experian publicly states its commercial data supported <strong>at
+least two-thirds of UK SME borrowing in 2024</strong>. In January 2026,
+Experian announced full commercial credit data (including Commercial
+CAIS, risk scores, CATO) available through its <strong>Ascend</strong>
+analytics platform — aimed at lenders, not self-serve startups.</p>
+<h3 id="product-catalogue-relevant-to-juskel">7.2 Product catalogue
+relevant to juskel</h3>
+<table>
+<colgroup>
+<col style="width: 17%" />
+<col style="width: 35%" />
+<col style="width: 11%" />
+<col style="width: 35%" />
+</colgroup>
+<thead>
+<tr>
+<th>Product</th>
+<th>What it delivers</th>
+<th>API?</th>
+<th>juskel relevance</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Commercial Credit API</strong></td>
+<td>Real-time business and director credit information, risk scores</td>
+<td>Yes — REST via developer.experian.com</td>
+<td>Core bureau pull if eligible</td>
+</tr>
+<tr>
+<td><strong>CATO API</strong></td>
+<td>12-month current account turnover from mandatory credit sharing</td>
+<td>Yes</td>
+<td>Cash-flow corroboration vs OB</td>
+</tr>
+<tr>
+<td><strong>Commercial Acumen</strong></td>
+<td>OB transactions + management accounts + Experian credit in one
+view</td>
+<td>Yes — Open Data Platform REST</td>
+<td><strong>Duplicates TrueLayer</strong> unless juskel replaces OB
+stack</td>
+</tr>
+<tr>
+<td><strong>Business Decisioning APIs</strong></td>
+<td>PowerCurve / Decisioning Plus / Premier — automated credit
+decisions</td>
+<td>Yes — docs behind login</td>
+<td>Overkill for MVP; lender-grade</td>
+</tr>
+<tr>
+<td><strong>Ascend platform</strong></td>
+<td>Cloud analytics + 6+ years commercial data + sandbox</td>
+<td>Platform, not simple REST</td>
+<td>Enterprise pricing; lender-focused</td>
+</tr>
+</tbody>
+</table>
+<h3 id="coverage">7.3 Coverage</h3>
+<ul>
+<li><strong>8 million+ UK businesses</strong> in commercial credit
+database (2026 Ascend announcement)</li>
+<li>Strongest for <strong>Ltd companies</strong> with trade credit or
+bank lending history</li>
+<li>Weaker for <strong>sole traders</strong> and <strong>very new
+businesses</strong> (&lt; 12 months)</li>
+<li>CCDS subset subject to <strong>~25% consent rate</strong> on
+designated bank accounts nationally</li>
+</ul>
+<h3 id="licensing-and-access">7.4 Licensing and access</h3>
+<ul>
+<li><strong>No self-serve public pricing</strong> — enterprise sales
+process</li>
+<li>Typically requires: commercial contract, permissible purpose
+documentation, technical onboarding (IP allowlisting, certificates)</li>
+<li>Decisioning products may require <strong>lender status</strong> or
+equivalent</li>
+<li>Developer portal lists products; full API docs often <strong>behind
+authenticated login</strong></li>
+</ul>
+<h3 id="reciprocity">7.5 Reciprocity</h3>
+<ul>
+<li>Full <strong>CCDS reciprocal obligations</strong> apply if juskel
+accesses CCDS pool as finance provider</li>
+<li><strong>Commercial CAIS</strong> participation has separate SCoR/PoR
+membership rules for contributors</li>
+</ul>
+<h3 id="cost-estimated-not-quoted">7.6 Cost (estimated — not
+quoted)</h3>
+<p>Public sources and industry norms suggest:</p>
+<ul>
+<li><strong>Setup / integration:</strong> often £5k–£50k+ for enterprise
+CRA integrations (varies widely)</li>
+<li><strong>Per-search / per-report:</strong> £3–£30+ per commercial
+credit search depending on product tier</li>
+<li><strong>Minimum commits:</strong> common for bureau contracts — may
+be incompatible with juskel MVP volume</li>
+</ul>
+<p><strong>Not compatible with £5–15/mo all-in Azure infra
+budget</strong> unless pulls are rare and cached.</p>
+<h3 id="juskel-fit-assessment">7.7 juskel fit assessment</h3>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr>
+<th>Strength</th>
+<th>Weakness</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Best match to spec Reference Note</td>
+<td>Enterprise sales cycle; unclear non-lender eligibility</td>
+</tr>
+<tr>
+<td>Richest commercial API catalogue</td>
+<td>Commercial Acumen overlaps TrueLayer investment</td>
+</tr>
+<tr>
+<td>CCDS + CAIS designated CRA</td>
+<td>Reciprocity likely if accessing CCDS as finance provider</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Verdict:</strong> <strong>Primary vendor conversation
+#1.</strong> Ask explicitly about non-lending funding-readiness use case
+and structured commitment fields without displaying CRA scores.</p>
+<hr />
+<h2 id="provider-research-equifax-uk">8. Provider research — Equifax
+UK</h2>
+<h3 id="overview-1">8.1 Overview</h3>
+<p>Equifax is a <strong>designated CCDS CRA</strong> and offers the
+spec’s other named comparator: <strong>Open Banking Commercial
+Insights</strong> combined with <strong>Equifax Business Insights
+(EBI)</strong> and CCDS through a single channel.</p>
+<p>Equifax acquired AccountScore (open banking analytics) and positions
+strongly on <strong>OB + bureau in one journey</strong>.</p>
+<h3 id="product-catalogue-relevant-to-juskel-1">8.2 Product catalogue
+relevant to juskel</h3>
+<table>
+<colgroup>
+<col style="width: 20%" />
+<col style="width: 40%" />
+<col style="width: 40%" />
+</colgroup>
+<thead>
+<tr>
+<th>Product</th>
+<th>What it delivers</th>
+<th>juskel relevance</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Open Banking Commercial Insights</strong></td>
+<td>Business transaction data + categorisation + liquidity/cash-flow
+insights</td>
+<td>Core BIS data — may <strong>replace TrueLayer</strong></td>
+</tr>
+<tr>
+<td><strong>OBaaS (Open Banking as a Service)</strong></td>
+<td>Hosted consent portal; “portal in under 7 days” (2022 brochure)</td>
+<td>Fast time-to-market; less custom OB UX</td>
+</tr>
+<tr>
+<td><strong>Equifax Business Insights (EBI)</strong></td>
+<td>Commercial bureau file on UK companies</td>
+<td>Credit commitments, trade data</td>
+</tr>
+<tr>
+<td><strong>CCDS via same API/dashboard</strong></td>
+<td>Commercial finance agreement data</td>
+<td>Spec reconciliation layer input</td>
+</tr>
+<tr>
+<td><strong>Business Health Characteristics</strong></td>
+<td>Derived metrics from transaction categorisation</td>
+<td>Maps to BIAM dimensions</td>
+</tr>
+<tr>
+<td><strong>Forecasting API</strong></td>
+<td>Forward-looking cash views from historic OB</td>
+<td>Cash runway enrichment</td>
+</tr>
+</tbody>
+</table>
+<p>Developer flow (from public docs): <strong>Business Lookup → Check
+Progress → All Data endpoint</strong> (categorised transactions,
+recurrence, events). Full API reference requires <strong>developer
+login</strong>.</p>
+<h3 id="coverage-1">8.3 Coverage</h3>
+<ul>
+<li>Strong <strong>Ltd company</strong> bureau coverage via EBI</li>
+<li>OB coverage: any UK bank the SME can authorise through Equifax’s AIS
+journey</li>
+<li>CCDS subject to same national consent limitations as Experian</li>
+</ul>
+<h3 id="buy-vs-build-tension">8.4 Buy vs build tension</h3>
+<p>Equifax explicitly markets <strong>turnkey OB + bureau</strong> to
+avoid “large development investment.” juskel has already integrated
+<strong>TrueLayer</strong>. Options:</p>
+<ol type="1">
+<li><strong>Keep TrueLayer + add Equifax EBI/CCDS only</strong> (hybrid
+— preferred if Equifax allows)</li>
+<li><strong>Replace TrueLayer with Equifax OB Commercial
+Insights</strong> (single vendor, higher lock-in)</li>
+<li><strong>Defer bureau; keep TrueLayer for MVP</strong> (lowest
+near-term risk)</li>
+</ol>
+<h3 id="cost-estimated-not-quoted-1">8.5 Cost (estimated — not
+quoted)</h3>
+<ul>
+<li>OBaaS positioned as faster/cheaper than building OB yourself — but
+still <strong>enterprise contract</strong></li>
+<li>Combined OB + bureau likely <strong>£thousands+/year</strong>
+minimum</li>
+</ul>
+<h3 id="juskel-fit-assessment-1">8.6 juskel fit assessment</h3>
+<p><strong>Verdict:</strong> <strong>Primary vendor conversation
+#2.</strong> Best if juskel wants one partner for spec’s full “Banking
+Intelligence journey.” Confirm whether TrueLayer can coexist.</p>
+<hr />
+<h2 id="provider-research-transunion-uk">9. Provider research —
+TransUnion UK</h2>
+<h3 id="overview-2">9.1 Overview</h3>
+<p>TransUnion is a major <strong>consumer</strong> credit bureau in the
+UK (<strong>Call Report</strong> is the standard consumer credit search
+product). It is <strong>not</strong> one of the four
+<strong>Treasury-designated CCDS CRAs</strong>.</p>
+<h3 id="commercial-sme-relevance">9.2 Commercial SME relevance</h3>
+<ul>
+<li><strong>Not a primary path</strong> for commercial CCDS enrichment
+described in the spec</li>
+<li>Appears in <strong>D&amp;B Unified Risk View</strong> as the
+<strong>consumer leg</strong> (director/owner personal credit) blended
+with D&amp;B commercial + CCDS</li>
+<li>API access to Call Report typically via <strong>aggregators</strong>
+(e.g. Credit Canary) requiring <strong>SHARE membership</strong> for
+data contribution</li>
+</ul>
+<h3 id="when-transunion-still-matters-for-juskel">9.3 When TransUnion
+still matters for juskel</h3>
+<table>
+<colgroup>
+<col style="width: 52%" />
+<col style="width: 47%" />
+</colgroup>
+<thead>
+<tr>
+<th>Scenario</th>
+<th>TU role</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Sole trader with thin commercial file</td>
+<td>Consumer credit on individual may add signal</td>
+</tr>
+<tr>
+<td>Personal guarantee on business lending</td>
+<td>Director consumer file relevant</td>
+</tr>
+<tr>
+<td>Fraud / identity on company principals</td>
+<td>KYC crossover</td>
+</tr>
+</tbody>
+</table>
+<h3 id="juskel-fit-assessment-2">9.4 juskel fit assessment</h3>
+<p><strong>Verdict:</strong> <strong>Deprioritise for commercial credit
+enrichment.</strong> Revisit for director-consumer checks only when
+legal and product require it — likely via lender or partner stack, not
+as primary CCDS source.</p>
+<hr />
+<h2 id="provider-research-creditsafe">10. Provider research —
+Creditsafe</h2>
+<h3 id="overview-3">10.1 Overview</h3>
+<p>Creditsafe is a <strong>designated CCDS CRA</strong> and offers one
+of the most <strong>developer-accessible</strong> commercial data APIs
+in this research.</p>
+<h3 id="product-catalogue">10.2 Product catalogue</h3>
+<table>
+<colgroup>
+<col style="width: 52%" />
+<col style="width: 47%" />
+</colgroup>
+<thead>
+<tr>
+<th>Product</th>
+<th>Detail</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Creditsafe Connect API</strong></td>
+<td>REST API with JWT auth; global company data</td>
+</tr>
+<tr>
+<td><strong>UK company credit reports</strong></td>
+<td>Scores, limits, financials, directors</td>
+</tr>
+<tr>
+<td><strong>CCDS endpoint</strong></td>
+<td>Documented path: <code>/v1/localSolutions/GB/CCDS/{companyId}</code>
+for commercial finance agreement data</td>
+</tr>
+<tr>
+<td><strong>Sandbox</strong></td>
+<td>Free sandbox for development and integration testing</td>
+</tr>
+</tbody>
+</table>
+<h3 id="coverage-2">10.3 Coverage</h3>
+<ul>
+<li>Broad <strong>company registry</strong> coverage globally; UK
+reports widely used for B2B credit checks</li>
+<li>CCDS data embedded where SME has consented into scheme</li>
+<li>Good for <strong>Ltd companies</strong>; variable for micro-entities
+and new cos</li>
+</ul>
+<h3 id="cost">10.4 Cost</h3>
+<ul>
+<li>Subscription packages on website (per-report credits model)</li>
+<li>Third-party integrators cite <strong>~€1,000/year</strong> API
+integration fee <strong>plus</strong> Creditsafe subscription — not
+official Creditsafe pricing</li>
+<li><strong>Lower entry point</strong> than Experian Decisioning or
+Equifax OBaaS enterprise deals</li>
+</ul>
+<h3 id="reciprocity-1">10.5 Reciprocity</h3>
+<p>Same CCDS reciprocal rules if juskel accesses CCDS pool as a finance
+provider.</p>
+<h3 id="juskel-fit-assessment-3">10.6 juskel fit assessment</h3>
+<p><strong>Verdict:</strong> <strong>Best MVP spike candidate.</strong>
+Sandbox available today; sufficient for Phase 2 “show commitments list”
+UI without full BIS engine. Not a replacement for Experian/Equifax depth
+if juskel scales to lender-grade decisioning.</p>
+<hr />
+<h2 id="provider-research-dun-bradstreet-uk">11. Provider research — Dun
+&amp; Bradstreet UK</h2>
+<h3 id="overview-4">11.1 Overview</h3>
+<p>D&amp;B is the fourth <strong>designated CCDS CRA</strong>. Strong in
+<strong>trade credit</strong> and <strong>payment performance</strong>
+data globally.</p>
+<h3 id="relevant-products">11.2 Relevant products</h3>
+<table>
+<colgroup>
+<col style="width: 52%" />
+<col style="width: 47%" />
+</colgroup>
+<thead>
+<tr>
+<th>Product</th>
+<th>Detail</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>D&amp;B Business Data</strong></td>
+<td>Company profiles, PAYDEX, trade payments, legal events</td>
+</tr>
+<tr>
+<td><strong>Unified Risk View</strong></td>
+<td>Blends D&amp;B commercial + CCDS + <strong>TransUnion
+consumer</strong> for small-business decisioning</td>
+</tr>
+<tr>
+<td><strong>CCDS</strong></td>
+<td>Designated CRA — same scheme rules</td>
+</tr>
+</tbody>
+</table>
+<h3 id="api-access">11.3 API access</h3>
+<p>Enterprise integration — contact sales. Less public developer
+self-serve than Creditsafe.</p>
+<h3 id="juskel-fit-assessment-4">11.4 juskel fit assessment</h3>
+<p><strong>Verdict:</strong> <strong>Alternative CRA</strong> if
+Experian/Equifax pricing or eligibility fails. Less Open-Banking-native
+than Equifax/Experian Acumen. Consider if trade-credit-heavy SME segment
+is juskel’s primary market.</p>
+<hr />
+<h2 id="buy-vs-build-open-banking-overlap">12. Buy vs build — Open
+Banking overlap</h2>
+<p>The spec assumes:</p>
+<pre><code>Open Banking (primary) + Commercial Credit (enrichment) → Reconciliation → BIS</code></pre>
+<p>juskel’s current architecture:</p>
+<pre><code>TrueLayer OB → bands (today)     QuickBooks → FinancialIntegrationMetrics → FIS path</code></pre>
+<h3 id="three-strategic-options">12.1 Three strategic options</h3>
+<p><strong>Option A — Keep TrueLayer, add bureau separately (recommended
+for MVP)</strong></p>
+<ul>
+<li>Pros: Preserves existing integration and sandbox work; clear FIS/BIS
+separation</li>
+<li>Cons: juskel builds categorisation, reconciliation, and BIAM logic
+itself</li>
+<li>Bureau vendor: Creditsafe (Phase 2) or Experian/Equifax (Phase
+3)</li>
+</ul>
+<p><strong>Option B — Replace TrueLayer with Equifax/Experian OB
+bundle</strong></p>
+<ul>
+<li>Pros: Faster to spec’s 15-step journey; categorisation included</li>
+<li>Cons: Rip-out cost; vendor lock-in; duplicate OB consent if bureau
+pull fails</li>
+<li>Best if: legal confirms single-vendor contract and pricing
+acceptable</li>
+</ul>
+<p><strong>Option C — Defer all bureau; ship OB + accounting +
+attestation</strong></p>
+<ul>
+<li>Pros: Zero bureau cost and regulatory exposure now</li>
+<li>Cons: Spec’s enrichment stage not implemented; weaker BIS
+confidence</li>
+<li>Best if: MVP deadline dominates</li>
+</ul>
+<h3 id="multi-bank-already-researched-in-juskel-repo">12.2 Multi-bank
+(already researched in juskel repo)</h3>
+<p>TrueLayer/PSD2 constraints (documented internally):</p>
+<ul>
+<li>No single OAuth for all banks</li>
+<li>One consent journey <strong>per bank (ASPSP)</strong></li>
+<li>SME selects accounts at each bank</li>
+<li>90-day reconfirmation for ongoing access</li>
+<li>juskel can require attestation but cannot verify completeness</li>
+</ul>
+<p>This aligns with spec steps 6–7. <strong>No additional vendor
+research needed</strong> for multi-bank UX — engineering implementation
+required.</p>
+<hr />
+<h2 id="what-data-is-realistically-available-from-an-average-sme">13.
+What data is realistically available from an average SME</h2>
+<p>This section connects bureau research to onboarding reality. “Average
+SME” = micro to small Ltd or sole trader, £50k–£2m turnover, mixed
+digital maturity.</p>
+<h3 id="expected-coverage-tiers-in-production">13.1 Expected coverage
+tiers in production</h3>
+<table>
+<colgroup>
+<col style="width: 17%" />
+<col style="width: 49%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr>
+<th>SME profile</th>
+<th>Share of cohort (planning estimate)</th>
+<th>Bureau enrichment yield</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Manual baseline only</td>
+<td>40–55%</td>
+<td>None — self-declared only</td>
+</tr>
+<tr>
+<td>Open Banking only</td>
+<td>10–15%</td>
+<td>None — unless bureau pulled separately</td>
+</tr>
+<tr>
+<td>Accounting connected</td>
+<td>15–25%</td>
+<td>None from bureau — FIS path only</td>
+</tr>
+<tr>
+<td>OB + accounting</td>
+<td>10–20%</td>
+<td>Optional bureau adds commitments not in OB</td>
+</tr>
+<tr>
+<td>Full stack + bureau consent</td>
+<td>5–15%</td>
+<td>Richest; still often incomplete</td>
+</tr>
+</tbody>
+</table>
+<h3 id="by-data-category">13.2 By data category</h3>
+<table>
+<colgroup>
+<col style="width: 14%" />
+<col style="width: 10%" />
+<col style="width: 31%" />
+<col style="width: 18%" />
+<col style="width: 25%" />
+</colgroup>
+<thead>
+<tr>
+<th>Data need</th>
+<th>Manual</th>
+<th>Accounting (QB/Xero)</th>
+<th>Open Banking</th>
+<th>Commercial credit</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Turnover / revenue</td>
+<td>Medium quality</td>
+<td>Good if P&amp;L dated correctly</td>
+<td>Poor proxy from credits</td>
+<td>CCDS turnover where consented</td>
+</tr>
+<tr>
+<td>Profitability</td>
+<td>Medium</td>
+<td>Good</td>
+<td>Not reliable</td>
+<td>Not primary</td>
+</tr>
+<tr>
+<td>Cash position</td>
+<td>Medium</td>
+<td>Good (cash accounts)</td>
+<td>Excellent (connected accounts)</td>
+<td>Not primary</td>
+</tr>
+<tr>
+<td>Borrowing commitments</td>
+<td>Low</td>
+<td>Partial (loan accounts)</td>
+<td>Partial (repayment patterns)</td>
+<td><strong>Best source</strong> where file exists</td>
+</tr>
+<tr>
+<td>Payment performance</td>
+<td>N/A</td>
+<td>N/A</td>
+<td>Good (failed payments)</td>
+<td><strong>Strong</strong> on CCDS facilities</td>
+</tr>
+<tr>
+<td>Director adverse credit</td>
+<td>N/A</td>
+<td>N/A</td>
+<td>N/A</td>
+<td>Via consumer leg (TU/D&amp;B blends)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="product-design-rule">13.3 Product design rule</h3>
+<p><strong>Never assume bureau completeness.</strong> Default UI state
+for many SMEs: <em>“We could not find additional commercial credit
+records for this business. You can confirm your borrowing
+manually.”</em></p>
+<hr />
+<h2 id="cost-budget-and-commercial-model">14. Cost, budget, and
+commercial model</h2>
+<h3 id="juskel-mvp-infrastructure-budget">14.1 juskel MVP infrastructure
+budget</h3>
+<p>Target: <strong>£5–15/month</strong> Azure Container Apps + Basic
+SQL. Bureau data does not fit this budget at per-onboarding pull
+volume.</p>
+<h3 id="cost-components">14.2 Cost components</h3>
+<table>
+<colgroup>
+<col style="width: 28%" />
+<col style="width: 39%" />
+<col style="width: 31%" />
+</colgroup>
+<thead>
+<tr>
+<th>Component</th>
+<th>Typical model</th>
+<th>MVP impact</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Experian / Equifax enterprise</td>
+<td>Annual fee + per-search</td>
+<td>High — sales-led</td>
+</tr>
+<tr>
+<td>Creditsafe Connect</td>
+<td>Subscription + credits + possible API fee</td>
+<td>Medium — lowest entry</td>
+</tr>
+<tr>
+<td>CIGB subscription</td>
+<td>Annual subscriber fee</td>
+<td>Compliance overhead</td>
+</tr>
+<tr>
+<td>Reciprocity engineering</td>
+<td>Build data reporting pipeline</td>
+<td>High hidden cost if CCDS</td>
+</tr>
+<tr>
+<td>TrueLayer (existing)</td>
+<td>Per-connection SaaS</td>
+<td>Already planned</td>
+</tr>
+<tr>
+<td>Legal / compliance review</td>
+<td>One-off + ongoing</td>
+<td>Required before production</td>
+</tr>
+</tbody>
+</table>
+<h3 id="cost-control-strategies">14.3 Cost control strategies</h3>
+<ol type="1">
+<li><strong>Pull bureau only on explicit SME action</strong>
+(“Strengthen my profile”) — not every signup</li>
+<li><strong>Cache results</strong> for 30–90 days per application</li>
+<li><strong>Ltd-company gate</strong> — skip bureau call for sole
+traders until product justifies cost</li>
+<li><strong>Pass cost to lender</strong> post-match rather than at
+onboarding (commercial model decision)</li>
+<li><strong>Creditsafe sandbox</strong> for dev/test; production pulls
+only after contract</li>
+</ol>
+<hr />
+<h2 id="juskel-eligibility-assessment">15. juskel eligibility
+assessment</h2>
+<table>
+<colgroup>
+<col style="width: 45%" />
+<col style="width: 54%" />
+</colgroup>
+<thead>
+<tr>
+<th>Question</th>
+<th>Assessment</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Is juskel a finance provider under CCDS today?</td>
+<td><strong>No</strong> — funding readiness platform</td>
+</tr>
+<tr>
+<td>Can juskel access CCDS without reciprocity?</td>
+<td><strong>Unlikely</strong> for full scheme data</td>
+</tr>
+<tr>
+<td>Can juskel use commercial <strong>company reports</strong> with
+consent?</td>
+<td><strong>Possibly</strong> — via Creditsafe/CRA business information
+products; legal confirmation required</td>
+</tr>
+<tr>
+<td>Must juskel be FCA authorised?</td>
+<td><strong>Depends on use</strong> — credit broking / CIS if
+facilitating lender decisions with bureau data</td>
+</tr>
+<tr>
+<td>Can juskel meet spec without bureau?</td>
+<td><strong>Yes for MVP</strong> — OB + accounting + attestations</td>
+</tr>
+<tr>
+<td>Must juskel become a CRA?</td>
+<td><strong>No</strong> — spec explicitly forbids looking like one</td>
+</tr>
+</tbody>
+</table>
+<h3 id="working-hypothesis-pending-legal-sign-off">15.1 Working
+hypothesis (pending legal sign-off)</h3>
+<p><strong>Near-term eligible path:</strong> SME-initiated
+<strong>commercial company report</strong> (summary commitments, no CRA
+score displayed) via Creditsafe or similar — <strong>not</strong> full
+CCDS reciprocal membership.</p>
+<p><strong>Long-term path:</strong> If juskel becomes FCA-authorised
+credit broker/introducer with lending partners, Experian or Equifax
+enterprise contract with reciprocity plan.</p>
+<hr />
+<h2 id="accounting-integration-gap-analysis">16. Accounting integration
+gap analysis</h2>
+<p>Spec question: <em>How do we get missing data when QuickBooks/Xero
+doesn’t expose everything?</em></p>
+<h3 id="data-acquisition-hierarchy-from-spec">16.1 Data acquisition
+hierarchy (from spec)</h3>
+<ol type="1">
+<li><strong>Direct connected accounting data</strong> (QuickBooks, Xero,
+Sage, FreeAgent)</li>
+<li><strong>Derived from connected data</strong> (margins, working
+capital, EBITDA)</li>
+<li><strong>Existing juskel company/profile data</strong> (employees,
+sector)</li>
+<li><strong>Financial document evidence</strong> (AI extract → SME
+confirm)</li>
+<li><strong>SME structured input</strong> (self-declared, lower
+confidence)</li>
+</ol>
+<h3 id="quickbooks-juskel-status">16.2 QuickBooks — juskel status</h3>
+<table>
+<colgroup>
+<col style="width: 39%" />
+<col style="width: 25%" />
+<col style="width: 34%" />
+</colgroup>
+<thead>
+<tr>
+<th>Canonical field</th>
+<th>QB source</th>
+<th>juskel status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Revenue, net income</td>
+<td>P&amp;L report</td>
+<td>Live in <code>FinancialIntegrationMetrics</code></td>
+</tr>
+<tr>
+<td>Cash, AR, AP</td>
+<td>Accounts / balance sheet</td>
+<td>Live</td>
+</tr>
+<tr>
+<td>Working capital, ratios</td>
+<td>Derived</td>
+<td>Live</td>
+</tr>
+<tr>
+<td>Operating cash flow</td>
+<td>Cash flow report</td>
+<td>Partial — often missing</td>
+</tr>
+<tr>
+<td>EBITDA</td>
+<td>Derived from P&amp;L lines</td>
+<td>Conditional</td>
+</tr>
+<tr>
+<td>Prior period / YoY</td>
+<td>Second P&amp;L window</td>
+<td>Live when data exists</td>
+</tr>
+<tr>
+<td>Provenance metadata</td>
+<td>N/A</td>
+<td><strong>Not built</strong></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Known issue:</strong> Wrong report date window →
+<code>NoReportData: true</code> → bands fall back to account balances
+only.</p>
+<h3 id="xero-juskel-status">16.3 Xero — juskel status</h3>
+<ul>
+<li>OAuth stub exists in API</li>
+<li><strong>No metrics mapper</strong> equivalent to QuickBooks</li>
+<li><strong>Next engineering task:</strong>
+<code>api/sandbox/xero/SPEC-MAP.md</code> probe</li>
+</ul>
+<h3 id="mapping-principle-from-spec">16.4 Mapping principle (from
+spec)</h3>
+<p>Build canonical fields (<code>net_profit_loss</code>,
+<code>operating_cash_flow</code>) — <strong>not</strong>
+provider-specific names (<code>QuickBooks.PnL.NetIncome</code>). juskel
+already follows this in <code>FinancialIntegrationMetrics</code>.</p>
+<hr />
+<h2 id="recommended-strategy-and-phased-roadmap">17. Recommended
+strategy and phased roadmap</h2>
+<div class="callout success">
+<p><strong>Recommended MVP strategy:</strong> Ship Financial Profile
+without bureau integration. Parallel-track vendor discovery and legal
+review. Add lightweight Creditsafe enrichment in Phase 2 only if
+eligibility and cost confirm.</p>
+</div>
+<h3 id="phase-0-compliance-and-vendor-discovery-weeks-16">Phase 0 —
+Compliance and vendor discovery (weeks 1–6)</h3>
+<ul class="task-list">
+<li><label><input type="checkbox" />Legal: FCA status, permissible
+purpose, consent copy for bureau step</label></li>
+<li><label><input type="checkbox" />Sales: Experian + Equifax
+introductory calls (script in Section 18)</label></li>
+<li><label><input type="checkbox" />Engineering: Creditsafe Connect
+sandbox spike</label></li>
+<li><label><input type="checkbox" />Decision record: TrueLayer-only vs
+Equifax OB bundle</label></li>
+</ul>
+<h3 id="phase-1-mvp-without-bureau-ship-now">Phase 1 — MVP without
+bureau (ship now)</h3>
+<ul class="task-list">
+<li><label><input type="checkbox" />Align manual baseline with spec (8
+questions or band mapping)</label></li>
+<li><label><input type="checkbox" />QuickBooks metrics (done) +
+provenance flags</label></li>
+<li><label><input type="checkbox" />TrueLayer → new
+<code>BankingIntegrationMetrics</code> (replace balance→band
+hack)</label></li>
+<li><label><input type="checkbox" />Multi-bank connection model +
+banking completeness attestation</label></li>
+<li><label><input type="checkbox" />Coverage/confidence on all GET
+responses</label></li>
+</ul>
+<h3 id="phase-2-lightweight-commercial-enrichment">Phase 2 — Lightweight
+commercial enrichment</h3>
+<ul class="task-list">
+<li><label><input type="checkbox" />Creditsafe company report + CCDS
+slice for Ltd SMEs (consent-gated)</label></li>
+<li><label><input type="checkbox" />Reconciliation UI: corroborated /
+additional / discrepancy / insufficient</label></li>
+<li><label><input type="checkbox" />Borrowing completeness attestation
+(spec step 12)</label></li>
+<li><label><input type="checkbox" />No CRA score displayed; no 8th BIS
+dimension</label></li>
+</ul>
+<h3 id="phase-3-full-banking-intelligence">Phase 3 — Full Banking
+Intelligence</h3>
+<ul class="task-list">
+<li><label><input type="checkbox" />Experian or Equifax enterprise
+contract (if eligible + funded)</label></li>
+<li><label><input type="checkbox" />BIAM dimension enrichment from
+bureau + OB</label></li>
+<li><label><input type="checkbox" />BIS calculation in scoring
+module</label></li>
+<li><label><input type="checkbox" />SFS / FRI integration with EIS +
+FIS</label></li>
+</ul>
+<hr />
+<h2 id="vendor-engagement-pack">18. Vendor engagement pack</h2>
+<h3 id="intro-call-script">18.1 Intro call script</h3>
+<blockquote>
+<p>juskel is a UK SME <strong>funding readiness</strong> platform. We
+are <strong>not a lender</strong>. During onboarding we connect
+<strong>Open Banking (TrueLayer)</strong> and <strong>accounting
+software (QuickBooks/Xero)</strong>. We want to supplement connected
+banking with <strong>permitted commercial credit information</strong> so
+SMEs see a consolidated view of borrowing and commitments, and we enrich
+our <strong>Banking Intelligence</strong> scoring —
+<strong>without</strong> displaying a bureau credit score or operating
+as a CRA.</p>
+</blockquote>
+<p><strong>Questions to ask every vendor:</strong></p>
+<ol type="1">
+<li>Which product fits a <strong>non-lending platform</strong> with
+<strong>SME-initiated consent</strong>?</li>
+<li>What <strong>FCA authorisation</strong> and
+<strong>CIGB/PoR</strong> obligations apply to juskel?</li>
+<li>Is <strong>CCDS reciprocal reporting</strong> required for our use
+case?</li>
+<li>Provide pricing at <strong>500 / 5,000 / 50,000</strong> SME lookups
+per year.</li>
+<li>Can we receive <strong>structured commitment fields</strong> without
+raw CRA scores?</li>
+<li>Can we keep <strong>TrueLayer for Open Banking</strong> and use your
+product for bureau data only?</li>
+<li>What is <strong>sandbox access</strong> timeline and production
+onboarding duration?</li>
+<li>What <strong>sole trader / new company</strong> coverage should we
+expect?</li>
+</ol>
+<h3 id="experian-specific-questions">18.2 Experian-specific
+questions</h3>
+<ul>
+<li>Commercial Credit API vs Commercial Acumen vs Ascend — which for
+juskel?</li>
+<li>Can Acumen replace TrueLayer or must we dual-integrate?</li>
+<li>CATO API standalone availability and cost?</li>
+</ul>
+<h3 id="equifax-specific-questions">18.3 Equifax-specific questions</h3>
+<ul>
+<li>OBaaS vs API-only with existing TrueLayer?</li>
+<li>Business Health Characteristics field schema for BIAM mapping?</li>
+<li>CCDS + EBI + OB single contract pricing?</li>
+</ul>
+<h3 id="creditsafe-specific-questions">18.4 Creditsafe-specific
+questions</h3>
+<ul>
+<li>CCDS endpoint coverage rates for micro-SMEs?</li>
+<li>Reciprocity trigger for Connect API CCDS calls?</li>
+<li>Production pricing vs sandbox limits?</li>
+</ul>
+<h3 id="decision-log-update-after-calls">18.5 Decision log (update after
+calls)</h3>
+<table>
+<colgroup>
+<col style="width: 7%" />
+<col style="width: 10%" />
+<col style="width: 11%" />
+<col style="width: 24%" />
+<col style="width: 14%" />
+<col style="width: 23%" />
+<col style="width: 8%" />
+</colgroup>
+<thead>
+<tr>
+<th>Date</th>
+<th>Vendor</th>
+<th>Contact</th>
+<th>Product discussed</th>
+<th>Eligible?</th>
+<th>Est. annual cost</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td></td>
+<td>Experian</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>Equifax</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>Creditsafe</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>Legal counsel</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="risks-mitigations-and-open-questions">19. Risks, mitigations,
+and open questions</h2>
+<table style="width:100%;">
+<colgroup>
+<col style="width: 15%" />
+<col style="width: 31%" />
+<col style="width: 21%" />
+<col style="width: 31%" />
+</colgroup>
+<thead>
+<tr>
+<th>Risk</th>
+<th>Likelihood</th>
+<th>Impact</th>
+<th>Mitigation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>juskel not eligible for CCDS without reciprocity</td>
+<td>High</td>
+<td>Blocks full spec enrichment</td>
+<td>Phase 2 Creditsafe reports; legal path for CIS/broker role</td>
+</tr>
+<tr>
+<td>Bureau cost exceeds revenue</td>
+<td>High</td>
+<td>Budget failure</td>
+<td>Consent-gated pulls; cache; lender-funded model</td>
+</tr>
+<tr>
+<td>Thin bureau files for average SME</td>
+<td>High</td>
+<td>Weak BIS confidence</td>
+<td>“Insufficient coverage” as normal; manual attestation</td>
+</tr>
+<tr>
+<td>SME refuses bureau consent</td>
+<td>Medium</td>
+<td>Gap in commitments view</td>
+<td>Borrowing completeness step + manual add</td>
+</tr>
+<tr>
+<td>TrueLayer + Equifax OB duplication</td>
+<td>Medium</td>
+<td>Wasted engineering</td>
+<td>Decide single OB vendor in Phase 0</td>
+</tr>
+<tr>
+<td>Regulatory action for impermissible purpose</td>
+<td>Low</td>
+<td>Severe</td>
+<td>No production pulls until legal sign-off</td>
+</tr>
+<tr>
+<td>Reciprocity obligation if juskel pivots to lending</td>
+<td>Medium</td>
+<td>Long-term ops burden</td>
+<td>Architecture isolates bureau module</td>
+</tr>
+</tbody>
+</table>
+<h3 id="open-questions-for-product-owner">Open questions for product
+owner</h3>
+<ol type="1">
+<li>Is bureau enrichment <strong>required for MVP launch</strong> or
+Phase 2?</li>
+<li>Will juskel pursue <strong>FCA credit broking</strong> authorisation
+in 2026–2027?</li>
+<li>Who pays for bureau pulls — juskel, SME, or lender?</li>
+<li>Should sole traders be <strong>excluded</strong> from bureau step
+initially?</li>
+</ol>
+<hr />
+<h2 id="appendix-a-sources-and-references">Appendix A — Sources and
+references</h2>
+<table>
+<colgroup>
+<col style="width: 61%" />
+<col style="width: 38%" />
+</colgroup>
+<thead>
+<tr>
+<th>Source</th>
+<th>URL</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Experian Commercial Credit API</td>
+<td>https://developer.experian.com/products/uk/commercial-credit</td>
+</tr>
+<tr>
+<td>Experian Business Decisioning</td>
+<td>https://developer.experian.com/products/uk/business-decisioning</td>
+</tr>
+<tr>
+<td>Experian Ascend expansion (Jan 2026)</td>
+<td>https://news.europawire.eu/experian-expands-ascend-platform-with-full-access-to-uk-commercial-credit-data/eu-press-release/2026/01/05/11/31/50/167249/</td>
+</tr>
+<tr>
+<td>Equifax OB Commercial Insights</td>
+<td>https://www.equifax.co.uk/business/product/open-banking-commercial-insights/</td>
+</tr>
+<tr>
+<td>Equifax OB Insights developer</td>
+<td>https://developer.equifax.co.uk/open-banking-insights</td>
+</tr>
+<tr>
+<td>Creditsafe Connect API</td>
+<td>https://www.creditsafe.com/gb/en/enterprise/integrations/company-data-api.html</td>
+</tr>
+<tr>
+<td>Creditsafe API catalog</td>
+<td>https://doc.creditsafe.com/connect-catalog</td>
+</tr>
+<tr>
+<td>GOV.UK CCDS consultation</td>
+<td>https://www.gov.uk/government/consultations/commercial-credit-data-sharing-and-bank-referral-scheme-consultation-and-call-for-evidence/commercial-credit-data-sharing-consultation-and-call-for-evidence</td>
+</tr>
+<tr>
+<td>CCDS Post-Implementation Review 2024</td>
+<td>https://assets.publishing.service.gov.uk/media/672113d93ce5634f5f6ef442/CCDS_Post-Implementation_Review_2024.pdf</td>
+</tr>
+<tr>
+<td>CIGB FAQs</td>
+<td>https://www.cigb.co.uk/resources/help-advice-faqs/</td>
+</tr>
+<tr>
+<td>Principles of Reciprocity (PDF)</td>
+<td>https://www.cigb.co.uk/wp-content/uploads/2026/03/PoRs-Jan-26.pdf</td>
+</tr>
+<tr>
+<td>D&amp;B Unified Risk View</td>
+<td>https://dev-cs.dnb.co.uk/products/dnb-unified-risk-view.html</td>
+</tr>
+<tr>
+<td>juskel TrueLayer multi-bank limits</td>
+<td><code>api/sandbox/truelayer/docs/Open_Banking_Consent_And_Multi_Bank_Limits.pdf</code></td>
+</tr>
+<tr>
+<td>juskel QuickBooks SPEC-MAP</td>
+<td><code>api/sandbox/quickbooks/SPEC-MAP.md</code></td>
+</tr>
+<tr>
+<td>juskel Financial Profile spec (updated)</td>
+<td><code>discovery/requirements/financial-profile/Financial Profile (updated 2026-09-07).pdf</code></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="appendix-b-mapping-research-questions-to-this-report">Appendix B
+— Mapping research questions to this report</h2>
+<table>
+<thead>
+<tr>
+<th>Spec Tech Lead question</th>
+<th>Report section</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Coverage</td>
+<td>Sections 7–11, 13</td>
+</tr>
+<tr>
+<td>API availability</td>
+<td>Sections 7–11, 16</td>
+</tr>
+<tr>
+<td>Licensing</td>
+<td>Sections 6, 7–11</td>
+</tr>
+<tr>
+<td>Permissible use</td>
+<td>Sections 6.4, 6.5, 15</td>
+</tr>
+<tr>
+<td>Reciprocity requirements</td>
+<td>Sections 6.2, 6.3</td>
+</tr>
+<tr>
+<td>Cost</td>
+<td>Section 14</td>
+</tr>
+<tr>
+<td>juskel use case eligibility</td>
+<td>Sections 15, 17</td>
+</tr>
+<tr>
+<td>Reference Note (Experian Acumen, Equifax OB, CAIS)</td>
+<td>Sections 7, 8</td>
+</tr>
+<tr>
+<td>Accounting “missing data” question</td>
+<td>Section 16</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<footer class="doc-footer">
+<p><strong>juskel</strong> — Internal document. Version 1.1, 7 September
+2026.<br />
+Desk research from public sources and juskel codebase analysis. Not
+legal advice. Vendor pricing requires direct quotes.</p>
+</footer>
+</body>
+</html>

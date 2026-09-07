@@ -15,7 +15,7 @@ source "$ROOT/secrets.env"
 export TRUELAYER_CLIENT_ID TRUELAYER_CLIENT_SECRET
 export TRUELAYER_API_BASE_URL="${TRUELAYER_API_BASE_URL:-https://api.truelayer-sandbox.com}"
 export TRUELAYER_AUTH_BASE_URL="${TRUELAYER_AUTH_BASE_URL:-https://auth.truelayer-sandbox.com}"
-export TRUELAYER_REDIRECT_URI="${TRUELAYER_REDIRECT_URI:-https://console.truelayer.com/redirect-page}"
+export TRUELAYER_REDIRECT_URI="${TRUELAYER_REDIRECT_URI:-http://127.0.0.1:8767/callback}"
 export TRUELAYER_SCOPES="${TRUELAYER_SCOPES:-info accounts balance transactions offline_access}"
 export TRUELAYER_SANDBOX_PROVIDER="${TRUELAYER_SANDBOX_PROVIDER:-uk-cs-mock}"
 export TRUELAYER_TRANSACTIONS_DAYS="${TRUELAYER_TRANSACTIONS_DAYS:-90}"
