@@ -238,7 +238,8 @@ Store `accessToken` and attach to all subsequent requests.
 
 | When | Method | Endpoint | Notes |
 |------|--------|----------|-------|
-| Open step | `GET` | `/funding/applications/current/financial-profile` | Check `bandsLockedByIntegration`, `integrations[]`, `connectedBanks[]`, `bankingIntegrationMetrics`, `bankingCompleteness`, `evidence[]` |
+| Open step | `GET` | `/funding/applications/current/financial-profile` | Check `bandsLockedByIntegration`, `integrations[]`, `quickBooksExtended`, `connectedBanks[]`, `bankingIntegrationMetrics`, `bankingCompleteness`, `evidence[]` |
+| Open step (raw QB JSON) | `GET` | `/funding/applications/current/financial-profile?includeRaw=true` | Same as above plus `quickBooksRaw` (full Intuit report JSON strings; large payload) |
 | Save manual bands | `PUT` | `/funding/applications/current/financial-profile` | When `bandsLockedByIntegration: true`, PUT is a **no-op** on bands (returns **200** + current profile) and marks the financial step complete — use for **Save and continue** after QuickBooks/Open Banking **completeness attestation** |
 | Connect Open Banking (per bank) | `POST` | `/funding/integrations/open-banking/authorize` | No body → `{ authorizationUrl, state }` — redirect user; repeat for each bank (one OAuth journey per ASPSP) |
 | OAuth return | Browser | `GET` | `/funding/integrations/open-banking/callback?code=...&state=...` | Backend **appends** a bank connection, recomputes metrics, then **302** to `{JUSKEL_FRONTEND_URL}/onboarding/financial-profile?integration=open-banking&status=connected` (or `status=error`) |
@@ -265,7 +266,7 @@ Store `accessToken` and attach to all subsequent requests.
 
 The browser cannot use a plain `<a href>` — there is no public blob URL. Fetch with the JWT, then use `URL.createObjectURL(blob)` (frontend developer).
 
-**GET response** includes `evidence[]` (empty array when none uploaded), optional `integrationMetrics` (QuickBooks accounting sync only), optional `connectedBanks[]`, optional `bankingIntegrationMetrics` (Open Banking aggregate), and optional `bankingCompleteness` (SME attestation). Each evidence item:
+**GET response** includes `evidence[]` (empty array when none uploaded), optional `integrationMetrics` (QuickBooks accounting sync only), optional `quickBooksExtended` (structured QuickBooks archive — company, accounts, all report line amounts, aging buckets, cash-flow sections), optional `quickBooksRaw` (only when `?includeRaw=true` — full Intuit JSON strings), optional `connectedBanks[]`, optional `bankingIntegrationMetrics` (Open Banking aggregate), and optional `bankingCompleteness` (SME attestation). Each evidence item:
 
 ```json
 {
@@ -370,6 +371,65 @@ Example snippet:
     "workingCapital": 3809.96,
     "currentRatio": 1.62,
     "syncedAt": "2026-09-02T16:00:00Z"
+  }
+}
+```
+
+**`quickBooksExtended`** (read-only; populated after QuickBooks connect; `null` when disconnected or no archive):
+
+| Field | Type | Notes |
+|-------|------|-------|
+| `externalRealmId` | string | Intuit company / realm id |
+| `company` | object | `companyName`, `legalName`, `country`, `email`, `fiscalYearStartMonth`, `companyStartDate` |
+| `accounts[]` | array | Full chart of accounts: `id`, `name`, `accountType`, `accountSubType`, `classification`, `currentBalance`, `currency` |
+| `reportLines[]` | array | Every numeric line from P&amp;L, balance sheet, aged AR/AP, cash flow: `report`, `label`, `group`, `amount` |
+| `agingReceivables` / `agingPayables` | object? | `total`, `current`, `days1To30`, `days31To60`, `days61To90`, `daysOver90` |
+| `cashFlow` | object? | `operating`, `investing`, `financing`, `netChangeInCash` |
+| `hasReportData` / `priorPeriodHasReportData` | bool | QBO `NoReportData` flags |
+
+**`quickBooksRaw`** (read-only; only when `GET .../financial-profile?includeRaw=true`; `null` otherwise):
+
+| Field | Type | Notes |
+|-------|------|-------|
+| `companyInfo` | string | Raw JSON from `/companyinfo` |
+| `profitAndLoss` | string | Current P&amp;L report JSON |
+| `profitAndLossPrior` | string | Prior-year P&amp;L JSON |
+| `balanceSheet` | string | Balance sheet JSON |
+| `agedReceivables` | string | Aged AR JSON |
+| `agedPayables` | string | Aged AP JSON |
+| `cashFlow` | string | Cash flow JSON |
+| `accounts` | string | Full chart-of-accounts query JSON |
+
+Example snippet (`quickBooksExtended`):
+
+```json
+{
+  "quickBooksExtended": {
+    "externalRealmId": "1234567890",
+    "company": {
+      "companyName": "Acme Ltd",
+      "legalName": "Acme Limited",
+      "country": "GB",
+      "email": "finance@acme.example",
+      "fiscalYearStartMonth": "April",
+      "companyStartDate": "2018-04-01"
+    },
+    "accounts": [
+      {
+        "id": "1",
+        "name": "Business Current Account",
+        "accountType": "Bank",
+        "accountSubType": "Checking",
+        "classification": "Asset",
+        "currentBalance": 125000.00,
+        "currency": "GBP"
+      }
+    ],
+    "reportLines": [
+      { "report": "profitAndLoss", "label": "Total Income", "group": "Income", "amount": 750000.00 }
+    ],
+    "hasReportData": true,
+    "priorPeriodHasReportData": true
   }
 }
 ```

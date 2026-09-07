@@ -36,4 +36,6 @@ public sealed record QuickBooksFinancialSnapshot(
 
 public sealed record QuickBooksSyncResult(
     QuickBooksFinancialSnapshot Snapshot,
+    QuickBooksRawPayloads RawPayloads,
+    QuickBooksExtendedSnapshot ExtendedSnapshot,
     OAuthTokenResult? RefreshedTokens);

@@ -27,7 +27,8 @@ public static class FundingEndpoints
             HttpRequest request,
             IIdentityModule identity,
             FinancialProfileService service,
-            CancellationToken ct) =>
+            CancellationToken ct,
+            [FromQuery] bool includeRaw = false) =>
         {
             if (!TryGetUserId(user, out var userId))
                 return Results.Unauthorized();
@@ -36,7 +37,7 @@ public static class FundingEndpoints
             if (error is not null)
                 return error;
 
-            var response = await service.GetAsync(access!.OrganisationId, ct);
+            var response = await service.GetAsync(access!.OrganisationId, includeRaw, ct);
             return response is null ? Results.NotFound() : Results.Ok(response);
         })
         .WithName("GetFinancialProfile")

@@ -27,6 +27,8 @@ internal sealed class FundingDbContext : DbContext
     public DbSet<BankingCompletenessAttestation> BankingCompletenessAttestations =>
         Set<BankingCompletenessAttestation>();
 
+    public DbSet<QuickBooksSyncArchive> QuickBooksSyncArchives => Set<QuickBooksSyncArchive>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.HasDefaultSchema("funding");
@@ -38,5 +40,6 @@ internal sealed class FundingDbContext : DbContext
         modelBuilder.ApplyConfiguration(new OpenBankingConnectionEntityConfiguration());
         modelBuilder.ApplyConfiguration(new BankingIntegrationMetricsEntityConfiguration());
         modelBuilder.ApplyConfiguration(new BankingCompletenessAttestationEntityConfiguration());
+        modelBuilder.ApplyConfiguration(new QuickBooksSyncArchiveEntityConfiguration());
     }
 }

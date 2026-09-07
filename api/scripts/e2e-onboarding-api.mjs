@@ -472,7 +472,12 @@ async function runFullCoverage(token) {
     && financialAfterQb.data?.bandsLockedByIntegration === true
     && financialAfterQb.data?.annualRevenueBand != null
     && financialAfterQb.data?.integrationMetrics?.provider === 3
-    && financialAfterQb.data?.integrationMetrics?.annualRevenue != null, {
+    && financialAfterQb.data?.integrationMetrics?.annualRevenue != null
+    && Array.isArray(financialAfterQb.data?.quickBooksExtended?.accounts)
+    && financialAfterQb.data.quickBooksExtended.accounts.length > 0
+    && Array.isArray(financialAfterQb.data?.quickBooksExtended?.reportLines)
+    && financialAfterQb.data.quickBooksExtended.reportLines.length > 0
+    && financialAfterQb.data?.quickBooksExtended?.company?.companyName, {
     status: financialAfterQb.status,
     bandsLocked: financialAfterQb.data?.bandsLockedByIntegration,
     annualRevenueBand: financialAfterQb.data?.annualRevenueBand,
@@ -481,6 +486,20 @@ async function runFullCoverage(token) {
     qbConnected: financialAfterQb.data?.integrations?.some(
       (i) => i.provider === 3 && i.isConnected,
     ),
+    quickBooksAccountCount: financialAfterQb.data?.quickBooksExtended?.accounts?.length,
+    quickBooksReportLineCount: financialAfterQb.data?.quickBooksExtended?.reportLines?.length,
+    quickBooksCompanyName: financialAfterQb.data?.quickBooksExtended?.company?.companyName,
+  });
+
+  const financialWithRaw = await apiGet('/funding/applications/current/financial-profile?includeRaw=true', token);
+  log('GET /funding/.../financial-profile?includeRaw=true', financialWithRaw.status === 200
+    && financialWithRaw.data?.quickBooksRaw?.companyInfo
+    && financialWithRaw.data?.quickBooksRaw?.profitAndLoss
+    && financialWithRaw.data?.quickBooksRaw?.accounts, {
+    status: financialWithRaw.status,
+    hasCompanyInfoRaw: !!financialWithRaw.data?.quickBooksRaw?.companyInfo,
+    hasProfitAndLossRaw: !!financialWithRaw.data?.quickBooksRaw?.profitAndLoss,
+    hasAccountsRaw: !!financialWithRaw.data?.quickBooksRaw?.accounts,
   });
 
   const financialPutWhileLocked = await api('PUT', '/funding/applications/current/financial-profile', token, financialProfileBody);
