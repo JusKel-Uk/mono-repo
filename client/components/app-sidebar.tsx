@@ -55,11 +55,14 @@ export const SME_NAV: { label: string; icon: LucideIcon; href: string }[] = [
 export function AppSidebar({
   locked = false,
   context,
+  orgSwitcher,
   callout,
 }: {
   locked?: boolean;
-  /** Icon + title / badge + subtitle block — same styling in both modes. */
-  context: SidebarContext;
+  /** Icon + title / badge + subtitle block — used when `orgSwitcher` is absent. */
+  context?: SidebarContext;
+  /** Dashboard-only interactive org context (replaces the static block). */
+  orgSwitcher?: ReactNode;
   /** Onboarding-only extra rendered under the context block (unlock callout). */
   callout?: ReactNode;
 }) {
@@ -87,22 +90,26 @@ export function AppSidebar({
       <div className='flex flex-1 flex-col gap-8 overflow-y-auto pt-8'>
         <JusKelLogo className='mx-auto text-carbon-black' />
 
-        {/* Context block — identical for both; only the text differs */}
+        {/* Context block — org switcher (dashboard) or static text (onboarding). */}
         <div className='border-y border-gray-200 px-6 py-6'>
-          <div className='flex items-center gap-2'>
-            <Building2 className='size-4.5 text-gray-600' />
-            <span className='text-body-sm font-medium text-gray-600'>
-              {context.title}
-            </span>
-          </div>
-          <div className='mt-3 flex items-center gap-2'>
-            <span className='flex h-7 items-center rounded-full bg-gray-200 px-3 text-label-md font-semibold text-gray-600'>
-              {context.badge}
-            </span>
-            <span className='text-body-sm text-gray-600'>
-              {context.subtitle}
-            </span>
-          </div>
+          {orgSwitcher ?? (
+            <>
+              <div className='flex items-center gap-2'>
+                <Building2 className='size-4.5 text-gray-600' />
+                <span className='text-body-sm font-medium text-gray-600'>
+                  {context?.title}
+                </span>
+              </div>
+              <div className='mt-3 flex items-center gap-2'>
+                <span className='flex h-7 items-center rounded-full bg-gray-200 px-3 text-label-md font-semibold text-gray-600'>
+                  {context?.badge}
+                </span>
+                <span className='text-body-sm text-gray-600'>
+                  {context?.subtitle}
+                </span>
+              </div>
+            </>
+          )}
         </div>
 
         {callout && <div className='px-6'>{callout}</div>}

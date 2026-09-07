@@ -7,7 +7,6 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import type { LucideIcon } from 'lucide-react';
 import {
-  ChevronDown,
   CircleCheck,
   Eye,
   Gem,
@@ -31,13 +30,25 @@ import {
   signOutSession,
   getOrganisations,
   requestOrganisationClosure,
+  getMembers,
+  inviteMember,
+  updateMemberRole,
+  removeMember,
   OrganisationRole,
   type NotificationPreferences,
   type Session,
+  type CreateInviteRequest,
 } from '@/lib/api/settings';
 import { useAuthStore } from '@/stores/authStore';
 import { DashboardShell } from '@/components/dashboard/dashboard-shell';
 import { Skeleton } from '@/components/ui/skeleton';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import {
   Dialog,
   DialogClose,
@@ -70,7 +81,21 @@ const SK = {
   notifications: ['settings', 'notification-preferences'] as const,
   sessions: ['settings', 'sessions'] as const,
   organisations: ['settings', 'organisations'] as const,
+  members: (orgId: string) => ['settings', 'members', orgId] as const,
 };
+
+const ROLE_LABEL: Record<OrganisationRole, string> = {
+  [OrganisationRole.Owner]: 'Owner',
+  [OrganisationRole.Admin]: 'Admin',
+  [OrganisationRole.Contributor]: 'Contributor',
+  [OrganisationRole.Viewer]: 'Viewer',
+};
+/** Roles assignable via invite or a role change (never Owner). */
+const ASSIGNABLE_ROLES = [
+  OrganisationRole.Admin,
+  OrganisationRole.Contributor,
+  OrganisationRole.Viewer,
+];
 
 const errMsg = (e: unknown, fallback: string) =>
   e instanceof ApiError ? e.message : fallback;
@@ -258,44 +283,107 @@ const ROLES: { icon: LucideIcon; name: string; can: string; you?: boolean }[] =
     },
   ];
 
-const MEMBERS = [
-  {
-    initials: 'FR',
-    name: 'Flourish Ralph · You',
-    email: 'Flo@juskel.co.uk',
-    role: 'Owner',
-    owner: true,
-  },
-  {
-    initials: 'AT',
-    name: 'Austin Tonayam',
-    email: 'Aus@juskel.co.uk',
-    role: 'Admin',
-  },
-  {
-    initials: 'AO',
-    name: 'Alo Odunayo',
-    email: 'Alo@juskel.co.uk',
-    role: 'Contributor',
-  },
-  {
-    initials: 'PS',
-    name: 'Priya Shah',
-    email: 'Priya@juskel.co.uk',
-    role: 'Viewer',
-  },
-];
+const initialsOf = (first?: string, last?: string) =>
+  `${first?.[0] ?? ''}${last?.[0] ?? ''}`.toUpperCase() || '—';
 
-function RoleSelect({ value }: { value: string }) {
+/** Static role pill (Owner, or read-only where you can't manage the member). */
+function RoleBadge({ role }: { role: OrganisationRole }) {
   return (
-    <div className='flex h-10 w-full items-center justify-between rounded-lg border border-gray-300 px-4 text-sm text-carbon-black sm:w-50'>
-      <span>{value}</span>
-      <ChevronDown className='size-5 text-gray-500' />
-    </div>
+    <span className='inline-flex h-7 w-fit items-center gap-1 rounded-full bg-gray-200 px-3 text-label-md font-medium text-gray-600'>
+      {role === OrganisationRole.Owner && <Gem className='size-4' />}
+      {ROLE_LABEL[role]}
+    </span>
+  );
+}
+
+/** Role dropdown (Admin / Contributor / Viewer — never Owner). */
+function RolePicker({
+  value,
+  onChange,
+  disabled,
+}: {
+  value: OrganisationRole;
+  onChange: (role: OrganisationRole) => void;
+  disabled?: boolean;
+}) {
+  return (
+    <Select
+      value={String(value)}
+      onValueChange={(v) => onChange(Number(v) as OrganisationRole)}
+      disabled={disabled}
+    >
+      <SelectTrigger className='h-10 w-full sm:w-50'>
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent>
+        {ASSIGNABLE_ROLES.map((r) => (
+          <SelectItem key={r} value={String(r)}>
+            {ROLE_LABEL[r]}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
   );
 }
 
 function TeamPanel() {
+  const qc = useQueryClient();
+  const { data: orgs } = useQuery({
+    queryKey: SK.organisations,
+    queryFn: getOrganisations,
+  });
+  const { data: me } = useQuery({ queryKey: SK.me, queryFn: getMe });
+
+  const org = orgs?.find((o) => o.isCurrent) ?? orgs?.[0];
+  const orgId = org?.id;
+  const canManage =
+    org?.role === OrganisationRole.Owner || org?.role === OrganisationRole.Admin;
+  const domain = me?.email?.split('@')[1];
+
+  const { data: members, isLoading } = useQuery({
+    queryKey: SK.members(orgId ?? 'none'),
+    queryFn: () => getMembers(orgId!),
+    enabled: Boolean(orgId),
+  });
+
+  const invalidate = () => {
+    if (orgId) qc.invalidateQueries({ queryKey: SK.members(orgId) });
+  };
+
+  const [inviteEmail, setInviteEmail] = useState('');
+  const [inviteRole, setInviteRole] = useState<OrganisationRole>(
+    OrganisationRole.Viewer,
+  );
+
+  const invite = useMutation({
+    mutationFn: (body: CreateInviteRequest) => inviteMember(orgId!, body),
+    onSuccess: (res) => {
+      invalidate();
+      setInviteEmail('');
+      setInviteRole(OrganisationRole.Viewer);
+      toast.success(`Invite sent to ${res.email}.`);
+    },
+    onError: (e) =>
+      toast.error(errMsg(e, 'Could not send the invite. Please try again.')),
+  });
+
+  const changeRole = useMutation({
+    mutationFn: (v: { userId: string; role: OrganisationRole }) =>
+      updateMemberRole(orgId!, v.userId, v.role),
+    onSuccess: invalidate,
+    onError: (e) =>
+      toast.error(errMsg(e, 'Could not update the role. Please try again.')),
+  });
+
+  const remove = useMutation({
+    mutationFn: (userId: string) => removeMember(orgId!, userId),
+    onSuccess: invalidate,
+    onError: (e) =>
+      toast.error(errMsg(e, 'Could not remove the member. Please try again.')),
+  });
+
+  const busy = changeRole.isPending || remove.isPending;
+
   return (
     <section className='flex flex-col gap-5'>
       <div className='flex flex-col'>
@@ -339,68 +427,131 @@ function TeamPanel() {
 
       {/* Members */}
       <p className='text-body-md font-medium text-carbon-black'>
-        Members ({MEMBERS.length})
+        Members{members ? ` (${members.length})` : ''}
       </p>
       <div className='overflow-hidden rounded-lg border border-gray-200 bg-white'>
-        {MEMBERS.map((m, i) => (
-          <div
-            key={m.email}
-            className={cn(
-              'flex flex-col gap-3 p-5 sm:flex-row sm:items-center sm:justify-between',
-              i > 0 && 'border-t border-gray-200',
-            )}
-          >
-            <div className='flex items-center gap-3'>
-              <span className='flex size-10 shrink-0 items-center justify-center rounded-full bg-sage-grey text-sm font-medium text-mineral-white'>
-                {m.initials}
-              </span>
-              <div className='flex flex-col gap-0.5'>
-                <p className='text-body-sm font-semibold text-carbon-black'>
-                  {m.name}
-                </p>
-                <p className='text-body-sm text-gray-500'>{m.email}</p>
+        {isLoading ? (
+          [0, 1, 2].map((i) => (
+            <div
+              key={i}
+              className={cn(
+                'flex items-center justify-between p-5',
+                i > 0 && 'border-t border-gray-200',
+              )}
+            >
+              <div className='flex items-center gap-3'>
+                <Skeleton className='size-10 shrink-0 rounded-full' />
+                <div className='flex flex-col gap-1.5'>
+                  <Skeleton className='h-4 w-40' />
+                  <Skeleton className='h-3.5 w-52' />
+                </div>
               </div>
+              <Skeleton className='h-10 w-24 rounded-lg' />
             </div>
-            {m.owner ? (
-              <span className='inline-flex h-7 w-fit items-center gap-1 rounded-full bg-gray-200 px-3 text-label-md font-medium text-gray-600'>
-                <Gem className='size-4' />
-                Owner
-              </span>
-            ) : (
-              <div className='flex items-center gap-4'>
-                <RoleSelect value={m.role} />
-                <button type='button' aria-label={`Remove ${m.name}`}>
-                  <Trash2 className='size-5 text-gray-500 hover:text-carbon-black' />
-                </button>
+          ))
+        ) : members && members.length > 0 ? (
+          members.map((m, i) => {
+            const isYou = m.userId === me?.id;
+            const isOwner = m.role === OrganisationRole.Owner;
+            const manageable = canManage && !isYou && !isOwner;
+            return (
+              <div
+                key={m.userId}
+                className={cn(
+                  'flex flex-col gap-3 p-5 sm:flex-row sm:items-center sm:justify-between',
+                  i > 0 && 'border-t border-gray-200',
+                )}
+              >
+                <div className='flex items-center gap-3'>
+                  <span className='flex size-10 shrink-0 items-center justify-center rounded-full bg-sage-grey text-sm font-medium text-mineral-white'>
+                    {initialsOf(m.firstName, m.lastName)}
+                  </span>
+                  <div className='flex flex-col gap-0.5'>
+                    <p className='text-body-sm font-semibold text-carbon-black'>
+                      {joinName(m.firstName, m.lastName)}
+                      {isYou && ' · You'}
+                    </p>
+                    <p className='text-body-sm text-gray-500'>{m.email}</p>
+                  </div>
+                </div>
+                {manageable ? (
+                  <div className='flex items-center gap-4'>
+                    <RolePicker
+                      value={m.role}
+                      disabled={busy}
+                      onChange={(role) =>
+                        changeRole.mutate({ userId: m.userId, role })
+                      }
+                    />
+                    <button
+                      type='button'
+                      onClick={() => remove.mutate(m.userId)}
+                      disabled={busy}
+                      aria-label={`Remove ${m.email}`}
+                      className='disabled:opacity-60'
+                    >
+                      <Trash2 className='size-5 text-gray-500 hover:text-carbon-black' />
+                    </button>
+                  </div>
+                ) : (
+                  <RoleBadge role={m.role} />
+                )}
               </div>
-            )}
-          </div>
-        ))}
+            );
+          })
+        ) : (
+          <p className='p-5 text-body-sm text-gray-500'>No members yet.</p>
+        )}
       </div>
 
-      {/* Invite */}
-      <div className='rounded-lg border border-dashed border-gray-300 bg-white p-5'>
-        <div className='flex flex-col gap-2'>
-          <p className='text-body-md font-medium text-carbon-black'>
-            Invite a team member
-          </p>
-          <div className='flex flex-col gap-4 sm:flex-row sm:items-center'>
-            <input
-              type='email'
-              placeholder='colleague@yourcompany.co.uk'
-              className='h-12 flex-1 rounded-lg border border-gray-300 px-4 text-sm text-carbon-black placeholder:text-gray-400 focus-visible:border-primary focus-visible:outline-none'
-            />
-            <RoleSelect value='Viewer' />
-            <button
-              type='button'
-              className={cn(PRIMARY_BTN, 'h-10 px-4 text-sm')}
-            >
-              <UserPlus className='size-5' />
-              Invite
-            </button>
+      {/* Invite — Owner / Admin only */}
+      {canManage && (
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            const email = inviteEmail.trim();
+            if (email) invite.mutate({ email, role: inviteRole });
+          }}
+          className='rounded-lg border border-dashed border-gray-300 bg-white p-5'
+        >
+          <div className='flex flex-col gap-2'>
+            <p className='text-body-md font-medium text-carbon-black'>
+              Invite a team member
+            </p>
+            <div className='flex flex-col gap-4 sm:flex-row sm:items-center'>
+              <input
+                type='email'
+                required
+                value={inviteEmail}
+                onChange={(e) => setInviteEmail(e.target.value)}
+                placeholder={
+                  domain ? `colleague@${domain}` : 'colleague@yourcompany.co.uk'
+                }
+                className='h-12 flex-1 rounded-lg border border-gray-300 px-4 text-sm text-carbon-black placeholder:text-gray-400 focus-visible:border-primary focus-visible:outline-none'
+              />
+              <RolePicker value={inviteRole} onChange={setInviteRole} />
+              <button
+                type='submit'
+                disabled={invite.isPending || !inviteEmail.trim()}
+                className={cn(PRIMARY_BTN, 'h-10 px-4 text-sm')}
+              >
+                {invite.isPending ? (
+                  <Loader2 className='size-4 animate-spin' />
+                ) : (
+                  <UserPlus className='size-5' />
+                )}
+                Invite
+              </button>
+            </div>
+            {domain && (
+              <p className='text-label-md text-gray-500'>
+                Must be a business email on your organisation&apos;s domain (@
+                {domain}).
+              </p>
+            )}
           </div>
-        </div>
-      </div>
+        </form>
+      )}
     </section>
   );
 }

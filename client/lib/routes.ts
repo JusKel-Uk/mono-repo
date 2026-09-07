@@ -27,6 +27,7 @@ export const ROUTES = {
     settings: '/sme/settings',
     notifications: '/sme/notifications',
   },
+  acceptInvite: '/accept-invite',
   lender: {
     root: '/lender',
     dashboard: '/lender/dashboard',
@@ -43,7 +44,9 @@ export type Role = 'sme' | 'lender';
  */
 export function safeInternalPath(
   path: string | null | undefined,
-  fallback: string = ROUTES.onboarding,
+  // Default landing after auth. TODO(auth): route by role / onboarding status
+  // once the backend exposes them; the dashboard is the interim home.
+  fallback: string = ROUTES.sme.dashboard,
 ): string {
   if (!path) return fallback;
   if (

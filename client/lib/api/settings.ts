@@ -106,3 +106,90 @@ export function requestOrganisationClosure(organisationId: string) {
     { method: 'POST', auth: true },
   );
 }
+
+/** Switch the signed-in user's active organisation (multi-org). */
+export function setCurrentOrganisation(organisationId: string) {
+  return request<void>('/identity/me/organisations/current', {
+    method: 'PUT',
+    body: { organisationId },
+    auth: true,
+  });
+}
+
+/* ---- Team (members / invites) ---- */
+
+export type OrganisationMember = {
+  userId: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  role: OrganisationRole;
+  joinedAt: string;
+};
+
+export function getMembers(organisationId: string) {
+  return request<OrganisationMember[]>(
+    `/identity/organisations/${organisationId}/members`,
+    { method: 'GET', auth: true },
+  );
+}
+
+export type CreateInviteRequest = {
+  email: string;
+  /** Not Owner (0). */
+  role: OrganisationRole;
+};
+
+export type CreateInviteResponse = {
+  inviteId: string;
+  email: string;
+  role: OrganisationRole;
+  expiresAt: string;
+  /** Present in the API response for E2E; production relies on the email link. */
+  acceptToken: string;
+};
+
+/** Owner / Admin only. Invitee must be a business email on the org's domain. */
+export function inviteMember(
+  organisationId: string,
+  body: CreateInviteRequest,
+) {
+  return request<CreateInviteResponse>(
+    `/identity/organisations/${organisationId}/invites`,
+    { method: 'POST', body, auth: true },
+  );
+}
+
+export type AcceptInviteResponse = {
+  organisationId: string;
+  organisationName: string;
+  role: OrganisationRole;
+};
+
+/** Authenticated; the signed-in user's email must match the invite. */
+export function acceptInvite(token: string) {
+  return request<AcceptInviteResponse>(
+    `/identity/invites/${token}/accept`,
+    { method: 'POST', auth: true },
+  );
+}
+
+/** Owner / Admin only. Cannot demote the last Owner (409). */
+export function updateMemberRole(
+  organisationId: string,
+  memberUserId: string,
+  role: OrganisationRole,
+) {
+  return request<void>(
+    `/identity/organisations/${organisationId}/members/${memberUserId}`,
+    { method: 'PATCH', body: { role }, auth: true },
+  );
+}
+
+/** Owner / Admin only. Cannot remove the last Owner (409). */
+export function removeMember(organisationId: string, memberUserId: string) {
+  return request<void>(
+    `/identity/organisations/${organisationId}/members/${memberUserId}`,
+    { method: 'DELETE', auth: true },
+  );
+}

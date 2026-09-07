@@ -1,14 +1,7 @@
 import { AppSidebar } from '@/components/app-sidebar';
+import { OrgSwitcher } from '@/components/dashboard/org-switcher';
 
-/** Dashboard sidebar: unlocked, route-aware app nav + company context. */
+/** Dashboard sidebar: unlocked, route-aware app nav + org switcher context. */
 export function DashboardSidebar() {
-  return (
-    <AppSidebar
-      context={{
-        title: 'JusKel Technology Ltd',
-        badge: 'OWNER',
-        subtitle: 'Owner / Founder / Director',
-      }}
-    />
-  );
+  return <AppSidebar orgSwitcher={<OrgSwitcher />} />;
 }
