@@ -11,6 +11,5 @@ internal static class MeProfileMapping
         user.FirstName,
         user.LastName,
         user.JobTitle,
-        user.Phone,
-        user.AccountClosureRequestedAt);
+        user.Phone);
 }

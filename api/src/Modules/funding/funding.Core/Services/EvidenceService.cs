@@ -37,9 +37,9 @@ internal sealed class EvidenceService
         _blobStorage = blobStorage;
     }
 
-    public async Task<IReadOnlyList<EvidenceResponse>> ListAsync(Guid userId, CancellationToken ct = default)
+    public async Task<IReadOnlyList<EvidenceResponse>> ListAsync(Guid organisationId, CancellationToken ct = default)
     {
-        var applicationId = await _onboarding.GetDraftApplicationIdAsync(userId, ct);
+        var applicationId = await _onboarding.GetDraftApplicationIdAsync(organisationId, ct);
         if (applicationId is null)
             return [];
 
@@ -58,13 +58,13 @@ internal sealed class EvidenceService
     }
 
     public async Task<EvidenceResponse?> UploadAsync(
-        Guid userId,
+        Guid organisationId,
         IFormFile file,
         CancellationToken ct = default)
     {
         ValidateFile(file);
 
-        var applicationId = await _onboarding.GetDraftApplicationIdAsync(userId, ct)
+        var applicationId = await _onboarding.GetDraftApplicationIdAsync(organisationId, ct)
             ?? throw new InvalidOperationException("Draft application not found.");
 
         var evidenceId = Guid.NewGuid();
@@ -96,9 +96,9 @@ internal sealed class EvidenceService
             evidence.UploadedAt);
     }
 
-    public async Task<bool> DeleteAsync(Guid userId, Guid evidenceId, CancellationToken ct = default)
+    public async Task<bool> DeleteAsync(Guid organisationId, Guid evidenceId, CancellationToken ct = default)
     {
-        var applicationId = await _onboarding.GetDraftApplicationIdAsync(userId, ct);
+        var applicationId = await _onboarding.GetDraftApplicationIdAsync(organisationId, ct);
         if (applicationId is null)
             return false;
 
@@ -115,11 +115,11 @@ internal sealed class EvidenceService
     }
 
     public async Task<EvidenceFile?> DownloadAsync(
-        Guid userId,
+        Guid organisationId,
         Guid evidenceId,
         CancellationToken ct = default)
     {
-        var applicationId = await _onboarding.GetCurrentApplicationIdAsync(userId, ct);
+        var applicationId = await _onboarding.GetCurrentApplicationIdAsync(organisationId, ct);
         if (applicationId is null)
             return null;
 

@@ -12,14 +12,16 @@ internal sealed class ApplicationEntityConfiguration : IEntityTypeConfiguration<
         entity.HasKey(a => a.Id);
 
         entity.Property(a => a.UserId).IsRequired();
+        entity.Property(a => a.OrganisationId).IsRequired();
         entity.Property(a => a.Status).IsRequired();
         entity.Property(a => a.CreatedAt).IsRequired();
         entity.Property(a => a.UpdatedAt).IsRequired();
 
-        // One draft application per user (enforced at DB level)
-        entity.HasIndex(a => a.UserId)
+        entity.HasIndex(a => a.OrganisationId)
             .IsUnique()
-            .HasFilter("[Status] = 0"); // 0 = SubmissionStatus.Draft
+            .HasFilter("[Status] = 0");
+
+        entity.HasIndex(a => a.UserId);
 
         entity.HasMany(a => a.Steps)
             .WithOne(s => s.Application)

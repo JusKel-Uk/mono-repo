@@ -3,6 +3,7 @@ using identity.Core.Features.GetMe;
 using identity.Core.Features.GetNotificationPreferences;
 using identity.Core.Features.GetUserById;
 using identity.Core.Features.ListSessions;
+using identity.Core.Features.Organisations;
 using identity.Core.Features.PutNotificationPreferences;
 using identity.Core.Features.RegisterUser;
 using identity.Core.Features.RequestAccountClosure;
@@ -36,6 +37,7 @@ public static class IdentityEndpoints
         app.MapRevokeCurrentSessionEndpoint();
         app.MapRevokeSessionEndpoint();
         app.MapRequestAccountClosureEndpoint();
+        app.MapOrganisationsEndpoints();
         app.MapVerifyEmailEndpoint();
         app.MapResendOtpEndpoint();
         return app;

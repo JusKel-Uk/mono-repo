@@ -22,9 +22,9 @@ internal sealed class SustainabilityProfileService
         _scoring = scoring;
     }
 
-    public async Task<SustainabilityProfileResponse?> GetAsync(Guid userId, CancellationToken ct = default)
+    public async Task<SustainabilityProfileResponse?> GetAsync(Guid organisationId, CancellationToken ct = default)
     {
-        var applicationId = await _onboarding.GetCurrentApplicationIdAsync(userId, ct);
+        var applicationId = await _onboarding.GetCurrentApplicationIdAsync(organisationId, ct);
         if (applicationId is null)
             return null;
 
@@ -47,13 +47,13 @@ internal sealed class SustainabilityProfileService
     }
 
     public async Task<SustainabilityProfileResponse?> UpsertAsync(
-        Guid userId,
+        Guid organisationId,
         UpsertSustainabilityProfileRequest request,
         CancellationToken ct = default)
     {
         ValidateRequest(request);
 
-        var applicationId = await _onboarding.GetDraftApplicationIdAsync(userId, ct)
+        var applicationId = await _onboarding.GetDraftApplicationIdAsync(organisationId, ct)
             ?? throw new InvalidOperationException("Draft application not found.");
 
         var profile = await _db.SustainabilityProfiles

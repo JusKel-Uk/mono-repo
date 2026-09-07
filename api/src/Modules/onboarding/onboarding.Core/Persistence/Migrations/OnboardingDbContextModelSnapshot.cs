@@ -32,6 +32,9 @@ namespace onboarding.Core.Persistence.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
+                    b.Property<Guid>("OrganisationId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<int>("Status")
                         .HasColumnType("int");
 
@@ -46,9 +49,11 @@ namespace onboarding.Core.Persistence.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("UserId")
+                    b.HasIndex("OrganisationId")
                         .IsUnique()
                         .HasFilter("[Status] = 0");
+
+                    b.HasIndex("UserId");
 
                     b.ToTable("Applications", "onboarding");
                 });

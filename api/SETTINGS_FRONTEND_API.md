@@ -23,7 +23,7 @@ After this API ships, **existing access tokens are rejected** until the user sig
 | Security | Active sessions | `GET` | `/identity/me/sessions` |
 | Security | Sign out a device | `DELETE` | `/identity/me/sessions/{id}` |
 | Security | Sign out this browser | `DELETE` | `/identity/me/sessions/current` |
-| Privacy | Request account closure | `POST` | `/identity/me/account-closure` |
+| Privacy | Request organisation closure (Owner) | `POST` | `/identity/organisations/{organisationId}/closure` |
 
 **Team** is not implemented. Do not call invite/role APIs; keep the tab mock or hide Invite until a later release.
 
@@ -140,16 +140,18 @@ No city/IP in the payload. Use `isCurrent` for “this browser / Now”; other r
 
 ## Privacy
 
-`POST /identity/me/account-closure` (empty body), idempotent:
+`POST /identity/organisations/{organisationId}/closure` (empty body), Owner only, idempotent:
 
 ```json
 { "status": "requested", "requestedAt": "2026-09-06T18:30:00Z" }
 ```
 
-The user **stays signed in**. Reload Profile/Privacy from `GET /identity/me` — if `accountClosureRequestedAt` is set, show the success panel. This does not set `DeletedAt` or wipe data.
+Requires org context when the user belongs to multiple organisations. The user **stays signed in**. Reload Team/Privacy from `GET /identity/me/organisations` — if `isClosed` is true for that org, show the success panel. This does not set `DeletedAt` or wipe data.
+
+**Deprecated:** `POST /identity/me/account-closure` returns **410 Gone**. See [ORGANISATIONS_FRONTEND_API.md](./ORGANISATIONS_FRONTEND_API.md).
 
 ---
 
 ## Client stubs to replace
 
-[`client/lib/api/auth.ts`](../client/lib/api/auth.ts) parked `requestPasswordReset` / `verifyResetCode` / `resetPassword` (501) should call the three public password-reset paths above. `logout()` should `DELETE /identity/me/sessions/current` then `clearToken()`. `MeResponse` should add `jobTitle`, `phone`, `accountClosureRequestedAt`.
+[`client/lib/api/auth.ts`](../client/lib/api/auth.ts) parked `requestPasswordReset` / `verifyResetCode` / `resetPassword` (501) should call the three public password-reset paths above. `logout()` should `DELETE /identity/me/sessions/current` then `clearToken()`. `MeResponse` should add `jobTitle`, `phone` (no user-level closure field).

@@ -11,6 +11,5 @@ public sealed class MeProfileExample : IExamplesProvider<MeProfileDto>
         "Ada",
         "Lovelace",
         "Founder & Managing Director",
-        "+44 117 000 0000",
-        null);
+        "+44 117 000 0000");
 }

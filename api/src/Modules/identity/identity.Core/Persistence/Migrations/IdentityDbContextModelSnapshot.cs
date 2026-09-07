@@ -110,6 +110,101 @@ namespace identity.Core.Persistence.Migrations
                     b.ToTable("NotificationPreferences", "identity");
                 });
 
+            modelBuilder.Entity("identity.Core.Entities.Organisation", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("ClosureRequestedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("EmailDomain")
+                        .IsRequired()
+                        .HasMaxLength(253)
+                        .HasColumnType("nvarchar(253)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Organisations", "identity");
+                });
+
+            modelBuilder.Entity("identity.Core.Entities.OrganisationInvite", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("AcceptedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("EmailLookupHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<DateTime>("ExpiresAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("InvitedByUserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("OrganisationId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("Role")
+                        .HasColumnType("int");
+
+                    b.Property<string>("TokenHash")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TokenHash")
+                        .IsUnique();
+
+                    b.HasIndex("OrganisationId", "EmailLookupHash");
+
+                    b.ToTable("OrganisationInvites", "identity");
+                });
+
+            modelBuilder.Entity("identity.Core.Entities.OrganisationMember", b =>
+                {
+                    b.Property<Guid>("OrganisationId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("JoinedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("Role")
+                        .HasColumnType("int");
+
+                    b.HasKey("OrganisationId", "UserId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("OrganisationMembers", "identity");
+                });
+
             modelBuilder.Entity("identity.Core.Entities.PasswordResetRequest", b =>
                 {
                     b.Property<Guid>("Id")
@@ -155,9 +250,6 @@ namespace identity.Core.Persistence.Migrations
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime?>("AccountClosureRequestedAt")
-                        .HasColumnType("datetime2");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
@@ -212,6 +304,9 @@ namespace identity.Core.Persistence.Migrations
                         .HasMaxLength(1024)
                         .HasColumnType("nvarchar(1024)");
 
+                    b.Property<Guid?>("LastOrganisationId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<DateTime?>("LastPasswordChangeAt")
                         .HasColumnType("datetime2");
 
@@ -229,7 +324,56 @@ namespace identity.Core.Persistence.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("LastOrganisationId");
+
                     b.ToTable("Users", "identity");
+                });
+
+            modelBuilder.Entity("identity.Core.Entities.OrganisationInvite", b =>
+                {
+                    b.HasOne("identity.Core.Entities.Organisation", "Organisation")
+                        .WithMany("Invites")
+                        .HasForeignKey("OrganisationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Organisation");
+                });
+
+            modelBuilder.Entity("identity.Core.Entities.OrganisationMember", b =>
+                {
+                    b.HasOne("identity.Core.Entities.Organisation", "Organisation")
+                        .WithMany("Members")
+                        .HasForeignKey("OrganisationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("identity.Core.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Organisation");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("identity.Core.Entities.User", b =>
+                {
+                    b.HasOne("identity.Core.Entities.Organisation", "LastOrganisation")
+                        .WithMany()
+                        .HasForeignKey("LastOrganisationId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("LastOrganisation");
+                });
+
+            modelBuilder.Entity("identity.Core.Entities.Organisation", b =>
+                {
+                    b.Navigation("Invites");
+
+                    b.Navigation("Members");
                 });
 #pragma warning restore 612, 618
         }

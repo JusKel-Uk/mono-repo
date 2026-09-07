@@ -27,9 +27,9 @@ internal sealed class CompanySetupService
         _onboarding = onboarding;
     }
 
-    public async Task<CompanySetupResponse?> GetAsync(Guid userId, CancellationToken ct = default)
+    public async Task<CompanySetupResponse?> GetAsync(Guid organisationId, CancellationToken ct = default)
     {
-        var application = await GetCurrentApplicationAsync(userId, ct);
+        var application = await GetCurrentApplicationAsync(organisationId, ct);
         if (application?.CompanySetup is null)
             return null;
 
@@ -37,11 +37,11 @@ internal sealed class CompanySetupService
     }
 
     public async Task<CompanySetupResponse?> UpsertAsync(
-        Guid userId,
+        Guid organisationId,
         UpsertCompanySetupRequest request,
         CancellationToken ct = default)
     {
-        var application = await GetDraftApplicationAsync(userId, ct)
+        var application = await GetDraftApplicationAsync(organisationId, ct)
             ?? throw new InvalidOperationException("Draft application not found.");
 
         ValidateRequest(request);
@@ -75,11 +75,11 @@ internal sealed class CompanySetupService
     }
 
     public async Task<VerifyCompaniesHouseResponse?> VerifyAsync(
-        Guid userId,
+        Guid organisationId,
         VerifyCompaniesHouseRequest request,
         CancellationToken ct = default)
     {
-        var application = await GetDraftApplicationAsync(userId, ct)
+        var application = await GetDraftApplicationAsync(organisationId, ct)
             ?? throw new InvalidOperationException("Draft application not found.");
 
         var companyNumber = request.CompanyNumber.Trim().ToUpperInvariant();
@@ -124,20 +124,22 @@ internal sealed class CompanySetupService
             lookup.IsActive);
     }
 
-    private async Task<Application?> GetCurrentApplicationAsync(Guid userId, CancellationToken ct)
+    private async Task<Application?> GetCurrentApplicationAsync(Guid organisationId, CancellationToken ct)
     {
         return await _db.Applications
             .Include(a => a.CompanySetup)
-            .Where(a => a.UserId == userId)
+            .Where(a => a.OrganisationId == organisationId)
             .OrderByDescending(a => a.CreatedAt)
             .FirstOrDefaultAsync(ct);
     }
 
-    private async Task<Application?> GetDraftApplicationAsync(Guid userId, CancellationToken ct)
+    private async Task<Application?> GetDraftApplicationAsync(Guid organisationId, CancellationToken ct)
     {
         return await _db.Applications
             .Include(a => a.CompanySetup)
-            .FirstOrDefaultAsync(a => a.UserId == userId && a.Status == SubmissionStatus.Draft, ct);
+            .FirstOrDefaultAsync(
+                a => a.OrganisationId == organisationId && a.Status == SubmissionStatus.Draft,
+                ct);
     }
 
     private static void ValidateRequest(UpsertCompanySetupRequest request)

@@ -60,6 +60,7 @@ internal sealed class RegisterUserHandler
             throw new ArgumentException("Email is already registered.");
 
         var now = DateTime.UtcNow;
+        var organisationId = Guid.NewGuid();
 
         var user = new User
         {
@@ -70,20 +71,56 @@ internal sealed class RegisterUserHandler
             EmailLookupHash = emailLookupHash,
             CreatedAt = now,
             UpdatedAt = now,
-            LastPasswordChangeAt = now
+            LastPasswordChangeAt = now,
+            LastOrganisationId = organisationId,
         };
 
         user.PasswordHash = _passwordHasher.HashPassword(user, command.Password);
         user.EmailVerified = false;
 
+        if (!BusinessEmailValidator.TryGetDomain(email, out var emailDomain))
+            throw new ArgumentException("A valid business email address is required.");
+
+        var organisation = new Organisation
+        {
+            Id = organisationId,
+            Name = DeriveOrganisationName(email),
+            EmailDomain = emailDomain,
+            CreatedAt = now,
+            UpdatedAt = now,
+        };
+
+        var membership = new OrganisationMember
+        {
+            OrganisationId = organisationId,
+            UserId = user.Id,
+            Role = OrganisationRole.Owner,
+            JoinedAt = now,
+        };
+
         var otp = _emailOtpService.IssueOtp(user);
         _db.Users.Add(user);
+        _db.Organisations.Add(organisation);
+        _db.OrganisationMembers.Add(membership);
 
         await _db.SaveChangesAsync(ct);
 
         E2eOtpBridge.LogOtpIfDevelopment(user.Email, otp.PlainCode);
         await _emailVerificationNotifier.SendVerificationOtpAsync(user, otp.DisplayCode, ct);
 
-        return new RegisterUserResponse(user.Id, user.Email, user.EmailVerified);
+        return new RegisterUserResponse(user.Id, user.Email, user.EmailVerified, organisationId);
+    }
+
+    private static string DeriveOrganisationName(string email)
+    {
+        var atIndex = email.IndexOf('@');
+        if (atIndex <= 0 || atIndex >= email.Length - 1)
+            return "My company";
+
+        var domain = email[(atIndex + 1)..];
+        var companyPart = domain.Split('.')[0];
+        return string.IsNullOrWhiteSpace(companyPart)
+            ? "My company"
+            : char.ToUpperInvariant(companyPart[0]) + companyPart[1..];
     }
 }

@@ -45,7 +45,8 @@ If `JUSKEL_FRONTEND_URL` is empty, callbacks return JSON `{ status, provider }` 
 | **Empty step** | `GET` a step resource → **404** means show an empty form. |
 | **After submit** | Step `GET`s resolve the user's **latest** application (draft or submitted) so saved answers and `evidence[]` remain available for review. Writes (`PUT`, evidence upload/delete) still require a **draft** application. |
 | **Save step** | `PUT` with JSON body → **200** with saved data. |
-| **No-body POSTs** | `POST /onboarding/applications`, `POST .../submit`, `POST .../authorize` — user comes from JWT; draft application is resolved server-side. |
+| **Org context** | When the user belongs to multiple organisations, send `X-Organisation-Id` on onboarding/funding/scoring routes (or set current org via `PUT /identity/me/organisations/current`). See [ORGANISATIONS_FRONTEND_API.md](./ORGANISATIONS_FRONTEND_API.md). |
+| **No-body POSTs** | `POST /onboarding/applications`, `POST .../submit`, `POST .../authorize` — user from JWT; application resolved per **organisation**. |
 | **Progress** | `GET /onboarding/applications/current` drives the dashboard sidebar, step ticks, and “Ready for submission”. |
 | **Money** | `requestedAmount` is `decimal` (e.g. `150000.00`) — use two decimal places in UI. |
 

@@ -15,7 +15,7 @@ import { readFileSync, unlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { createApiClient, createLogger, tinyPngBuffer } from './lib/e2e-http-client.mjs';
+import { createApiClient, createLogger, e2eSpawnIntegrationEnv, integrationCallbackOk, tinyPngBuffer } from './lib/e2e-http-client.mjs';
 
 const apiRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -102,6 +102,7 @@ function spawnApi() {
     const otpWaiters = new Map();
     let startupFailed = false;
     const port = process.env.E2E_PORT || '5243';
+    const apiBase = `http://localhost:${port}`;
 
     const child = spawn(
       'dotnet',
@@ -112,8 +113,9 @@ function spawnApi() {
         env: {
           ...process.env,
           ASPNETCORE_ENVIRONMENT: 'Development',
-          ASPNETCORE_URLS: `http://localhost:${port}`,
+          ASPNETCORE_URLS: apiBase,
           E2E_OTP_FILE: otpFile,
+          ...e2eSpawnIntegrationEnv(port),
         },
       },
     );
@@ -292,7 +294,8 @@ async function testOAuthProvider(token, label, authorizePath, callbackPath) {
   log(`POST ${authorizePath}`, okAuth, { status: auth.status, hasUrl: !!auth.data?.authorizationUrl });
 
   const cb = await oauthCallback(callbackPath, 'e2e-stub-auth-code', auth.data.state);
-  const okCb = (cb.status === 200 && cb.data?.provider) || (cb.ok && cb.data?.redirected);
+  const providerKey = label.replace(/_/g, '-');
+  const okCb = integrationCallbackOk(cb, providerKey);
   log(`GET ${callbackPath}`, okCb, {
     status: cb.status,
     provider: cb.data?.provider,
@@ -457,7 +460,7 @@ async function runFullCoverage(token) {
     'e2e-stub-auth-code',
     qbAuth.data.state,
   );
-  log('GET /funding/integrations/quickbooks/callback', qbCb.status === 200 || qbCb.ok, {
+  log('GET /funding/integrations/quickbooks/callback', integrationCallbackOk(qbCb, 'quickbooks'), {
     status: qbCb.status,
     provider: qbCb.data?.provider,
     redirected: qbCb.data?.redirected,

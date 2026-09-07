@@ -43,9 +43,10 @@ internal sealed class IntegrationService
 
     public async Task<OAuthAuthorizeResponse?> BuildOpenBankingAuthorizationAsync(
         Guid userId,
+        Guid organisationId,
         CancellationToken ct = default)
     {
-        var applicationId = await _onboarding.GetDraftApplicationIdAsync(userId, ct);
+        var applicationId = await _onboarding.GetDraftApplicationIdAsync(organisationId, ct);
         if (applicationId is null)
             return null;
 
@@ -86,9 +87,10 @@ internal sealed class IntegrationService
 
     public async Task<OAuthAuthorizeResponse?> BuildXeroAuthorizationAsync(
         Guid userId,
+        Guid organisationId,
         CancellationToken ct = default)
     {
-        var applicationId = await _onboarding.GetDraftApplicationIdAsync(userId, ct);
+        var applicationId = await _onboarding.GetDraftApplicationIdAsync(organisationId, ct);
         if (applicationId is null)
             return null;
 
@@ -114,9 +116,10 @@ internal sealed class IntegrationService
 
     public async Task<OAuthAuthorizeResponse?> BuildQuickBooksAuthorizationAsync(
         Guid userId,
+        Guid organisationId,
         CancellationToken ct = default)
     {
-        var applicationId = await _onboarding.GetDraftApplicationIdAsync(userId, ct);
+        var applicationId = await _onboarding.GetDraftApplicationIdAsync(organisationId, ct);
         if (applicationId is null)
             return null;
 
@@ -179,11 +182,11 @@ internal sealed class IntegrationService
     }
 
     public async Task<bool> DisconnectAsync(
-        Guid userId,
+        Guid organisationId,
         IntegrationProvider provider,
         CancellationToken ct = default)
     {
-        var applicationId = await _onboarding.GetDraftApplicationIdAsync(userId, ct);
+        var applicationId = await _onboarding.GetDraftApplicationIdAsync(organisationId, ct);
         if (applicationId is null)
             return false;
 

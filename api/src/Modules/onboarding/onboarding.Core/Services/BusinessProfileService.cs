@@ -21,9 +21,9 @@ internal sealed class BusinessProfileService
         _onboarding = onboarding;
     }
 
-    public async Task<BusinessProfileResponse?> GetAsync(Guid userId, CancellationToken ct = default)
+    public async Task<BusinessProfileResponse?> GetAsync(Guid organisationId, CancellationToken ct = default)
     {
-        var application = await GetCurrentApplicationAsync(userId, ct);
+        var application = await GetCurrentApplicationAsync(organisationId, ct);
         if (application?.BusinessProfile is null)
             return null;
 
@@ -31,11 +31,11 @@ internal sealed class BusinessProfileService
     }
 
     public async Task<BusinessProfileResponse?> UpsertAsync(
-        Guid userId,
+        Guid organisationId,
         UpsertBusinessProfileRequest request,
         CancellationToken ct = default)
     {
-        var application = await GetDraftApplicationAsync(userId, ct)
+        var application = await GetDraftApplicationAsync(organisationId, ct)
             ?? throw new InvalidOperationException("Draft application not found.");
 
         ValidateRequest(request);
@@ -65,20 +65,22 @@ internal sealed class BusinessProfileService
         return Map(application.Id, profile);
     }
 
-    private async Task<Application?> GetCurrentApplicationAsync(Guid userId, CancellationToken ct)
+    private async Task<Application?> GetCurrentApplicationAsync(Guid organisationId, CancellationToken ct)
     {
         return await _db.Applications
             .Include(a => a.BusinessProfile)
-            .Where(a => a.UserId == userId)
+            .Where(a => a.OrganisationId == organisationId)
             .OrderByDescending(a => a.CreatedAt)
             .FirstOrDefaultAsync(ct);
     }
 
-    private async Task<Application?> GetDraftApplicationAsync(Guid userId, CancellationToken ct)
+    private async Task<Application?> GetDraftApplicationAsync(Guid organisationId, CancellationToken ct)
     {
         return await _db.Applications
             .Include(a => a.BusinessProfile)
-            .FirstOrDefaultAsync(a => a.UserId == userId && a.Status == SubmissionStatus.Draft, ct);
+            .FirstOrDefaultAsync(
+                a => a.OrganisationId == organisationId && a.Status == SubmissionStatus.Draft,
+                ct);
     }
 
     private static void ValidateRequest(UpsertBusinessProfileRequest request)

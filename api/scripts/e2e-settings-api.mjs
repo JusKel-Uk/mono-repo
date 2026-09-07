@@ -5,7 +5,7 @@
  * Usage:
  *   E2E_SPAWN_API=1 E2E_PORT=5246 node scripts/e2e-settings-api.mjs
  */
-import { spawn } from 'node:child_process';
+import { execSync, spawn } from 'node:child_process';
 import { readFileSync, unlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
@@ -105,12 +105,35 @@ function latestOtpFromFile(targetEmail) {
   }
 }
 
-async function waitForOtp(targetEmail, previousCode = null, timeoutMs = 20_000) {
+function latestOtpFromAzureLogs(targetEmail) {
+  const normalized = targetEmail.trim().toLowerCase();
+  const appName = process.env.AZURE_CONTAINER_APP || 'juskel-api';
+  const resourceGroup = process.env.AZURE_RESOURCE_GROUP || 'DevTest';
+  try {
+    const logs = execSync(
+      `az containerapp logs show -n "${appName}" -g "${resourceGroup}" --tail 120 2>/dev/null`,
+      { encoding: 'utf8', maxBuffer: 4 * 1024 * 1024 },
+    );
+    let found = null;
+    for (const line of logs.split('\n')) {
+      const match = line.match(otpPattern);
+      if (match && match[1].trim().toLowerCase() === normalized) found = match[2];
+    }
+    return found;
+  } catch {
+    return null;
+  }
+}
+
+async function waitForOtp(targetEmail, previousCode = null, timeoutMs) {
+  const useAzureLogs = BASE.includes('azurecontainerapps.io');
+  const limit = timeoutMs ?? (useAzureLogs ? 60_000 : 20_000);
   const start = Date.now();
-  while (Date.now() - start < timeoutMs) {
-    const code = latestOtpFromFile(targetEmail);
+  while (Date.now() - start < limit) {
+    const code = latestOtpFromFile(targetEmail)
+      ?? (useAzureLogs ? latestOtpFromAzureLogs(targetEmail) : null);
     if (code && code !== previousCode) return code;
-    await new Promise((r) => setTimeout(r, 250));
+    await new Promise((r) => setTimeout(r, useAzureLogs ? 2500 : 250));
   }
   throw new Error(`OTP not found for ${targetEmail}`);
 }
@@ -267,23 +290,33 @@ async function runSettingsCoverage(token, userId) {
 
   const login3 = await api('POST', '/identity/sessions', null, { email, password: newPassword });
   const token3 = login3.data.accessToken;
-  const closure = await api('POST', '/identity/me/account-closure', token3, {});
-  log('POST /identity/me/account-closure', closure.status === 200
+
+  const orgs = await apiGet('/identity/me/organisations', token3);
+  const orgId = orgs.data?.[0]?.id;
+  log('GET /identity/me/organisations', orgs.status === 200 && !!orgId, { status: orgs.status, orgId });
+
+  const deprecatedClosure = await api('POST', '/identity/me/account-closure', token3, {});
+  log('POST /identity/me/account-closure deprecated', deprecatedClosure.status === 410, {
+    status: deprecatedClosure.status,
+  });
+
+  const closure = await api('POST', `/identity/organisations/${orgId}/closure`, token3, {}, orgId);
+  log('POST /identity/organisations/{id}/closure', closure.status === 200
     && closure.data?.status === 'requested'
     && !!closure.data?.requestedAt, { status: closure.status });
 
-  const closureAgain = await api('POST', '/identity/me/account-closure', token3, {});
-    log('POST account-closure idempotent', closureAgain.status === 200
+  const closureAgain = await api('POST', `/identity/organisations/${orgId}/closure`, token3, {}, orgId);
+  log('POST organisation-closure idempotent', closureAgain.status === 200
     && closureAgain.data?.status === 'requested'
     && Date.parse(closureAgain.data?.requestedAt) === Date.parse(closure.data?.requestedAt), {
     status: closureAgain.status,
   });
 
-  const meClosed = await apiGet('/identity/me', token3);
-  log('GET /identity/me shows closure timestamp', meClosed.status === 200
-    && !!meClosed.data?.accountClosureRequestedAt, {
-    status: meClosed.status,
-    accountClosureRequestedAt: meClosed.data?.accountClosureRequestedAt,
+  const orgsAfterClose = await apiGet('/identity/me/organisations', token3);
+  log('GET organisations shows closed flag', orgsAfterClose.status === 200
+    && orgsAfterClose.data?.[0]?.isClosed === true, {
+    status: orgsAfterClose.status,
+    isClosed: orgsAfterClose.data?.[0]?.isClosed,
   });
 }
 

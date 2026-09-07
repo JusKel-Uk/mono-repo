@@ -1,4 +1,5 @@
 using funding.Contracts;
+using identity.Contracts;
 using Microsoft.EntityFrameworkCore;
 using onboarding.Contracts;
 using onboarding.Core.Entities;
@@ -26,11 +27,14 @@ internal sealed class OnboardingApplicationService
 
     public async Task<CreateApplicationResponse> CreateApplicationAsync(
         Guid userId,
+        OrganisationAccessDto access,
         CancellationToken ct = default)
     {
         var existing = await _db.Applications
             .AsNoTracking()
-            .FirstOrDefaultAsync(a => a.UserId == userId && a.Status == SubmissionStatus.Draft, ct);
+            .FirstOrDefaultAsync(
+                a => a.OrganisationId == access.OrganisationId && a.Status == SubmissionStatus.Draft,
+                ct);
 
         if (existing is not null)
             return new CreateApplicationResponse(existing.Id);
@@ -40,6 +44,7 @@ internal sealed class OnboardingApplicationService
         {
             Id = Guid.NewGuid(),
             UserId = userId,
+            OrganisationId = access.OrganisationId,
             Status = SubmissionStatus.Draft,
             CreatedAt = now,
             UpdatedAt = now,
@@ -60,13 +65,13 @@ internal sealed class OnboardingApplicationService
     }
 
     public async Task<ApplicationResponse?> GetCurrentApplicationAsync(
-        Guid userId,
+        Guid organisationId,
         CancellationToken ct = default)
     {
         var application = await _db.Applications
             .AsNoTracking()
             .Include(a => a.Steps)
-            .Where(a => a.UserId == userId)
+            .Where(a => a.OrganisationId == organisationId)
             .OrderByDescending(a => a.CreatedAt)
             .FirstOrDefaultAsync(ct);
 
@@ -74,12 +79,14 @@ internal sealed class OnboardingApplicationService
     }
 
     public async Task<SubmitApplicationResponse?> SubmitApplicationAsync(
-        Guid userId,
+        Guid organisationId,
         CancellationToken ct = default)
     {
         var application = await _db.Applications
             .Include(a => a.Steps)
-            .FirstOrDefaultAsync(a => a.UserId == userId && a.Status == SubmissionStatus.Draft, ct);
+            .FirstOrDefaultAsync(
+                a => a.OrganisationId == organisationId && a.Status == SubmissionStatus.Draft,
+                ct);
 
         if (application is null)
             return null;

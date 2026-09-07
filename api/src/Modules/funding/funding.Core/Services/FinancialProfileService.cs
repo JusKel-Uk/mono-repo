@@ -24,9 +24,9 @@ internal sealed class FinancialProfileService
         _funding = funding;
     }
 
-    public async Task<FinancialProfileResponse?> GetAsync(Guid userId, CancellationToken ct = default)
+    public async Task<FinancialProfileResponse?> GetAsync(Guid organisationId, CancellationToken ct = default)
     {
-        var applicationId = await _onboarding.GetCurrentApplicationIdAsync(userId, ct);
+        var applicationId = await _onboarding.GetCurrentApplicationIdAsync(organisationId, ct);
         if (applicationId is null)
             return null;
 
@@ -50,11 +50,11 @@ internal sealed class FinancialProfileService
     }
 
     public async Task<FinancialProfileResponse?> UpsertAsync(
-        Guid userId,
+        Guid organisationId,
         UpsertFinancialProfileRequest request,
         CancellationToken ct = default)
     {
-        var applicationId = await _onboarding.GetDraftApplicationIdAsync(userId, ct)
+        var applicationId = await _onboarding.GetDraftApplicationIdAsync(organisationId, ct)
             ?? throw new InvalidOperationException("Draft application not found.");
 
         var profile = await _db.FinancialProfiles

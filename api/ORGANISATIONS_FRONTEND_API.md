@@ -1,0 +1,134 @@
+# Organisations & RBAC — Frontend API Contract
+
+Backend scope for Team tab, org switcher, and multi-company access. All routes require JWT unless noted.
+
+## Organisation context header
+
+| Header | When required |
+|--------|----------------|
+| `X-Organisation-Id` | Required when the signed-in user belongs to **more than one** organisation and the route is org-scoped (onboarding, funding, scoring, team). |
+
+Resolution order:
+
+1. `X-Organisation-Id` header (if present and user is a member)
+2. `User.LastOrganisationId` (set via `PUT /identity/me/organisations/current`)
+3. If user has a single membership, that org is used automatically
+
+Errors:
+
+| Status | `type` | Meaning |
+|--------|--------|---------|
+| 400 | `organisation-context-required` | Multiple orgs; header or current org missing |
+| 403 | `organisation-closed` | Organisation closure requested |
+| 403 | — | Not a member or insufficient role |
+
+## Roles
+
+| Role | Value | Write onboarding/funding/scoring | Submit application | Manage team | Close org |
+|------|-------|----------------------------------|--------------------|-------------|-----------|
+| Owner | 0 | yes | yes | yes | yes |
+| Admin | 1 | yes | yes | yes | no |
+| Contributor | 2 | yes | no | no | no |
+| Viewer | 3 | no (read only) | no | no | no |
+
+## Endpoints
+
+### List my organisations
+
+`GET /identity/me/organisations`
+
+```json
+[
+  {
+    "id": "uuid",
+    "name": "Acme Ltd",
+    "role": 0,
+    "isClosed": false,
+    "isCurrent": true
+  }
+]
+```
+
+### Set current organisation
+
+`PUT /identity/me/organisations/current`
+
+```json
+{ "organisationId": "uuid" }
+```
+
+### Team members
+
+`GET /identity/organisations/{organisationId}/members`
+
+Requires org context (header or current org when multiple).
+
+### Invite member
+
+`POST /identity/organisations/{organisationId}/invites`
+
+```json
+{ "email": "teammate@company.co.uk", "role": 2 }
+```
+
+Invitee email must:
+
+- Be a **business email** (personal providers like Gmail are rejected)
+- Use the **same domain** as the organisation (set from the Owner’s email at registration), e.g. if the org domain is `acme.co.uk`, only `*@acme.co.uk` addresses are allowed
+
+Response includes `acceptToken` in Development for E2E; production sends email.
+
+### Accept invite
+
+`POST /identity/invites/{token}/accept`
+
+Authenticated; invitee email must match signed-in user.
+
+### Update member role
+
+`PATCH /identity/organisations/{organisationId}/members/{userId}`
+
+```json
+{ "role": 1 }
+```
+
+Cannot demote/remove the last Owner (409).
+
+### Remove member
+
+`DELETE /identity/organisations/{organisationId}/members/{userId}`
+
+### Organisation closure (Privacy)
+
+`POST /identity/organisations/{organisationId}/closure`
+
+Owner only. Idempotent. Sets `isClosed` on the organisation; blocks all org-scoped routes for members.
+
+**Deprecated:** `POST /identity/me/account-closure` → **410 Gone**
+
+## Registration
+
+`POST /identity/users` response now includes:
+
+```json
+{
+  "userId": "uuid",
+  "email": "founder@company.co.uk",
+  "emailVerified": false,
+  "defaultOrganisationId": "uuid"
+}
+```
+
+Each new user gets a default organisation (Owner) derived from email domain.
+
+## Onboarding / funding / scoring
+
+All `/applications/current/*` routes resolve the draft or current application for the **active organisation**, not the user alone.
+
+When integrating from the frontend:
+
+1. After sign-in, call `GET /identity/me/organisations`
+2. If `length > 1`, show org switcher and send `X-Organisation-Id` on org-scoped calls
+3. On switch, call `PUT /identity/me/organisations/current` and/or set the header
+
+See also [ONBOARDING_FRONTEND_API.md](./ONBOARDING_FRONTEND_API.md) and [SETTINGS_FRONTEND_API.md](./SETTINGS_FRONTEND_API.md).

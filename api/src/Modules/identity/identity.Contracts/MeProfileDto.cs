@@ -6,5 +6,4 @@ public sealed record MeProfileDto(
     string FirstName,
     string LastName,
     string? JobTitle,
-    string? Phone,
-    DateTime? AccountClosureRequestedAt);
+    string? Phone);

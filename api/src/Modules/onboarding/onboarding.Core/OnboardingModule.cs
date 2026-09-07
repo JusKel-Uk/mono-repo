@@ -10,21 +10,25 @@ internal sealed class OnboardingModule : IOnboardingModule
 
     public OnboardingModule(OnboardingDbContext db) => _db = db;
 
-    public async Task<Guid?> GetDraftApplicationIdAsync(Guid userId, CancellationToken ct = default)
+    public async Task<Guid?> GetDraftApplicationIdAsync(
+        Guid organisationId,
+        CancellationToken ct = default)
     {
         return await _db.Applications
             .AsNoTracking()
-            .Where(a => a.UserId == userId && a.Status == SubmissionStatus.Draft)
+            .Where(a => a.OrganisationId == organisationId && a.Status == SubmissionStatus.Draft)
             .OrderByDescending(a => a.CreatedAt)
             .Select(a => (Guid?)a.Id)
             .FirstOrDefaultAsync(ct);
     }
 
-    public async Task<Guid?> GetCurrentApplicationIdAsync(Guid userId, CancellationToken ct = default)
+    public async Task<Guid?> GetCurrentApplicationIdAsync(
+        Guid organisationId,
+        CancellationToken ct = default)
     {
         return await _db.Applications
             .AsNoTracking()
-            .Where(a => a.UserId == userId)
+            .Where(a => a.OrganisationId == organisationId)
             .OrderByDescending(a => a.CreatedAt)
             .Select(a => (Guid?)a.Id)
             .FirstOrDefaultAsync(ct);

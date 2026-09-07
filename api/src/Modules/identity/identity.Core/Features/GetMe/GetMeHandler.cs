@@ -24,8 +24,7 @@ internal sealed class GetMeHandler
                 u.FirstName,
                 u.LastName,
                 u.JobTitle,
-                u.Phone,
-                u.AccountClosureRequestedAt))
+                u.Phone))
             .FirstOrDefaultAsync(ct);
     }
 }

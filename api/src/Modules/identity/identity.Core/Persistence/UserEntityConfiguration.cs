@@ -52,5 +52,10 @@ internal sealed class UserEntityConfiguration : IEntityTypeConfiguration<User>
         entity.Property(u => u.EmailOtpAttempts)
             .HasDefaultValue(0)
             .IsRequired();
+
+        entity.HasOne(u => u.LastOrganisation)
+            .WithMany()
+            .HasForeignKey(u => u.LastOrganisationId)
+            .OnDelete(DeleteBehavior.SetNull);
     }
 }

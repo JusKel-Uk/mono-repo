@@ -22,9 +22,9 @@ internal sealed class FundingProfileService
         _funding = funding;
     }
 
-    public async Task<FundingProfileResponse?> GetAsync(Guid userId, CancellationToken ct = default)
+    public async Task<FundingProfileResponse?> GetAsync(Guid organisationId, CancellationToken ct = default)
     {
-        var applicationId = await _onboarding.GetCurrentApplicationIdAsync(userId, ct);
+        var applicationId = await _onboarding.GetCurrentApplicationIdAsync(organisationId, ct);
         if (applicationId is null)
             return null;
 
@@ -36,7 +36,7 @@ internal sealed class FundingProfileService
     }
 
     public async Task<FundingProfileResponse?> UpsertAsync(
-        Guid userId,
+        Guid organisationId,
         UpsertFundingProfileRequest request,
         CancellationToken ct = default)
     {
@@ -52,7 +52,7 @@ internal sealed class FundingProfileService
         if (!Enum.IsDefined(request.Urgency))
             throw new ArgumentException("Funding urgency is required.");
 
-        var applicationId = await _onboarding.GetDraftApplicationIdAsync(userId, ct)
+        var applicationId = await _onboarding.GetDraftApplicationIdAsync(organisationId, ct)
             ?? throw new InvalidOperationException("Draft application not found.");
 
         var profile = await _db.FundingProfiles

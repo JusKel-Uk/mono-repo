@@ -38,7 +38,7 @@ internal sealed class EvidenceService
     }
 
     public async Task<SustainabilityEvidenceResponse?> UploadAsync(
-        Guid userId,
+        Guid organisationId,
         SustainabilityQuestionKey questionKey,
         IFormFile file,
         CancellationToken ct = default)
@@ -48,7 +48,7 @@ internal sealed class EvidenceService
         if (!Enum.IsDefined(questionKey))
             throw new ArgumentException("Question key is required.");
 
-        var applicationId = await _onboarding.GetDraftApplicationIdAsync(userId, ct)
+        var applicationId = await _onboarding.GetDraftApplicationIdAsync(organisationId, ct)
             ?? throw new InvalidOperationException("Draft application not found.");
 
         var evidenceId = Guid.NewGuid();
@@ -92,11 +92,11 @@ internal sealed class EvidenceService
     }
 
     public async Task<bool> DeleteAsync(
-        Guid userId,
+        Guid organisationId,
         Guid evidenceId,
         CancellationToken ct = default)
     {
-        var applicationId = await _onboarding.GetDraftApplicationIdAsync(userId, ct);
+        var applicationId = await _onboarding.GetDraftApplicationIdAsync(organisationId, ct);
         if (applicationId is null)
             return false;
 
@@ -113,11 +113,11 @@ internal sealed class EvidenceService
     }
 
     public async Task<EvidenceFile?> DownloadAsync(
-        Guid userId,
+        Guid organisationId,
         Guid evidenceId,
         CancellationToken ct = default)
     {
-        var applicationId = await _onboarding.GetCurrentApplicationIdAsync(userId, ct);
+        var applicationId = await _onboarding.GetCurrentApplicationIdAsync(organisationId, ct);
         if (applicationId is null)
             return null;
 

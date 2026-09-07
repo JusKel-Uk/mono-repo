@@ -3,7 +3,9 @@ using System.Security.Claims;
 using funding.Contracts;
 using funding.Core.Examples;
 using funding.Core.Services;
+using identity.Contracts;
 using juskel.Shared;
+using juskel.Shared.Organisation;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -22,13 +24,19 @@ public static class FundingEndpoints
 
         group.MapGet("/applications/current/financial-profile", async (
             ClaimsPrincipal user,
+            HttpRequest request,
+            IIdentityModule identity,
             FinancialProfileService service,
             CancellationToken ct) =>
         {
             if (!TryGetUserId(user, out var userId))
                 return Results.Unauthorized();
 
-            var response = await service.GetAsync(userId, ct);
+            var (access, error) = await OrganisationEndpointHelper.ResolveAsync(identity, userId, request, ct);
+            if (error is not null)
+                return error;
+
+            var response = await service.GetAsync(access!.OrganisationId, ct);
             return response is null ? Results.NotFound() : Results.Ok(response);
         })
         .WithName("GetFinancialProfile")
@@ -40,16 +48,25 @@ public static class FundingEndpoints
 
         group.MapPut("/applications/current/financial-profile", async (
             ClaimsPrincipal user,
-            UpsertFinancialProfileRequest request,
+            HttpRequest request,
+            UpsertFinancialProfileRequest requestBody,
+            IIdentityModule identity,
             FinancialProfileService service,
             CancellationToken ct) =>
         {
             if (!TryGetUserId(user, out var userId))
                 return Results.Unauthorized();
 
+            var (access, error) = await OrganisationEndpointHelper.ResolveAsync(identity, userId, request, ct);
+            if (error is not null)
+                return error;
+
+            if (!access!.CanWrite)
+                return OrganisationApiResults.Forbidden();
+
             try
             {
-                var response = await service.UpsertAsync(userId, request, ct);
+                var response = await service.UpsertAsync(access.OrganisationId, requestBody, ct);
                 return response is null ? Results.NotFound() : Results.Ok(response);
             }
             catch (InvalidOperationException ex)
@@ -74,13 +91,19 @@ public static class FundingEndpoints
 
         group.MapGet("/applications/current/funding-profile", async (
             ClaimsPrincipal user,
+            HttpRequest request,
+            IIdentityModule identity,
             FundingProfileService service,
             CancellationToken ct) =>
         {
             if (!TryGetUserId(user, out var userId))
                 return Results.Unauthorized();
 
-            var response = await service.GetAsync(userId, ct);
+            var (access, error) = await OrganisationEndpointHelper.ResolveAsync(identity, userId, request, ct);
+            if (error is not null)
+                return error;
+
+            var response = await service.GetAsync(access!.OrganisationId, ct);
             return response is null ? Results.NotFound() : Results.Ok(response);
         })
         .WithName("GetFundingProfile")
@@ -92,16 +115,25 @@ public static class FundingEndpoints
 
         group.MapPut("/applications/current/funding-profile", async (
             ClaimsPrincipal user,
-            UpsertFundingProfileRequest request,
+            HttpRequest request,
+            UpsertFundingProfileRequest requestBody,
+            IIdentityModule identity,
             FundingProfileService service,
             CancellationToken ct) =>
         {
             if (!TryGetUserId(user, out var userId))
                 return Results.Unauthorized();
 
+            var (access, error) = await OrganisationEndpointHelper.ResolveAsync(identity, userId, request, ct);
+            if (error is not null)
+                return error;
+
+            if (!access!.CanWrite)
+                return OrganisationApiResults.Forbidden();
+
             try
             {
-                var response = await service.UpsertAsync(userId, request, ct);
+                var response = await service.UpsertAsync(access.OrganisationId, requestBody, ct);
                 return response is null ? Results.NotFound() : Results.Ok(response);
             }
             catch (ArgumentException ex)
@@ -124,13 +156,22 @@ public static class FundingEndpoints
 
         group.MapPost("/integrations/open-banking/authorize", async (
             ClaimsPrincipal user,
+            HttpRequest request,
+            IIdentityModule identity,
             IntegrationService service,
             CancellationToken ct) =>
         {
             if (!TryGetUserId(user, out var userId))
                 return Results.Unauthorized();
 
-            var response = await service.BuildOpenBankingAuthorizationAsync(userId, ct);
+            var (access, error) = await OrganisationEndpointHelper.ResolveAsync(identity, userId, request, ct);
+            if (error is not null)
+                return error;
+
+            if (!access!.CanWrite)
+                return OrganisationApiResults.Forbidden();
+
+            var response = await service.BuildOpenBankingAuthorizationAsync(userId, access.OrganisationId, ct);
             return response is null ? Results.NotFound() : Results.Ok(response);
         })
         .WithName("AuthorizeOpenBanking")
@@ -169,13 +210,22 @@ public static class FundingEndpoints
 
         group.MapDelete("/integrations/open-banking", async (
             ClaimsPrincipal user,
+            HttpRequest request,
+            IIdentityModule identity,
             IntegrationService service,
             CancellationToken ct) =>
         {
             if (!TryGetUserId(user, out var userId))
                 return Results.Unauthorized();
 
-            var disconnected = await service.DisconnectAsync(userId, IntegrationProvider.OpenBanking, ct);
+            var (access, error) = await OrganisationEndpointHelper.ResolveAsync(identity, userId, request, ct);
+            if (error is not null)
+                return error;
+
+            if (!access!.CanWrite)
+                return OrganisationApiResults.Forbidden();
+
+            var disconnected = await service.DisconnectAsync(access.OrganisationId, IntegrationProvider.OpenBanking, ct);
             return disconnected ? Results.NoContent() : Results.NotFound();
         })
         .WithName("DisconnectOpenBanking")
@@ -186,13 +236,22 @@ public static class FundingEndpoints
 
         group.MapPost("/integrations/xero/authorize", async (
             ClaimsPrincipal user,
+            HttpRequest request,
+            IIdentityModule identity,
             IntegrationService service,
             CancellationToken ct) =>
         {
             if (!TryGetUserId(user, out var userId))
                 return Results.Unauthorized();
 
-            var response = await service.BuildXeroAuthorizationAsync(userId, ct);
+            var (access, error) = await OrganisationEndpointHelper.ResolveAsync(identity, userId, request, ct);
+            if (error is not null)
+                return error;
+
+            if (!access!.CanWrite)
+                return OrganisationApiResults.Forbidden();
+
+            var response = await service.BuildXeroAuthorizationAsync(userId, access.OrganisationId, ct);
             return response is null ? Results.NotFound() : Results.Ok(response);
         })
         .WithName("AuthorizeXero")
@@ -231,13 +290,22 @@ public static class FundingEndpoints
 
         group.MapDelete("/integrations/xero", async (
             ClaimsPrincipal user,
+            HttpRequest request,
+            IIdentityModule identity,
             IntegrationService service,
             CancellationToken ct) =>
         {
             if (!TryGetUserId(user, out var userId))
                 return Results.Unauthorized();
 
-            var disconnected = await service.DisconnectAsync(userId, IntegrationProvider.Xero, ct);
+            var (access, error) = await OrganisationEndpointHelper.ResolveAsync(identity, userId, request, ct);
+            if (error is not null)
+                return error;
+
+            if (!access!.CanWrite)
+                return OrganisationApiResults.Forbidden();
+
+            var disconnected = await service.DisconnectAsync(access.OrganisationId, IntegrationProvider.Xero, ct);
             return disconnected ? Results.NoContent() : Results.NotFound();
         })
         .WithName("DisconnectXero")
@@ -248,13 +316,22 @@ public static class FundingEndpoints
 
         group.MapPost("/integrations/quickbooks/authorize", async (
             ClaimsPrincipal user,
+            HttpRequest request,
+            IIdentityModule identity,
             IntegrationService service,
             CancellationToken ct) =>
         {
             if (!TryGetUserId(user, out var userId))
                 return Results.Unauthorized();
 
-            var response = await service.BuildQuickBooksAuthorizationAsync(userId, ct);
+            var (access, error) = await OrganisationEndpointHelper.ResolveAsync(identity, userId, request, ct);
+            if (error is not null)
+                return error;
+
+            if (!access!.CanWrite)
+                return OrganisationApiResults.Forbidden();
+
+            var response = await service.BuildQuickBooksAuthorizationAsync(userId, access.OrganisationId, ct);
             return response is null ? Results.NotFound() : Results.Ok(response);
         })
         .WithName("AuthorizeQuickBooks")
@@ -296,13 +373,22 @@ public static class FundingEndpoints
 
         group.MapDelete("/integrations/quickbooks", async (
             ClaimsPrincipal user,
+            HttpRequest request,
+            IIdentityModule identity,
             IntegrationService service,
             CancellationToken ct) =>
         {
             if (!TryGetUserId(user, out var userId))
                 return Results.Unauthorized();
 
-            var disconnected = await service.DisconnectAsync(userId, IntegrationProvider.QuickBooks, ct);
+            var (access, error) = await OrganisationEndpointHelper.ResolveAsync(identity, userId, request, ct);
+            if (error is not null)
+                return error;
+
+            if (!access!.CanWrite)
+                return OrganisationApiResults.Forbidden();
+
+            var disconnected = await service.DisconnectAsync(access.OrganisationId, IntegrationProvider.QuickBooks, ct);
             return disconnected ? Results.NoContent() : Results.NotFound();
         })
         .WithName("DisconnectQuickBooks")
@@ -313,16 +399,25 @@ public static class FundingEndpoints
 
         group.MapPost("/evidence", async (
             ClaimsPrincipal user,
+            HttpRequest request,
             IFormFile file,
+            IIdentityModule identity,
             EvidenceService service,
             CancellationToken ct) =>
         {
             if (!TryGetUserId(user, out var userId))
                 return Results.Unauthorized();
 
+            var (access, error) = await OrganisationEndpointHelper.ResolveAsync(identity, userId, request, ct);
+            if (error is not null)
+                return error;
+
+            if (!access!.CanWrite)
+                return OrganisationApiResults.Forbidden();
+
             try
             {
-                var response = await service.UploadAsync(userId, file, ct);
+                var response = await service.UploadAsync(access.OrganisationId, file, ct);
                 return response is null ? Results.NotFound() : Results.Created($"/funding/evidence/{response!.EvidenceId}", response);
             }
             catch (ArgumentException ex)
@@ -344,7 +439,9 @@ public static class FundingEndpoints
 
         group.MapGet("/evidence/{evidenceId:guid}/download", async (
             ClaimsPrincipal user,
+            HttpRequest request,
             Guid evidenceId,
+            IIdentityModule identity,
             EvidenceService service,
             CancellationToken ct,
             [FromQuery] bool download = false) =>
@@ -352,7 +449,11 @@ public static class FundingEndpoints
             if (!TryGetUserId(user, out var userId))
                 return Results.Unauthorized();
 
-            var file = await service.DownloadAsync(userId, evidenceId, ct);
+            var (access, error) = await OrganisationEndpointHelper.ResolveAsync(identity, userId, request, ct);
+            if (error is not null)
+                return error;
+
+            var file = await service.DownloadAsync(access!.OrganisationId, evidenceId, ct);
             if (file is null)
                 return Results.NotFound();
 
@@ -370,14 +471,23 @@ public static class FundingEndpoints
 
         group.MapDelete("/evidence/{evidenceId:guid}", async (
             ClaimsPrincipal user,
+            HttpRequest request,
             Guid evidenceId,
+            IIdentityModule identity,
             EvidenceService service,
             CancellationToken ct) =>
         {
             if (!TryGetUserId(user, out var userId))
                 return Results.Unauthorized();
 
-            var deleted = await service.DeleteAsync(userId, evidenceId, ct);
+            var (access, error) = await OrganisationEndpointHelper.ResolveAsync(identity, userId, request, ct);
+            if (error is not null)
+                return error;
+
+            if (!access!.CanWrite)
+                return OrganisationApiResults.Forbidden();
+
+            var deleted = await service.DeleteAsync(access.OrganisationId, evidenceId, ct);
             return deleted ? Results.NoContent() : Results.NotFound();
         })
         .WithName("DeleteFinancialEvidence")

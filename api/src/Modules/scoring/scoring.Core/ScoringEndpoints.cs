@@ -1,5 +1,7 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using identity.Contracts;
+using juskel.Shared.Organisation;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -20,13 +22,19 @@ public static class ScoringEndpoints
 
         group.MapGet("/applications/current/sustainability-profile", async (
             ClaimsPrincipal user,
+            HttpRequest request,
+            IIdentityModule identity,
             SustainabilityProfileService service,
             CancellationToken ct) =>
         {
             if (!TryGetUserId(user, out var userId))
                 return Results.Unauthorized();
 
-            var response = await service.GetAsync(userId, ct);
+            var (access, error) = await OrganisationEndpointHelper.ResolveAsync(identity, userId, request, ct);
+            if (error is not null)
+                return error;
+
+            var response = await service.GetAsync(access!.OrganisationId, ct);
             return response is null ? Results.NotFound() : Results.Ok(response);
         })
         .WithName("GetSustainabilityProfile")
@@ -38,16 +46,25 @@ public static class ScoringEndpoints
 
         group.MapPut("/applications/current/sustainability-profile", async (
             ClaimsPrincipal user,
-            UpsertSustainabilityProfileRequest request,
+            HttpRequest request,
+            UpsertSustainabilityProfileRequest requestBody,
+            IIdentityModule identity,
             SustainabilityProfileService service,
             CancellationToken ct) =>
         {
             if (!TryGetUserId(user, out var userId))
                 return Results.Unauthorized();
 
+            var (access, error) = await OrganisationEndpointHelper.ResolveAsync(identity, userId, request, ct);
+            if (error is not null)
+                return error;
+
+            if (!access!.CanWrite)
+                return OrganisationApiResults.Forbidden();
+
             try
             {
-                var response = await service.UpsertAsync(userId, request, ct);
+                var response = await service.UpsertAsync(access.OrganisationId, requestBody, ct);
                 return response is null ? Results.NotFound() : Results.Ok(response);
             }
             catch (ArgumentException ex)
@@ -70,17 +87,26 @@ public static class ScoringEndpoints
 
         group.MapPost("/evidence", async (
             ClaimsPrincipal user,
+            HttpRequest request,
             [FromForm] SustainabilityQuestionKey questionKey,
             IFormFile file,
+            IIdentityModule identity,
             EvidenceService service,
             CancellationToken ct) =>
         {
             if (!TryGetUserId(user, out var userId))
                 return Results.Unauthorized();
 
+            var (access, error) = await OrganisationEndpointHelper.ResolveAsync(identity, userId, request, ct);
+            if (error is not null)
+                return error;
+
+            if (!access!.CanWrite)
+                return OrganisationApiResults.Forbidden();
+
             try
             {
-                var response = await service.UploadAsync(userId, questionKey, file, ct);
+                var response = await service.UploadAsync(access.OrganisationId, questionKey, file, ct);
                 return response is null ? Results.NotFound() : Results.Created($"/scoring/evidence/{response!.EvidenceId}", response);
             }
             catch (ArgumentException ex)
@@ -102,7 +128,9 @@ public static class ScoringEndpoints
 
         group.MapGet("/evidence/{evidenceId:guid}/download", async (
             ClaimsPrincipal user,
+            HttpRequest request,
             Guid evidenceId,
+            IIdentityModule identity,
             EvidenceService service,
             CancellationToken ct,
             [FromQuery] bool download = false) =>
@@ -110,7 +138,11 @@ public static class ScoringEndpoints
             if (!TryGetUserId(user, out var userId))
                 return Results.Unauthorized();
 
-            var file = await service.DownloadAsync(userId, evidenceId, ct);
+            var (access, error) = await OrganisationEndpointHelper.ResolveAsync(identity, userId, request, ct);
+            if (error is not null)
+                return error;
+
+            var file = await service.DownloadAsync(access!.OrganisationId, evidenceId, ct);
             if (file is null)
                 return Results.NotFound();
 
@@ -128,14 +160,23 @@ public static class ScoringEndpoints
 
         group.MapDelete("/evidence/{evidenceId:guid}", async (
             ClaimsPrincipal user,
+            HttpRequest request,
             Guid evidenceId,
+            IIdentityModule identity,
             EvidenceService service,
             CancellationToken ct) =>
         {
             if (!TryGetUserId(user, out var userId))
                 return Results.Unauthorized();
 
-            var deleted = await service.DeleteAsync(userId, evidenceId, ct);
+            var (access, error) = await OrganisationEndpointHelper.ResolveAsync(identity, userId, request, ct);
+            if (error is not null)
+                return error;
+
+            if (!access!.CanWrite)
+                return OrganisationApiResults.Forbidden();
+
+            var deleted = await service.DeleteAsync(access.OrganisationId, evidenceId, ct);
             return deleted ? Results.NoContent() : Results.NotFound();
         })
         .WithName("DeleteSustainabilityEvidence")

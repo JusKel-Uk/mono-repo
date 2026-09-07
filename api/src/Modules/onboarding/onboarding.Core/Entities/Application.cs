@@ -8,6 +8,8 @@ internal sealed class Application
 
     public Guid UserId { get; set; }
 
+    public Guid OrganisationId { get; set; }
+
     public SubmissionStatus Status { get; set; }
 
     public DateTime CreatedAt { get; set; }

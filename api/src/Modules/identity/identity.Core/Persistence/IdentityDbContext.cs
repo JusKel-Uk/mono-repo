@@ -18,6 +18,12 @@ internal sealed class IdentityDbContext : DbContext
 
     public DbSet<PasswordResetRequest> PasswordResetRequests => Set<PasswordResetRequest>();
 
+    public DbSet<Organisation> Organisations => Set<Organisation>();
+
+    public DbSet<OrganisationMember> OrganisationMembers => Set<OrganisationMember>();
+
+    public DbSet<OrganisationInvite> OrganisationInvites => Set<OrganisationInvite>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.HasDefaultSchema("identity");

@@ -12,7 +12,9 @@ internal sealed class User
 
     public string? Phone { get; set; }
 
-    public DateTime? AccountClosureRequestedAt { get; set; }
+    public Guid? LastOrganisationId { get; set; }
+
+    public Organisation? LastOrganisation { get; set; }
 
     public string Email { get; set; } = string.Empty;
 

@@ -1,5 +1,7 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using identity.Contracts;
+using juskel.Shared.Organisation;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -21,173 +23,210 @@ public static class OnboardingEndpoints
 
         group.MapPost("/applications", async (
             ClaimsPrincipal user,
+            HttpRequest request,
+            IIdentityModule identity,
             OnboardingApplicationService service,
             CancellationToken ct) =>
         {
             if (!TryGetUserId(user, out var userId))
                 return Results.Unauthorized();
 
-            var response = await service.CreateApplicationAsync(userId, ct);
+            var (access, error) = await OrganisationEndpointHelper.ResolveAsync(identity, userId, request, ct);
+            if (error is not null)
+                return error;
+
+            if (!access!.CanWrite)
+                return OrganisationApiResults.Forbidden();
+
+            var response = await service.CreateApplicationAsync(userId, access, ct);
             return Results.Created($"/onboarding/applications/{response.ApplicationId}", response);
         })
         .WithName("CreateApplication")
         .Produces<CreateApplicationResponse>(StatusCodes.Status201Created)
         .Produces(StatusCodes.Status401Unauthorized)
-        .Produces<ProblemDetails>(StatusCodes.Status500InternalServerError)
+        .Produces<ProblemDetails>(StatusCodes.Status403Forbidden)
+        .Produces<ProblemDetails>(StatusCodes.Status400BadRequest)
         .WithMetadata(new SwaggerResponseExampleAttribute(StatusCodes.Status201Created, typeof(CreateApplicationResponseExample)));
 
         group.MapGet("/applications/current", async (
             ClaimsPrincipal user,
+            HttpRequest request,
+            IIdentityModule identity,
             OnboardingApplicationService service,
             CancellationToken ct) =>
         {
             if (!TryGetUserId(user, out var userId))
                 return Results.Unauthorized();
 
-            var response = await service.GetCurrentApplicationAsync(userId, ct);
+            var (access, error) = await OrganisationEndpointHelper.ResolveAsync(identity, userId, request, ct);
+            if (error is not null)
+                return error;
+
+            var response = await service.GetCurrentApplicationAsync(access!.OrganisationId, ct);
             return response is null ? Results.NotFound() : Results.Ok(response);
         })
         .WithName("GetCurrentApplication")
         .Produces<ApplicationResponse>(StatusCodes.Status200OK)
-        .Produces(StatusCodes.Status401Unauthorized)
-        .Produces(StatusCodes.Status404NotFound)
-        .Produces<ProblemDetails>(StatusCodes.Status500InternalServerError)
         .WithMetadata(new SwaggerResponseExampleAttribute(StatusCodes.Status200OK, typeof(ApplicationResponseExample)));
 
         group.MapGet("/applications/current/company-setup", async (
             ClaimsPrincipal user,
+            HttpRequest request,
+            IIdentityModule identity,
             CompanySetupService service,
             CancellationToken ct) =>
         {
             if (!TryGetUserId(user, out var userId))
                 return Results.Unauthorized();
 
-            var response = await service.GetAsync(userId, ct);
+            var (access, error) = await OrganisationEndpointHelper.ResolveAsync(identity, userId, request, ct);
+            if (error is not null)
+                return error;
+
+            var response = await service.GetAsync(access!.OrganisationId, ct);
             return response is null ? Results.NotFound() : Results.Ok(response);
         })
         .WithName("GetCompanySetup")
         .Produces<CompanySetupResponse>(StatusCodes.Status200OK)
-        .Produces(StatusCodes.Status401Unauthorized)
-        .Produces(StatusCodes.Status404NotFound)
-        .Produces<ProblemDetails>(StatusCodes.Status500InternalServerError)
         .WithMetadata(new SwaggerResponseExampleAttribute(StatusCodes.Status200OK, typeof(CompanySetupResponseExample)));
 
         group.MapPut("/applications/current/company-setup", async (
             ClaimsPrincipal user,
-            UpsertCompanySetupRequest request,
+            HttpRequest request,
+            UpsertCompanySetupRequest body,
+            IIdentityModule identity,
             CompanySetupService service,
             CancellationToken ct) =>
         {
             if (!TryGetUserId(user, out var userId))
                 return Results.Unauthorized();
 
+            var (access, error) = await OrganisationEndpointHelper.ResolveAsync(identity, userId, request, ct);
+            if (error is not null)
+                return error;
+
+            if (!access!.CanWrite)
+                return OrganisationApiResults.Forbidden();
+
             try
             {
-                var response = await service.UpsertAsync(userId, request, ct);
+                var response = await service.UpsertAsync(access.OrganisationId, body, ct);
                 return response is null ? Results.NotFound() : Results.Ok(response);
             }
             catch (ArgumentException ex)
             {
-                return Results.ValidationProblem(new Dictionary<string, string[]>
-                {
-                    ["request"] = [ex.Message],
-                });
+                return Results.ValidationProblem(new Dictionary<string, string[]> { ["request"] = [ex.Message] });
             }
         })
         .WithName("UpsertCompanySetup")
         .Accepts<UpsertCompanySetupRequest>("application/json")
         .Produces<CompanySetupResponse>(StatusCodes.Status200OK)
-        .Produces(StatusCodes.Status401Unauthorized)
-        .Produces(StatusCodes.Status404NotFound)
-        .Produces<ProblemDetails>(StatusCodes.Status400BadRequest)
-        .Produces<ProblemDetails>(StatusCodes.Status500InternalServerError)
         .WithMetadata(new SwaggerRequestExampleAttribute(typeof(UpsertCompanySetupRequest), typeof(UpsertCompanySetupRequestExample)))
         .WithMetadata(new SwaggerResponseExampleAttribute(StatusCodes.Status200OK, typeof(CompanySetupResponseExample)));
 
         group.MapPost("/applications/current/company-setup/verify-companies-house", async (
             ClaimsPrincipal user,
-            VerifyCompaniesHouseRequest request,
+            HttpRequest request,
+            VerifyCompaniesHouseRequest body,
+            IIdentityModule identity,
             CompanySetupService service,
             CancellationToken ct) =>
         {
             if (!TryGetUserId(user, out var userId))
                 return Results.Unauthorized();
 
-            var response = await service.VerifyAsync(userId, request, ct);
+            var (access, error) = await OrganisationEndpointHelper.ResolveAsync(identity, userId, request, ct);
+            if (error is not null)
+                return error;
+
+            if (!access!.CanWrite)
+                return OrganisationApiResults.Forbidden();
+
+            var response = await service.VerifyAsync(access.OrganisationId, body, ct);
             return response is null ? Results.NotFound() : Results.Ok(response);
         })
         .RequireRateLimiting("companies-house-verify")
         .WithName("VerifyCompaniesHouse")
         .Accepts<VerifyCompaniesHouseRequest>("application/json")
         .Produces<VerifyCompaniesHouseResponse>(StatusCodes.Status200OK)
-        .Produces(StatusCodes.Status401Unauthorized)
-        .Produces(StatusCodes.Status404NotFound)
-        .Produces<ProblemDetails>(StatusCodes.Status429TooManyRequests)
-        .Produces<ProblemDetails>(StatusCodes.Status500InternalServerError)
         .WithMetadata(new SwaggerRequestExampleAttribute(typeof(VerifyCompaniesHouseRequest), typeof(VerifyCompaniesHouseRequestExample)))
         .WithMetadata(new SwaggerResponseExampleAttribute(StatusCodes.Status200OK, typeof(VerifyCompaniesHouseResponseExample)));
 
         group.MapGet("/applications/current/business-profile", async (
             ClaimsPrincipal user,
+            HttpRequest request,
+            IIdentityModule identity,
             BusinessProfileService service,
             CancellationToken ct) =>
         {
             if (!TryGetUserId(user, out var userId))
                 return Results.Unauthorized();
 
-            var response = await service.GetAsync(userId, ct);
+            var (access, error) = await OrganisationEndpointHelper.ResolveAsync(identity, userId, request, ct);
+            if (error is not null)
+                return error;
+
+            var response = await service.GetAsync(access!.OrganisationId, ct);
             return response is null ? Results.NotFound() : Results.Ok(response);
         })
         .WithName("GetBusinessProfile")
         .Produces<BusinessProfileResponse>(StatusCodes.Status200OK)
-        .Produces(StatusCodes.Status401Unauthorized)
-        .Produces(StatusCodes.Status404NotFound)
-        .Produces<ProblemDetails>(StatusCodes.Status500InternalServerError)
         .WithMetadata(new SwaggerResponseExampleAttribute(StatusCodes.Status200OK, typeof(BusinessProfileResponseExample)));
 
         group.MapPut("/applications/current/business-profile", async (
             ClaimsPrincipal user,
-            UpsertBusinessProfileRequest request,
+            HttpRequest request,
+            UpsertBusinessProfileRequest body,
+            IIdentityModule identity,
             BusinessProfileService service,
             CancellationToken ct) =>
         {
             if (!TryGetUserId(user, out var userId))
                 return Results.Unauthorized();
 
+            var (access, error) = await OrganisationEndpointHelper.ResolveAsync(identity, userId, request, ct);
+            if (error is not null)
+                return error;
+
+            if (!access!.CanWrite)
+                return OrganisationApiResults.Forbidden();
+
             try
             {
-                var response = await service.UpsertAsync(userId, request, ct);
+                var response = await service.UpsertAsync(access.OrganisationId, body, ct);
                 return response is null ? Results.NotFound() : Results.Ok(response);
             }
             catch (ArgumentException ex)
             {
-                return Results.ValidationProblem(new Dictionary<string, string[]>
-                {
-                    ["request"] = [ex.Message],
-                });
+                return Results.ValidationProblem(new Dictionary<string, string[]> { ["request"] = [ex.Message] });
             }
         })
         .WithName("UpsertBusinessProfile")
         .Accepts<UpsertBusinessProfileRequest>("application/json")
         .Produces<BusinessProfileResponse>(StatusCodes.Status200OK)
-        .Produces(StatusCodes.Status401Unauthorized)
-        .Produces(StatusCodes.Status404NotFound)
-        .Produces<ProblemDetails>(StatusCodes.Status400BadRequest)
-        .Produces<ProblemDetails>(StatusCodes.Status500InternalServerError)
         .WithMetadata(new SwaggerRequestExampleAttribute(typeof(UpsertBusinessProfileRequest), typeof(UpsertBusinessProfileRequestExample)))
         .WithMetadata(new SwaggerResponseExampleAttribute(StatusCodes.Status200OK, typeof(BusinessProfileResponseExample)));
 
         group.MapPost("/applications/current/submit", async (
             ClaimsPrincipal user,
+            HttpRequest request,
+            IIdentityModule identity,
             OnboardingApplicationService service,
             CancellationToken ct) =>
         {
             if (!TryGetUserId(user, out var userId))
                 return Results.Unauthorized();
 
+            var (access, error) = await OrganisationEndpointHelper.ResolveAsync(identity, userId, request, ct);
+            if (error is not null)
+                return error;
+
+            if (!access!.CanSubmit)
+                return OrganisationApiResults.Forbidden();
+
             try
             {
-                var response = await service.SubmitApplicationAsync(userId, ct);
+                var response = await service.SubmitApplicationAsync(access.OrganisationId, ct);
                 return response is null ? Results.NotFound() : Results.Ok(response);
             }
             catch (InvalidOperationException ex)
@@ -202,10 +241,6 @@ public static class OnboardingEndpoints
         })
         .WithName("SubmitApplication")
         .Produces<SubmitApplicationResponse>(StatusCodes.Status200OK)
-        .Produces(StatusCodes.Status401Unauthorized)
-        .Produces(StatusCodes.Status404NotFound)
-        .Produces<ProblemDetails>(StatusCodes.Status409Conflict)
-        .Produces<ProblemDetails>(StatusCodes.Status500InternalServerError)
         .WithMetadata(new SwaggerResponseExampleAttribute(StatusCodes.Status200OK, typeof(SubmitApplicationResponseExample)));
 
         return app;
