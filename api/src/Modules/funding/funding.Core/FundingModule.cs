@@ -1,7 +1,6 @@
 using funding.Contracts;
 using funding.Core.Persistence;
 using Microsoft.EntityFrameworkCore;
-using onboarding.Contracts;
 
 namespace funding.Core;
 
@@ -20,15 +19,28 @@ internal sealed class FundingModule : IFundingModule
         if (profile is null)
             return false;
 
-        var integrationConnected = await _db.IntegrationConnections
+        var hasOpenBanking = await _db.OpenBankingConnections
+            .AsNoTracking()
+            .AnyAsync(c => c.ApplicationId == applicationId, ct);
+
+        if (hasOpenBanking)
+        {
+            var attestation = await _db.BankingCompletenessAttestations
+                .AsNoTracking()
+                .FirstOrDefaultAsync(a => a.ApplicationId == applicationId, ct);
+
+            return profile.BandsLockedByIntegration
+                && attestation is not null
+                && attestation.AllRelevantAccountsConnected;
+        }
+
+        var quickBooksConnected = await _db.IntegrationConnections
             .AsNoTracking()
             .AnyAsync(
-                i => i.ApplicationId == applicationId
-                    && (i.Provider == IntegrationProvider.OpenBanking
-                        || i.Provider == IntegrationProvider.QuickBooks),
+                i => i.ApplicationId == applicationId && i.Provider == IntegrationProvider.QuickBooks,
                 ct);
 
-        if (integrationConnected && profile.BandsLockedByIntegration)
+        if (quickBooksConnected && profile.BandsLockedByIntegration)
             return true;
 
         return profile.AnnualRevenueBand.HasValue
@@ -60,9 +72,25 @@ internal sealed class FundingModule : IFundingModule
             .Where(i => i.ApplicationId == applicationId)
             .ToListAsync(ct);
 
+        var openBankingConnections = await _db.OpenBankingConnections
+            .AsNoTracking()
+            .Where(c => c.ApplicationId == applicationId)
+            .OrderBy(c => c.ConnectedAt)
+            .ToListAsync(ct);
+
         return Enum.GetValues<IntegrationProvider>()
             .Select(provider =>
             {
+                if (provider == IntegrationProvider.OpenBanking)
+                {
+                    var earliest = openBankingConnections.FirstOrDefault();
+                    return new IntegrationStatusDto(
+                        provider,
+                        openBankingConnections.Count > 0,
+                        earliest?.ConnectedAt,
+                        openBankingConnections.MinBy(c => c.ExpiresAt ?? DateTime.MaxValue)?.ExpiresAt);
+                }
+
                 var connection = connections.FirstOrDefault(c => c.Provider == provider);
                 return new IntegrationStatusDto(
                     provider,

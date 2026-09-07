@@ -23,6 +23,87 @@ namespace funding.Core.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
+            modelBuilder.Entity("funding.Core.Entities.BankingCompletenessAttestation", b =>
+                {
+                    b.Property<Guid>("ApplicationId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("AllRelevantAccountsConnected")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime>("AttestedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("AttestedByUserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("ApplicationId");
+
+                    b.ToTable("BankingCompletenessAttestations", "funding");
+                });
+
+            modelBuilder.Entity("funding.Core.Entities.BankingIntegrationMetrics", b =>
+                {
+                    b.Property<Guid>("ApplicationId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("AccountCount")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("AvgMonthlyInflow")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("AvgMonthlyOutflow")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("ConnectionCount")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Currency")
+                        .IsRequired()
+                        .HasMaxLength(3)
+                        .HasColumnType("nvarchar(3)");
+
+                    b.Property<bool>("HasNonGbpAccounts")
+                        .HasColumnType("bit");
+
+                    b.Property<decimal>("NetCashFlow")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateOnly>("PeriodEnd")
+                        .HasColumnType("date");
+
+                    b.Property<DateOnly>("PeriodStart")
+                        .HasColumnType("date");
+
+                    b.Property<DateTime>("SyncedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<decimal>("TotalCashBalance")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("TotalCredits")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("TotalDebits")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("TransactionCount")
+                        .HasColumnType("int");
+
+                    b.HasKey("ApplicationId");
+
+                    b.ToTable("BankingIntegrationMetrics", "funding");
+                });
+
             modelBuilder.Entity("funding.Core.Entities.FinancialEvidence", b =>
                 {
                     b.Property<Guid>("Id")
@@ -58,65 +139,6 @@ namespace funding.Core.Migrations
                     b.ToTable("FinancialEvidence", "funding");
                 });
 
-            modelBuilder.Entity("funding.Core.Entities.FinancialProfile", b =>
-                {
-                    b.Property<Guid>("ApplicationId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<int?>("AnnualRevenueBand")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("AvgMonthlyRevenue")
-                        .HasColumnType("int");
-
-                    b.Property<bool>("BandsLockedByIntegration")
-                        .HasColumnType("bit");
-
-                    b.Property<int?>("CashReserves")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("EbitdaBand")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("ExistingDebtBand")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.HasKey("ApplicationId");
-
-                    b.ToTable("FinancialProfiles", "funding");
-                });
-
-            modelBuilder.Entity("funding.Core.Entities.FundingProfile", b =>
-                {
-                    b.Property<Guid>("ApplicationId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<int>("Purpose")
-                        .HasColumnType("int");
-
-                    b.Property<decimal>("RequestedAmount")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<int>("TermMonths")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("Urgency")
-                        .HasColumnType("int");
-
-                    b.HasKey("ApplicationId");
-
-                    b.ToTable("FundingProfiles", "funding");
-                });
-
             modelBuilder.Entity("funding.Core.Entities.FinancialIntegrationMetrics", b =>
                 {
                     b.Property<Guid>("ApplicationId")
@@ -145,6 +167,11 @@ namespace funding.Core.Migrations
                         .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
+                    b.Property<string>("Currency")
+                        .IsRequired()
+                        .HasMaxLength(3)
+                        .HasColumnType("nvarchar(3)");
+
                     b.Property<decimal?>("CurrentAssets")
                         .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
@@ -157,11 +184,6 @@ namespace funding.Core.Migrations
                         .HasPrecision(18, 4)
                         .HasColumnType("decimal(18,4)");
 
-                    b.Property<string>("Currency")
-                        .IsRequired()
-                        .HasMaxLength(3)
-                        .HasColumnType("nvarchar(3)");
-
                     b.Property<decimal?>("DebtToAssets")
                         .HasPrecision(18, 4)
                         .HasColumnType("decimal(18,4)");
@@ -170,12 +192,12 @@ namespace funding.Core.Migrations
                         .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
-                    b.Property<bool>("HasReportData")
-                        .HasColumnType("bit");
-
                     b.Property<decimal?>("GrossProfit")
                         .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
+
+                    b.Property<bool>("HasReportData")
+                        .HasColumnType("bit");
 
                     b.Property<decimal?>("NetIncome")
                         .HasPrecision(18, 2)
@@ -252,6 +274,65 @@ namespace funding.Core.Migrations
                     b.ToTable("FinancialIntegrationMetrics", "funding");
                 });
 
+            modelBuilder.Entity("funding.Core.Entities.FinancialProfile", b =>
+                {
+                    b.Property<Guid>("ApplicationId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int?>("AnnualRevenueBand")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("AvgMonthlyRevenue")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("BandsLockedByIntegration")
+                        .HasColumnType("bit");
+
+                    b.Property<int?>("CashReserves")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("EbitdaBand")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("ExistingDebtBand")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("ApplicationId");
+
+                    b.ToTable("FinancialProfiles", "funding");
+                });
+
+            modelBuilder.Entity("funding.Core.Entities.FundingProfile", b =>
+                {
+                    b.Property<Guid>("ApplicationId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("Purpose")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("RequestedAmount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("TermMonths")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("Urgency")
+                        .HasColumnType("int");
+
+                    b.HasKey("ApplicationId");
+
+                    b.ToTable("FundingProfiles", "funding");
+                });
+
             modelBuilder.Entity("funding.Core.Entities.IntegrationConnection", b =>
                 {
                     b.Property<Guid>("Id")
@@ -293,6 +374,57 @@ namespace funding.Core.Migrations
                         .IsUnique();
 
                     b.ToTable("IntegrationConnections", "funding");
+                });
+
+            modelBuilder.Entity("funding.Core.Entities.OpenBankingConnection", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("AccessTokenEncrypted")
+                        .IsRequired()
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)");
+
+                    b.Property<string>("AccountsJson")
+                        .IsRequired()
+                        .HasMaxLength(8000)
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("ApplicationId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("ConnectedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("ExpiresAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ExternalConnectionId")
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
+
+                    b.Property<string>("InstitutionId")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
+
+                    b.Property<string>("InstitutionName")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<string>("RefreshTokenEncrypted")
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ApplicationId", "InstitutionId")
+                        .IsUnique();
+
+                    b.ToTable("OpenBankingConnections", "funding");
                 });
 #pragma warning restore 612, 618
         }

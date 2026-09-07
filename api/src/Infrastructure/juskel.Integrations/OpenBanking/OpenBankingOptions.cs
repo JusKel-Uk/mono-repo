@@ -15,4 +15,12 @@ public sealed class OpenBankingOptions
     public string AuthBaseUrl { get; set; } = "https://auth.truelayer-sandbox.com";
 
     public string ApiBaseUrl { get; set; } = "https://api.truelayer-sandbox.com";
+
+    /// <summary>Sandbox: uk-cs-mock. Production: uk-ob-all uk-oauth-all.</summary>
+    public string Providers { get; set; } = "uk-ob-all uk-oauth-all";
+
+    /// <summary>Optional — preselect ASPSP (sandbox: uk-cs-mock).</summary>
+    public string ProviderId { get; set; } = string.Empty;
+
+    public int TransactionDays { get; set; } = 90;
 }

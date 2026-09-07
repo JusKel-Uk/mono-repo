@@ -1,4 +1,5 @@
 using identity.Core.Entities;
+using juskel.Shared.Security;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -10,6 +11,10 @@ internal sealed class OrganisationInviteEntityConfiguration : IEntityTypeConfigu
     {
         entity.ToTable("OrganisationInvites");
         entity.HasKey(i => i.Id);
+
+        entity.Property(i => i.Email)
+            .HasConversion(new EncryptedNullableStringConverter(IdentityEncryptionPurposes.Email))
+            .HasMaxLength(1024);
 
         entity.Property(i => i.EmailLookupHash)
             .HasMaxLength(64)

@@ -4,11 +4,15 @@ namespace identity.Core.Entities;
 
 internal sealed class OrganisationInvite
 {
+    public const int ExpiryDays = 7;
+
     public Guid Id { get; set; }
 
     public Guid OrganisationId { get; set; }
 
     public Organisation Organisation { get; set; } = null!;
+
+    public string? Email { get; set; }
 
     public string EmailLookupHash { get; set; } = string.Empty;
 

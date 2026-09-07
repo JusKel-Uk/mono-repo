@@ -131,7 +131,9 @@ All require `Authorization: Bearer {jwt}` unless noted.
 | `GET` | `/identity/me/organisations` | Any member | Org switcher data; `isCurrent`, `isClosed`, `role` |
 | `PUT` | `/identity/me/organisations/current` | Member of target org | Body: `{ "organisationId": "uuid" }` |
 | `GET` | `/identity/organisations/{id}/members` | Member | Team list |
+| `GET` | `/identity/organisations/{id}/invites` | Owner / Admin | Pending invites (including expired) |
 | `POST` | `/identity/organisations/{id}/invites` | Owner / Admin | Body: `{ "email", "role" }` |
+| `POST` | `/identity/organisations/{id}/invites/{inviteId}/resend` | Owner / Admin | Rotates token, resets 7-day expiry, re-sends email |
 | `POST` | `/identity/invites/{token}/accept` | Invitee (JWT) | No body; token in path |
 | `PATCH` | `/identity/organisations/{id}/members/{userId}` | Owner / Admin | Body: `{ "role" }` |
 | `DELETE` | `/identity/organisations/{id}/members/{userId}` | Owner / Admin | Cannot remove last Owner (409) |
@@ -169,6 +171,14 @@ export type OrganisationMember = {
 export type CreateInviteRequest = {
   email: string;
   role: OrganisationRole; // not Owner (0)
+};
+
+export type OrganisationInvite = {
+  id: string;
+  email: string;
+  role: OrganisationRole;
+  expiresAt: string;
+  createdAt: string;
 };
 
 export type CreateInviteResponse = {

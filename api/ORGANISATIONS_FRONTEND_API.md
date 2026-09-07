@@ -63,6 +63,24 @@ Errors:
 
 Requires org context (header or current org when multiple).
 
+### List pending invites
+
+`GET /identity/organisations/{organisationId}/invites`
+
+Owner / Admin. Returns pending invites (`acceptedAt` is null), including expired rows so the Team tab can offer Resend.
+
+```json
+[
+  {
+    "id": "uuid",
+    "email": "teammate@company.co.uk",
+    "role": 2,
+    "expiresAt": "2026-09-14T12:00:00Z",
+    "createdAt": "2026-09-07T12:00:00Z"
+  }
+]
+```
+
 ### Invite member
 
 `POST /identity/organisations/{organisationId}/invites`
@@ -77,6 +95,14 @@ Invitee email must:
 - Use the **same domain** as the organisation (set from the Owner’s email at registration), e.g. if the org domain is `acme.co.uk`, only `*@acme.co.uk` addresses are allowed
 
 Response includes `acceptToken` in Development for E2E; production sends email.
+
+### Resend invite
+
+`POST /identity/organisations/{organisationId}/invites/{inviteId}/resend`
+
+Owner / Admin. Empty body. Rotates the accept token, resets expiry to 7 days, and sends the email again. **404** if the invite is missing, already accepted, or belongs to another organisation.
+
+Response shape matches create-invite (`inviteId`, `email`, `role`, `expiresAt`, `acceptToken` in Development).
 
 ### Accept invite
 

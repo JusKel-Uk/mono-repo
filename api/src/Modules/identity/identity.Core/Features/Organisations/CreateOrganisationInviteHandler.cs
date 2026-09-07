@@ -10,8 +10,6 @@ namespace identity.Core.Features.Organisations;
 
 internal sealed class CreateOrganisationInviteHandler
 {
-    private const int InviteExpiryDays = 7;
-
     private readonly IdentityDbContext _db;
     private readonly IEmailLookupHasher _emailLookupHasher;
     private readonly IOrganisationInviteTokenService _tokenService;
@@ -83,19 +81,18 @@ internal sealed class CreateOrganisationInviteHandler
                 throw new ArgumentException("This user is already a member of the organisation.");
         }
 
-        var (plainToken, tokenHash) = _tokenService.IssueToken();
         var now = DateTime.UtcNow;
         var invite = new OrganisationInvite
         {
             Id = Guid.NewGuid(),
             OrganisationId = organisationId,
+            Email = email,
             EmailLookupHash = emailLookupHash,
             Role = request.Role,
-            TokenHash = tokenHash,
-            ExpiresAt = now.AddDays(InviteExpiryDays),
             InvitedByUserId = userId,
             CreatedAt = now,
         };
+        var plainToken = _tokenService.Rotate(invite);
 
         _db.OrganisationInvites.Add(invite);
         await _db.SaveChangesAsync(ct);

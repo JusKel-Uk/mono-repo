@@ -1,0 +1,24 @@
+namespace funding.Core.Entities;
+
+internal sealed class OpenBankingConnection
+{
+    public Guid Id { get; set; }
+
+    public Guid ApplicationId { get; set; }
+
+    public string InstitutionId { get; set; } = string.Empty;
+
+    public string InstitutionName { get; set; } = string.Empty;
+
+    public string? ExternalConnectionId { get; set; }
+
+    public string AccessTokenEncrypted { get; set; } = string.Empty;
+
+    public string? RefreshTokenEncrypted { get; set; }
+
+    public DateTime ConnectedAt { get; set; }
+
+    public DateTime? ExpiresAt { get; set; }
+
+    public string AccountsJson { get; set; } = "[]";
+}

@@ -238,11 +238,14 @@ Store `accessToken` and attach to all subsequent requests.
 
 | When | Method | Endpoint | Notes |
 |------|--------|----------|-------|
-| Open step | `GET` | `/funding/applications/current/financial-profile` | Check `bandsLockedByIntegration`, `integrations[]`, `evidence[]` |
-| Save manual bands | `PUT` | `/funding/applications/current/financial-profile` | When `bandsLockedByIntegration: true`, PUT is a **no-op** on bands (returns **200** + current profile) and marks the financial step complete — use for **Save and continue** after QuickBooks/Open Banking |
-| Connect Open Banking | `POST` | `/funding/integrations/open-banking/authorize` | No body → `{ authorizationUrl, state }` — redirect user |
-| OAuth return | Browser | `GET` | `/funding/integrations/open-banking/callback?code=...&state=...` | Backend saves connection, then **302** to `{JUSKEL_FRONTEND_URL}/onboarding/financial-profile?integration=open-banking&status=connected` (or `status=error`) |
-| Disconnect OB | `DELETE` | `/funding/integrations/open-banking` | |
+| Open step | `GET` | `/funding/applications/current/financial-profile` | Check `bandsLockedByIntegration`, `integrations[]`, `connectedBanks[]`, `bankingIntegrationMetrics`, `bankingCompleteness`, `evidence[]` |
+| Save manual bands | `PUT` | `/funding/applications/current/financial-profile` | When `bandsLockedByIntegration: true`, PUT is a **no-op** on bands (returns **200** + current profile) and marks the financial step complete — use for **Save and continue** after QuickBooks/Open Banking **completeness attestation** |
+| Connect Open Banking (per bank) | `POST` | `/funding/integrations/open-banking/authorize` | No body → `{ authorizationUrl, state }` — redirect user; repeat for each bank (one OAuth journey per ASPSP) |
+| OAuth return | Browser | `GET` | `/funding/integrations/open-banking/callback?code=...&state=...` | Backend **appends** a bank connection, recomputes metrics, then **302** to `{JUSKEL_FRONTEND_URL}/onboarding/financial-profile?integration=open-banking&status=connected` (or `status=error`) |
+| List connected banks | `GET` | `/funding/integrations/open-banking/connections` | `{ connections: [{ connectionId, institutionId, institutionName, accountCount, connectedAt, expiresAt }] }` |
+| Disconnect one bank | `DELETE` | `/funding/integrations/open-banking/connections/{connectionId}` | Removes one bank; recomputes aggregated metrics; clears completeness attestation |
+| Banking completeness | `PUT` | `/funding/integrations/open-banking/completeness` | Body `{ allRelevantAccountsConnected: true }` — required before financial step completes on OB path |
+| Disconnect all OB | `DELETE` | `/funding/integrations/open-banking` | Removes all bank connections, banking metrics, and attestation |
 | Connect Xero | `POST` | `/funding/integrations/xero/authorize` | Same pattern |
 | Xero callback | `GET` | `/funding/integrations/xero/callback` | Same post-auth redirect with `integration=xero` |
 | Disconnect Xero | `DELETE` | `/funding/integrations/xero` | |
@@ -262,7 +265,7 @@ Store `accessToken` and attach to all subsequent requests.
 
 The browser cannot use a plain `<a href>` — there is no public blob URL. Fetch with the JWT, then use `URL.createObjectURL(blob)` (frontend developer).
 
-**GET response** includes `evidence[]` (empty array when none uploaded) and optional `integrationMetrics` (populated after QuickBooks connect; `null` when no accounting sync). Each evidence item:
+**GET response** includes `evidence[]` (empty array when none uploaded), optional `integrationMetrics` (QuickBooks accounting sync only), optional `connectedBanks[]`, optional `bankingIntegrationMetrics` (Open Banking aggregate), and optional `bankingCompleteness` (SME attestation). Each evidence item:
 
 ```json
 {
@@ -272,6 +275,53 @@ The browser cannot use a plain `<a href>` — there is no public blob URL. Fetch
   "contentType": "application/pdf",
   "fileSizeBytes": 512000,
   "uploadedAt": "2026-01-15T10:00:00Z"
+}
+```
+
+**Multi-bank Open Banking UX (frontend developer):**
+
+1. `POST .../open-banking/authorize` → redirect to TrueLayer.
+2. On return (`status=connected`), `GET .../financial-profile` or `GET .../open-banking/connections` to show connected banks.
+3. Offer **Connect another bank** → repeat step 1 (new OAuth consent per bank).
+4. When the user confirms coverage, `PUT .../open-banking/completeness` with `{ "allRelevantAccountsConnected": true }`.
+5. **Save and continue** via `PUT .../financial-profile` (bands locked; step completes only after attestation).
+
+**`connectedBanks[]`** (read-only; one entry per bank consent):
+
+```json
+{
+  "connectionId": "33333333-3333-3333-3333-333333333333",
+  "institutionId": "mock-a",
+  "institutionName": "Mock Bank",
+  "accountCount": 1,
+  "connectedAt": "2026-09-07T10:00:00Z",
+  "expiresAt": "2026-09-07T11:00:00Z"
+}
+```
+
+**`bankingIntegrationMetrics`** (read-only; aggregated across all connected banks; `null` when no OB connections):
+
+| Field | Type | Notes |
+|-------|------|-------|
+| `currency` | string | MVP aggregates GBP accounts only |
+| `periodStart` / `periodEnd` | date | Transaction window (default 90 days) |
+| `syncedAt` | datetime | Last recompute |
+| `connectionCount` | int | Number of bank consents |
+| `accountCount` | int | Linked accounts across banks |
+| `totalCashBalance` | decimal | Sum of GBP balances |
+| `totalCredits` / `totalDebits` | decimal | Inflows / outflows in window |
+| `netCashFlow` | decimal | Credits minus debits |
+| `avgMonthlyInflow` / `avgMonthlyOutflow` | decimal | Used to derive revenue/cash-reserve bands |
+| `transactionCount` | int | Transactions in window |
+| `hasNonGbpAccounts` | bool | Non-GBP accounts skipped in totals |
+
+**`bankingCompleteness`** (null until PUT completeness):
+
+```json
+{
+  "allRelevantAccountsConnected": true,
+  "attestedAt": "2026-09-07T10:05:00Z",
+  "attestedByUserId": "44444444-4444-4444-4444-444444444444"
 }
 ```
 

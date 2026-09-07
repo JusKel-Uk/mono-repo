@@ -19,6 +19,7 @@ internal sealed class IntegrationService
     private readonly IOnboardingModule _onboarding;
     private readonly IFundingModule _funding;
     private readonly IOpenBankingProvider _openBanking;
+    private readonly OpenBankingSyncService _openBankingSync;
     private readonly IXeroClient _xero;
     private readonly IQuickBooksClient _quickBooks;
     private readonly IFieldEncryptor _encryptor;
@@ -28,6 +29,7 @@ internal sealed class IntegrationService
         IOnboardingModule onboarding,
         IFundingModule funding,
         IOpenBankingProvider openBanking,
+        OpenBankingSyncService openBankingSync,
         IXeroClient xero,
         IQuickBooksClient quickBooks,
         IFieldEncryptor encryptor)
@@ -36,6 +38,7 @@ internal sealed class IntegrationService
         _onboarding = onboarding;
         _funding = funding;
         _openBanking = openBanking;
+        _openBankingSync = openBankingSync;
         _xero = xero;
         _quickBooks = quickBooks;
         _encryptor = encryptor;
@@ -60,28 +63,111 @@ internal sealed class IntegrationService
         CancellationToken ct = default)
     {
         var (applicationId, _) = ParseState(state);
-        var token = await _openBanking.ExchangeCodeAsync(code, ct);
-        await UpsertConnectionAsync(
+        await _openBankingSync.ConnectFromCallbackAsync(applicationId, code, ct);
+
+        var complete = await _funding.IsFinancialStepCompleteAsync(applicationId, ct);
+        await _onboarding.MarkStepAsync(
             applicationId,
-            IntegrationProvider.OpenBanking,
-            token.AccessToken,
-            token.RefreshToken,
-            token.ExpiresAt,
-            null,
-            null,
+            OnboardingStep.Financial,
+            complete ? StepStatus.Complete : StepStatus.InProgress,
             ct);
 
-        var accounts = await _openBanking.GetAccountsAsync(token.AccessToken, ct);
-        var profile = await _db.FinancialProfiles.FirstOrDefaultAsync(f => f.ApplicationId == applicationId, ct)
-            ?? new FinancialProfile { ApplicationId = applicationId };
+        return true;
+    }
 
-        FinancialProfileService.ApplyOpenBankingBands(profile, accounts);
+    public async Task<OpenBankingConnectionsResponse?> GetOpenBankingConnectionsAsync(
+        Guid organisationId,
+        CancellationToken ct = default)
+    {
+        var applicationId = await _onboarding.GetCurrentApplicationIdAsync(organisationId, ct);
+        if (applicationId is null)
+            return null;
 
-        if (_db.Entry(profile).State == EntityState.Detached)
-            _db.FinancialProfiles.Add(profile);
+        var connections = await _db.OpenBankingConnections
+            .AsNoTracking()
+            .Where(c => c.ApplicationId == applicationId)
+            .OrderBy(c => c.ConnectedAt)
+            .ToListAsync(ct);
+
+        var dtos = connections
+            .Select(c => BankingIntegrationMetricsMapper.ToConnectionDto(
+                c,
+                BankingIntegrationMetricsMapper.CountAccounts(c)))
+            .ToList();
+
+        return new OpenBankingConnectionsResponse(dtos);
+    }
+
+    public async Task<bool> DisconnectOpenBankingConnectionAsync(
+        Guid organisationId,
+        Guid connectionId,
+        CancellationToken ct = default)
+    {
+        var applicationId = await _onboarding.GetDraftApplicationIdAsync(organisationId, ct);
+        if (applicationId is null)
+            return false;
+
+        var connection = await _db.OpenBankingConnections
+            .FirstOrDefaultAsync(
+                c => c.Id == connectionId && c.ApplicationId == applicationId,
+                ct);
+
+        if (connection is null)
+            return false;
+
+        _db.OpenBankingConnections.Remove(connection);
+        await _db.SaveChangesAsync(ct);
+
+        await _openBankingSync.ClearAttestationAsync(applicationId.Value, ct);
+        await _openBankingSync.RecomputeAllAsync(applicationId.Value, ct);
+
+        var complete = await _funding.IsFinancialStepCompleteAsync(applicationId.Value, ct);
+        await _onboarding.MarkStepAsync(
+            applicationId.Value,
+            OnboardingStep.Financial,
+            complete ? StepStatus.Complete : StepStatus.InProgress,
+            ct);
+
+        return true;
+    }
+
+    public async Task<bool> UpsertBankingCompletenessAsync(
+        Guid userId,
+        Guid organisationId,
+        UpsertBankingCompletenessRequest request,
+        CancellationToken ct = default)
+    {
+        var applicationId = await _onboarding.GetDraftApplicationIdAsync(organisationId, ct);
+        if (applicationId is null)
+            return false;
+
+        var hasConnections = await _db.OpenBankingConnections
+            .AnyAsync(c => c.ApplicationId == applicationId, ct);
+
+        if (!hasConnections)
+            return false;
+
+        var attestation = await _db.BankingCompletenessAttestations
+            .FirstOrDefaultAsync(a => a.ApplicationId == applicationId, ct);
+
+        attestation ??= new BankingCompletenessAttestation { ApplicationId = applicationId.Value };
+
+        attestation.AllRelevantAccountsConnected = request.AllRelevantAccountsConnected;
+        attestation.AttestedAt = DateTime.UtcNow;
+        attestation.AttestedByUserId = userId;
+
+        if (_db.Entry(attestation).State == EntityState.Detached)
+            _db.BankingCompletenessAttestations.Add(attestation);
 
         await _db.SaveChangesAsync(ct);
-        await _onboarding.MarkStepAsync(applicationId, OnboardingStep.Financial, StepStatus.Complete, ct);
+
+        var complete = await _funding.IsFinancialStepCompleteAsync(applicationId.Value, ct);
+        await _onboarding.MarkStepAsync(
+            applicationId.Value,
+            OnboardingStep.Financial,
+            complete ? StepStatus.Complete : StepStatus.InProgress,
+            ct);
+
         return true;
     }
 
@@ -102,7 +188,7 @@ internal sealed class IntegrationService
     {
         var (applicationId, _) = ParseState(state);
         var token = await _xero.ExchangeCodeAsync(code, ct);
-        await UpsertConnectionAsync(
+        await UpsertIntegrationConnectionAsync(
             applicationId,
             IntegrationProvider.Xero,
             token.AccessToken,
@@ -150,7 +236,7 @@ internal sealed class IntegrationService
         }
 
         var metadataJson = BuildQuickBooksMetadataJson(sync.Snapshot);
-        await UpsertConnectionAsync(
+        await UpsertIntegrationConnectionAsync(
             applicationId,
             IntegrationProvider.QuickBooks,
             accessToken,
@@ -186,6 +272,9 @@ internal sealed class IntegrationService
         IntegrationProvider provider,
         CancellationToken ct = default)
     {
+        if (provider == IntegrationProvider.OpenBanking)
+            return await DisconnectAllOpenBankingAsync(organisationId, ct);
+
         var applicationId = await _onboarding.GetDraftApplicationIdAsync(organisationId, ct);
         if (applicationId is null)
             return false;
@@ -197,16 +286,6 @@ internal sealed class IntegrationService
             return false;
 
         _db.IntegrationConnections.Remove(connection);
-
-        if (provider == IntegrationProvider.OpenBanking)
-        {
-            var profile = await _db.FinancialProfiles.FirstOrDefaultAsync(f => f.ApplicationId == applicationId, ct);
-            if (profile is not null)
-            {
-                profile.BandsLockedByIntegration = false;
-                profile.UpdatedAt = DateTime.UtcNow;
-            }
-        }
 
         if (provider == IntegrationProvider.QuickBooks)
         {
@@ -225,16 +304,6 @@ internal sealed class IntegrationService
 
         await _db.SaveChangesAsync(ct);
 
-        if (provider == IntegrationProvider.OpenBanking)
-        {
-            var complete = await _funding.IsFinancialStepCompleteAsync(applicationId.Value, ct);
-            await _onboarding.MarkStepAsync(
-                applicationId.Value,
-                OnboardingStep.Financial,
-                complete ? StepStatus.Complete : StepStatus.InProgress,
-                ct);
-        }
-
         if (provider == IntegrationProvider.QuickBooks)
         {
             var complete = await _funding.IsFinancialStepCompleteAsync(applicationId.Value, ct);
@@ -244,6 +313,50 @@ internal sealed class IntegrationService
                 complete ? StepStatus.Complete : StepStatus.InProgress,
                 ct);
         }
+
+        return true;
+    }
+
+    private async Task<bool> DisconnectAllOpenBankingAsync(Guid organisationId, CancellationToken ct)
+    {
+        var applicationId = await _onboarding.GetDraftApplicationIdAsync(organisationId, ct);
+        if (applicationId is null)
+            return false;
+
+        var connections = await _db.OpenBankingConnections
+            .Where(c => c.ApplicationId == applicationId)
+            .ToListAsync(ct);
+
+        if (connections.Count == 0)
+            return false;
+
+        _db.OpenBankingConnections.RemoveRange(connections);
+
+        var bankingMetrics = await _db.BankingIntegrationMetrics
+            .FirstOrDefaultAsync(m => m.ApplicationId == applicationId, ct);
+        if (bankingMetrics is not null)
+            _db.BankingIntegrationMetrics.Remove(bankingMetrics);
+
+        var attestation = await _db.BankingCompletenessAttestations
+            .FirstOrDefaultAsync(a => a.ApplicationId == applicationId, ct);
+        if (attestation is not null)
+            _db.BankingCompletenessAttestations.Remove(attestation);
+
+        var profile = await _db.FinancialProfiles.FirstOrDefaultAsync(f => f.ApplicationId == applicationId, ct);
+        if (profile is not null)
+        {
+            profile.BandsLockedByIntegration = false;
+            profile.UpdatedAt = DateTime.UtcNow;
+        }
+
+        await _db.SaveChangesAsync(ct);
+
+        var complete = await _funding.IsFinancialStepCompleteAsync(applicationId.Value, ct);
+        await _onboarding.MarkStepAsync(
+            applicationId.Value,
+            OnboardingStep.Financial,
+            complete ? StepStatus.Complete : StepStatus.InProgress,
+            ct);
 
         return true;
     }
@@ -264,7 +377,7 @@ internal sealed class IntegrationService
             syncedAt = DateTime.UtcNow,
         });
 
-    private async Task UpsertConnectionAsync(
+    private async Task UpsertIntegrationConnectionAsync(
         Guid applicationId,
         IntegrationProvider provider,
         string accessToken,
@@ -288,7 +401,6 @@ internal sealed class IntegrationService
             accessToken,
             provider switch
             {
-                IntegrationProvider.OpenBanking => IntegrationEncryptionPurposes.OpenBankingAccessToken,
                 IntegrationProvider.Xero => IntegrationEncryptionPurposes.XeroAccessToken,
                 IntegrationProvider.QuickBooks => IntegrationEncryptionPurposes.QuickBooksAccessToken,
                 _ => IntegrationEncryptionPurposes.OpenBankingAccessToken,
@@ -300,7 +412,6 @@ internal sealed class IntegrationService
                 refreshToken,
                 provider switch
                 {
-                    IntegrationProvider.OpenBanking => IntegrationEncryptionPurposes.OpenBankingRefreshToken,
                     IntegrationProvider.Xero => IntegrationEncryptionPurposes.XeroRefreshToken,
                     IntegrationProvider.QuickBooks => IntegrationEncryptionPurposes.QuickBooksRefreshToken,
                     _ => IntegrationEncryptionPurposes.OpenBankingRefreshToken,

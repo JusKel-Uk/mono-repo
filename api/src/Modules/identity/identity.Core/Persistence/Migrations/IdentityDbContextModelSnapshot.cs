@@ -152,6 +152,10 @@ namespace identity.Core.Persistence.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
+                    b.Property<string>("Email")
+                        .HasMaxLength(1024)
+                        .HasColumnType("nvarchar(1024)");
+
                     b.Property<string>("EmailLookupHash")
                         .IsRequired()
                         .HasMaxLength(64)

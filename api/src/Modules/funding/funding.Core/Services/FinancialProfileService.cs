@@ -1,7 +1,6 @@
 using funding.Contracts;
 using funding.Core.Entities;
 using funding.Core.Persistence;
-using juskel.Integrations.OpenBanking;
 using juskel.Integrations.QuickBooks;
 using Microsoft.EntityFrameworkCore;
 using onboarding.Contracts;
@@ -40,13 +39,29 @@ internal sealed class FinancialProfileService
 
         var evidence = await LoadEvidenceAsync(applicationId.Value, ct);
         var integrationMetrics = await LoadIntegrationMetricsAsync(applicationId.Value, ct);
+        var connectedBanks = await LoadConnectedBanksAsync(applicationId.Value, ct);
+        var bankingMetrics = await LoadBankingMetricsAsync(applicationId.Value, ct);
+        var bankingCompleteness = await LoadBankingCompletenessAsync(applicationId.Value, ct);
 
-        if (profile is null && !integrations.Any(i => i.IsConnected) && evidence.Count == 0 && integrationMetrics is null)
+        if (profile is null
+            && !integrations.Any(i => i.IsConnected)
+            && evidence.Count == 0
+            && integrationMetrics is null
+            && connectedBanks.Count == 0
+            && bankingMetrics is null)
             return null;
 
         profile ??= new FinancialProfile { ApplicationId = applicationId.Value, UpdatedAt = DateTime.UtcNow };
 
-        return Map(profile, integrations, isOpenBankingConnected, evidence, integrationMetrics);
+        return Map(
+            profile,
+            integrations,
+            isOpenBankingConnected,
+            evidence,
+            integrationMetrics,
+            connectedBanks,
+            bankingMetrics,
+            bankingCompleteness);
     }
 
     public async Task<FinancialProfileResponse?> UpsertAsync(
@@ -60,13 +75,14 @@ internal sealed class FinancialProfileService
         var profile = await _db.FinancialProfiles
             .FirstOrDefaultAsync(f => f.ApplicationId == applicationId, ct);
 
-        var integrationLocked = await _db.IntegrationConnections
+        var integrationLocked = await _db.OpenBankingConnections
             .AsNoTracking()
-            .AnyAsync(
-                i => i.ApplicationId == applicationId
-                    && (i.Provider == IntegrationProvider.OpenBanking
-                        || i.Provider == IntegrationProvider.QuickBooks),
-                ct);
+            .AnyAsync(c => c.ApplicationId == applicationId, ct)
+            || await _db.IntegrationConnections
+                .AsNoTracking()
+                .AnyAsync(
+                    i => i.ApplicationId == applicationId && i.Provider == IntegrationProvider.QuickBooks,
+                    ct);
 
         profile ??= new FinancialProfile { ApplicationId = applicationId };
 
@@ -95,7 +111,18 @@ internal sealed class FinancialProfileService
             i.Provider == IntegrationProvider.OpenBanking && i.IsConnected);
         var evidence = await LoadEvidenceAsync(applicationId, ct);
         var integrationMetrics = await LoadIntegrationMetricsAsync(applicationId, ct);
-        return Map(profile, integrations, isOpenBankingConnected, evidence, integrationMetrics);
+        var connectedBanks = await LoadConnectedBanksAsync(applicationId, ct);
+        var bankingMetrics = await LoadBankingMetricsAsync(applicationId, ct);
+        var bankingCompleteness = await LoadBankingCompletenessAsync(applicationId, ct);
+        return Map(
+            profile,
+            integrations,
+            isOpenBankingConnected,
+            evidence,
+            integrationMetrics,
+            connectedBanks,
+            bankingMetrics,
+            bankingCompleteness);
     }
 
     /// <summary>
@@ -117,7 +144,18 @@ internal sealed class FinancialProfileService
             i.Provider == IntegrationProvider.OpenBanking && i.IsConnected);
         var evidence = await LoadEvidenceAsync(applicationId, ct);
         var integrationMetrics = await LoadIntegrationMetricsAsync(applicationId, ct);
-        return Map(profile, integrations, isOpenBankingConnected, evidence, integrationMetrics);
+        var connectedBanks = await LoadConnectedBanksAsync(applicationId, ct);
+        var bankingMetrics = await LoadBankingMetricsAsync(applicationId, ct);
+        var bankingCompleteness = await LoadBankingCompletenessAsync(applicationId, ct);
+        return Map(
+            profile,
+            integrations,
+            isOpenBankingConnected,
+            evidence,
+            integrationMetrics,
+            connectedBanks,
+            bankingMetrics,
+            bankingCompleteness);
     }
 
     internal static void ApplyQuickBooksBands(FinancialProfile profile, QuickBooksFinancialSnapshot snapshot)
@@ -171,15 +209,22 @@ internal sealed class FinancialProfileService
         _ => ExistingDebtBand.Over1M,
     };
 
-    internal static void ApplyOpenBankingBands(FinancialProfile profile, IReadOnlyList<OpenBankingAccountSummary> accounts)
+    internal static void ApplyBankingMetricsBands(FinancialProfile profile, BankingIntegrationMetrics metrics)
     {
-        var totalBalance = accounts.Sum(a => a.CurrentBalance);
-        profile.AnnualRevenueBand = MapAnnualRevenue(totalBalance * 12m);
-        profile.EbitdaBand = EbitdaMarginBand.Margin5To15;
-        profile.ExistingDebtBand = ExistingDebtBand.Under50K;
-        profile.CashReserves = MapCashReservesMonths(totalBalance);
-        profile.AvgMonthlyRevenue = MapAvgMonthlyRevenue(totalBalance);
-        profile.BandsLockedByIntegration = true;
+        if (metrics.AvgMonthlyInflow > 0m)
+        {
+            profile.AvgMonthlyRevenue = MapAvgMonthlyRevenue(metrics.AvgMonthlyInflow);
+            profile.AnnualRevenueBand = MapAnnualRevenue(metrics.AvgMonthlyInflow * 12m);
+        }
+
+        if (metrics.TotalCashBalance > 0m)
+        {
+            profile.CashReserves = metrics.AvgMonthlyOutflow > 0m
+                ? MapCashReservesMonths(metrics.TotalCashBalance / metrics.AvgMonthlyOutflow)
+                : MapCashReservesMonths(metrics.TotalCashBalance);
+        }
+
+        profile.BandsLockedByIntegration = metrics.AccountCount > 0;
         profile.UpdatedAt = DateTime.UtcNow;
     }
 
@@ -208,6 +253,50 @@ internal sealed class FinancialProfileService
             .FirstOrDefaultAsync(m => m.ApplicationId == applicationId, ct);
 
         return metrics is null ? null : FinancialIntegrationMetricsMapper.ToDto(metrics);
+    }
+
+    private async Task<IReadOnlyList<OpenBankingConnectionDto>> LoadConnectedBanksAsync(
+        Guid applicationId,
+        CancellationToken ct)
+    {
+        var connections = await _db.OpenBankingConnections
+            .AsNoTracking()
+            .Where(c => c.ApplicationId == applicationId)
+            .OrderBy(c => c.ConnectedAt)
+            .ToListAsync(ct);
+
+        return connections
+            .Select(c => BankingIntegrationMetricsMapper.ToConnectionDto(
+                c,
+                BankingIntegrationMetricsMapper.CountAccounts(c)))
+            .ToList();
+    }
+
+    private async Task<BankingIntegrationMetricsDto?> LoadBankingMetricsAsync(
+        Guid applicationId,
+        CancellationToken ct)
+    {
+        var metrics = await _db.BankingIntegrationMetrics
+            .AsNoTracking()
+            .FirstOrDefaultAsync(m => m.ApplicationId == applicationId, ct);
+
+        return metrics is null ? null : BankingIntegrationMetricsMapper.ToDto(metrics);
+    }
+
+    private async Task<BankingCompletenessAttestationDto?> LoadBankingCompletenessAsync(
+        Guid applicationId,
+        CancellationToken ct)
+    {
+        var attestation = await _db.BankingCompletenessAttestations
+            .AsNoTracking()
+            .FirstOrDefaultAsync(a => a.ApplicationId == applicationId, ct);
+
+        return attestation is null
+            ? null
+            : new BankingCompletenessAttestationDto(
+                attestation.AllRelevantAccountsConnected,
+                attestation.AttestedAt,
+                attestation.AttestedByUserId);
     }
 
     internal static async Task UpsertQuickBooksMetricsAsync(
@@ -266,7 +355,10 @@ internal sealed class FinancialProfileService
         IReadOnlyList<IntegrationStatusDto> integrations,
         bool isOpenBankingConnected,
         IReadOnlyList<EvidenceResponse> evidence,
-        FinancialIntegrationMetricsDto? integrationMetrics) =>
+        FinancialIntegrationMetricsDto? integrationMetrics,
+        IReadOnlyList<OpenBankingConnectionDto> connectedBanks,
+        BankingIntegrationMetricsDto? bankingIntegrationMetrics,
+        BankingCompletenessAttestationDto? bankingCompleteness) =>
         new(
             profile.ApplicationId,
             profile.AnnualRevenueBand,
@@ -279,6 +371,9 @@ internal sealed class FinancialProfileService
             integrations,
             evidence,
             integrationMetrics,
+            connectedBanks,
+            bankingIntegrationMetrics,
+            bankingCompleteness,
             profile.UpdatedAt);
 
     private static AnnualRevenueBand MapAnnualRevenue(decimal annualAmount) => annualAmount switch

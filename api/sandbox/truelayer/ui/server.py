@@ -15,6 +15,7 @@ sys.path.insert(0, str(SANDBOX_ROOT))
 from truelayer_client import (  # noqa: E402
     ENDPOINTS,
     GROUPS,
+    load_connections,
     load_secrets,
     call_endpoint,
     exchange_code,
@@ -86,13 +87,16 @@ class Handler(BaseHTTPRequestHandler):
                     env = load_secrets()
                     ok, data = exchange_code(env, code)
                     if ok:
+                        institution = data.get("institutionName") or "bank"
+                        count = data.get("connectionCount") or len(load_connections())
                         html_response(
                             self,
                             200,
-                            """<!DOCTYPE html><html><head><meta charset="utf-8"><title>Connected</title></head>
+                            f"""<!DOCTYPE html><html><head><meta charset="utf-8"><title>Connected</title></head>
 <body style="font-family:system-ui;padding:2rem">
 <h1>TrueLayer connected</h1>
-<p>Access token saved to <code>secrets.env</code>. Return to the explorer and fetch accounts.</p>
+<p>Institution: <strong>{institution}</strong> ({count} connection(s) in <code>connections.json</code>).</p>
+<p>Latest token also saved to <code>secrets.env</code>.</p>
 <p><a href="/">Open explorer</a></p>
 </body></html>""",
                         )
@@ -120,6 +124,14 @@ class Handler(BaseHTTPRequestHandler):
             try:
                 env = load_secrets()
                 token = env.get("TRUELAYER_ACCESS_TOKEN", "").strip()
+                connections = load_connections()
+                connection_list = [
+                    {
+                        "institutionId": entry.get("institutionId", key),
+                        "institutionName": entry.get("institutionName", key),
+                    }
+                    for key, entry in connections.items()
+                ]
                 json_response(
                     self,
                     200,
@@ -128,6 +140,8 @@ class Handler(BaseHTTPRequestHandler):
                         "environment": "sandbox",
                         "apiBase": env.get("TRUELAYER_API_BASE_URL", "https://api.truelayer-sandbox.com"),
                         "hasAccessToken": bool(token),
+                        "connectionCount": len(connection_list),
+                        "connections": connection_list,
                         "redirectUri": redirect_uri(env),
                         "groups": GROUPS,
                         "endpoints": ENDPOINTS,

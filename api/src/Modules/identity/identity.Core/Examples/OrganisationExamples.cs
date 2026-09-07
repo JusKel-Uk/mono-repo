@@ -42,6 +42,22 @@ public sealed class OrganisationMemberListExample : IExamplesProvider<IReadOnlyL
         [new OrganisationMemberExample().GetExamples()];
 }
 
+public sealed class OrganisationInviteExample : IExamplesProvider<OrganisationInviteDto>
+{
+    public OrganisationInviteDto GetExamples() => new(
+        Guid.Parse("33333333-3333-3333-3333-333333333333"),
+        "teammate@example.com",
+        OrganisationRole.Contributor,
+        DateTime.Parse("2026-01-22T10:00:00Z"),
+        DateTime.Parse("2026-01-15T10:00:00Z"));
+}
+
+public sealed class OrganisationInviteListExample : IExamplesProvider<IReadOnlyList<OrganisationInviteDto>>
+{
+    public IReadOnlyList<OrganisationInviteDto> GetExamples() =>
+        [new OrganisationInviteExample().GetExamples()];
+}
+
 public sealed class CreateOrganisationInviteRequestExample : IExamplesProvider<CreateOrganisationInviteRequest>
 {
     public CreateOrganisationInviteRequest GetExamples() => new(

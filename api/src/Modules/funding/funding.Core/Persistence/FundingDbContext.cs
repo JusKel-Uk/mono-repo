@@ -20,6 +20,13 @@ internal sealed class FundingDbContext : DbContext
 
     public DbSet<FinancialIntegrationMetrics> FinancialIntegrationMetrics => Set<FinancialIntegrationMetrics>();
 
+    public DbSet<OpenBankingConnection> OpenBankingConnections => Set<OpenBankingConnection>();
+
+    public DbSet<BankingIntegrationMetrics> BankingIntegrationMetrics => Set<BankingIntegrationMetrics>();
+
+    public DbSet<BankingCompletenessAttestation> BankingCompletenessAttestations =>
+        Set<BankingCompletenessAttestation>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.HasDefaultSchema("funding");
@@ -28,5 +35,8 @@ internal sealed class FundingDbContext : DbContext
         modelBuilder.ApplyConfiguration(new IntegrationConnectionEntityConfiguration());
         modelBuilder.ApplyConfiguration(new FinancialEvidenceEntityConfiguration());
         modelBuilder.ApplyConfiguration(new FinancialIntegrationMetricsEntityConfiguration());
+        modelBuilder.ApplyConfiguration(new OpenBankingConnectionEntityConfiguration());
+        modelBuilder.ApplyConfiguration(new BankingIntegrationMetricsEntityConfiguration());
+        modelBuilder.ApplyConfiguration(new BankingCompletenessAttestationEntityConfiguration());
     }
 }

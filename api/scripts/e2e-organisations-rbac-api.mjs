@@ -304,9 +304,40 @@ async function runOrganisationRbacCoverage() {
     role: invite.data?.role,
   });
 
-  const inviteToken = invite.data?.acceptToken ?? await waitForInvite(teammateEmail);
+  const pendingInvites = await apiGet(
+    `/identity/organisations/${orgA.id}/invites`,
+    owner.token,
+    orgA.id,
+  );
+  const pendingMatch = pendingInvites.data?.find((row) => row.id === invite.data?.inviteId);
+  log('GET /identity/organisations/{orgA}/invites (pending)', pendingInvites.status === 200
+    && pendingMatch?.email === teammateEmail
+    && pendingMatch?.role === Role.Viewer, {
+    status: pendingInvites.status,
+    count: pendingInvites.data?.length,
+    inviteId: pendingMatch?.id,
+  });
+
+  const resend = await api(
+    'POST',
+    `/identity/organisations/${orgA.id}/invites/${invite.data.inviteId}/resend`,
+    owner.token,
+    null,
+    orgA.id,
+  );
+  log('POST /identity/organisations/{orgA}/invites/{id}/resend', resend.status === 200
+    && resend.data?.inviteId === invite.data?.inviteId
+    && resend.data?.email === teammateEmail
+    && !!resend.data?.acceptToken
+    && resend.data.acceptToken !== invite.data?.acceptToken, {
+    status: resend.status,
+    rotated: resend.data?.acceptToken !== invite.data?.acceptToken,
+  });
+
+  const originalInviteToken = invite.data?.acceptToken;
+  const inviteToken = resend.data?.acceptToken ?? originalInviteToken ?? await waitForInvite(teammateEmail);
   log('invite token resolved', !!inviteToken, {
-    source: invite.data?.acceptToken ? 'response' : 'E2E_INVITE_FILE/console',
+    source: resend.data?.acceptToken ? 'resend' : (invite.data?.acceptToken ? 'create' : 'E2E_INVITE_FILE/console'),
   });
 
   // ── 4. User B registers — starts with own orgB ───────────────────────────
@@ -326,6 +357,13 @@ async function runOrganisationRbacCoverage() {
   });
 
   // ── 5. Accept invite ─────────────────────────────────────────────────────
+  if (originalInviteToken && originalInviteToken !== inviteToken) {
+    const staleAccept = await api('POST', `/identity/invites/${originalInviteToken}/accept`, teammate.token);
+    log('POST accept rotated-away invite token → 404', staleAccept.status === 404, {
+      status: staleAccept.status,
+    });
+  }
+
   const accept = await api('POST', `/identity/invites/${inviteToken}/accept`, teammate.token);
   log('POST /identity/invites/{token}/accept', accept.status === 200
     && accept.data?.organisationId === orgA.id
@@ -333,6 +371,28 @@ async function runOrganisationRbacCoverage() {
     status: accept.status,
     organisationId: accept.data?.organisationId,
     role: accept.data?.role,
+  });
+
+  const pendingAfterAccept = await apiGet(
+    `/identity/organisations/${orgA.id}/invites`,
+    owner.token,
+    orgA.id,
+  );
+  log('GET invites after accept (accepted row gone)', pendingAfterAccept.status === 200
+    && !pendingAfterAccept.data?.some((row) => row.id === invite.data?.inviteId), {
+    status: pendingAfterAccept.status,
+    count: pendingAfterAccept.data?.length,
+  });
+
+  const resendAccepted = await api(
+    'POST',
+    `/identity/organisations/${orgA.id}/invites/${invite.data.inviteId}/resend`,
+    owner.token,
+    null,
+    orgA.id,
+  );
+  log('POST resend accepted invite → 404', resendAccepted.status === 404, {
+    status: resendAccepted.status,
   });
 
   const teammateOrgsAfter = await apiGet('/identity/me/organisations', teammate.token);
@@ -424,6 +484,24 @@ async function runOrganisationRbacCoverage() {
     orgA.id,
   );
   log('POST invite (Viewer → 403)', viewerInvite.status === 403, { status: viewerInvite.status });
+
+  const viewerListInvites = await apiGet(
+    `/identity/organisations/${orgA.id}/invites`,
+    teammate.token,
+    orgA.id,
+  );
+  log('GET invites (Viewer → 403)', viewerListInvites.status === 403, {
+    status: viewerListInvites.status,
+  });
+
+  const viewerResend = await api(
+    'POST',
+    `/identity/organisations/${orgA.id}/invites/${invite.data.inviteId}/resend`,
+    teammate.token,
+    null,
+    orgA.id,
+  );
+  log('POST resend (Viewer → 403)', viewerResend.status === 403, { status: viewerResend.status });
 
   const viewerFunding = await api(
     'PUT',

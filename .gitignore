@@ -43,6 +43,7 @@ api/deploy-azure.env
 
 # External API local sandboxes — secrets + live response captures
 api/sandbox/**/secrets.env
+api/sandbox/**/connections.json
 api/sandbox/**/.env
 api/sandbox/**/responses/*
 !api/sandbox/**/responses/.gitkeep
