@@ -116,9 +116,6 @@ export const VERIFIED_BANDS: Record<keyof FinancialProfileInput, string> = {
   existingDebtBand: '2', // Under £50k
   cashReserves: '3', // 3-6 months
   avgMonthlyRevenue: '3', // £80k-£400k
-  grossMarginBand: '3', // 25-50%
-  revenueGrowthBand: '3', // 10-25%
-  receivablesBand: '2', // Under £50k
 };
 
 export type ConnectionStatus =

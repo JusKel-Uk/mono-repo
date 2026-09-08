@@ -6,7 +6,6 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { CheckCircle2, ChevronDown } from 'lucide-react';
 
 import { getStep, nextStepRoute } from '@/lib/onboarding/steps';
 import { onboardingKeys, useLookupOptions } from '@/lib/hooks/use-onboarding';
@@ -15,6 +14,8 @@ import {
   saveFinancialProfile,
   authorizeIntegration,
   disconnectIntegration,
+  disconnectOpenBankingConnection,
+  setBankingCompleteness,
   type IntegrationProvider,
   type IntegrationSlug,
 } from '@/lib/api/onboarding';
@@ -23,7 +24,7 @@ import {
   toFinancialProfileRequest,
   fromFinancialProfile,
 } from '@/lib/onboarding/mappers';
-import { LOOKUP, labelOf, type LookupSpec } from '@/lib/onboarding/enums';
+import { LOOKUP, type LookupSpec } from '@/lib/onboarding/enums';
 import {
   financialProfileSchema,
   type FinancialProfileInput,
@@ -37,6 +38,19 @@ import {
 import { OnboardingShell } from '@/components/onboarding/onboarding-shell';
 import { OnboardingActions } from '@/components/onboarding/onboarding-actions';
 import { ConnectCard } from '@/components/onboarding/connect-card';
+import { OpenBankingPanel } from '@/components/onboarding/open-banking-panel';
+import {
+  VerifiedMetrics,
+  accountingMetricGroups,
+  accountingCaption,
+  bankingMetricGroups,
+  bankingCaption,
+} from '@/components/onboarding/verified-metrics';
+import {
+  SelfReportedFinancials,
+  EMPTY_REPORTED,
+  type ReportedFinancials,
+} from '@/components/onboarding/self-reported-financials';
 import { AuthoriseDialog } from '@/components/onboarding/authorise-dialog';
 import {
   EvidenceRow,
@@ -70,7 +84,10 @@ const NAME_BY_SLUG: Record<string, string> = {
 };
 // Providers wired to the real OAuth backend. The rest use the simulated flow
 // until their integration is verified end-to-end.
-const LIVE_PROVIDERS: ReadonlySet<ConnectorId> = new Set(['quickbooks']);
+const LIVE_PROVIDERS: ReadonlySet<ConnectorId> = new Set([
+  'quickbooks',
+  'openBanking',
+]);
 
 const BANDS: {
   name: keyof FinancialProfileInput;
@@ -88,29 +105,14 @@ const BANDS: {
     lookup: LOOKUP.avgMonthlyRevenue,
   },
   {
-    name: 'grossMarginBand',
-    label: 'Gross profit margin',
-    lookup: LOOKUP.grossMarginBand,
-  },
-  {
     name: 'ebitdaBand',
     label: 'EBITDA / Profitability band',
     lookup: LOOKUP.ebitdaBand,
   },
   {
-    name: 'revenueGrowthBand',
-    label: 'Revenue growth (YoY)',
-    lookup: LOOKUP.revenueGrowthBand,
-  },
-  {
     name: 'existingDebtBand',
     label: 'Existing debt band',
     lookup: LOOKUP.existingDebtBand,
-  },
-  {
-    name: 'receivablesBand',
-    label: 'Outstanding receivables',
-    lookup: LOOKUP.receivablesBand,
   },
   {
     name: 'cashReserves',
@@ -155,6 +157,10 @@ export function FinancialProfileForm() {
     if (saved) form.reset(fromFinancialProfile(saved));
   }, [saved, form]);
 
+  // QBO-shaped self-report (no connection). Held in form state only — the raw
+  // figures aren't persisted yet; see SelfReportedFinancials / TODO(backend).
+  const [reported, setReported] = useState<ReportedFinancials>(EMPTY_REPORTED);
+
   // --- Connector flow ---
   // Live providers (QuickBooks) run the real OAuth round-trip; the rest are
   // simulated client-side until their backend is verified.
@@ -172,34 +178,41 @@ export function FinancialProfileForm() {
   );
   const connectTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // The provider the backend reports as connected (source of truth for live).
-  const backendConnected = saved?.integrations?.find((i) => i.isConnected);
-  const backendConnectorId = backendConnected
-    ? ID_BY_PROVIDER[backendConnected.provider]
-    : null;
+  // The providers the backend reports as connected. Multiple can be live at
+  // once (e.g. Open Banking + QuickBooks), so this is a set, not a single id.
+  const backendConnectedIds = new Set<ConnectorId>();
+  for (const i of saved?.integrations ?? []) {
+    const id = i.isConnected ? ID_BY_PROVIDER[i.provider] : undefined;
+    if (id) backendConnectedIds.add(id);
+  }
+  // Open Banking is also reflected by connectedBanks (the panel's source).
+  if ((saved?.connectedBanks?.length ?? 0) > 0) backendConnectedIds.add('openBanking');
 
   const statusFor = (id: ConnectorId): ConnectionStatus => {
     if (pendingId === id) return 'connecting';
     // Until the profile has loaded we don't know what's connected — show a
     // "checking" spinner rather than flashing "Connect" then swapping.
     if (profileLoading) return 'checking';
-    if (backendConnectorId === id) return 'connected';
+    if (backendConnectedIds.has(id)) return 'connected';
     return connection?.id === id ? connection.status : 'idle';
   };
-  const connectedId =
-    backendConnectorId ??
-    (connection?.status === 'connected' ? connection.id : null);
-  // Real connections show server values; simulated ones use the stub band map.
-  const verifiedValueFor = (
-    name: keyof FinancialProfileInput,
-    lookup: LookupSpec,
-  ) => {
-    if (backendConnectorId) {
-      const raw = form.getValues(name);
-      return raw ? labelOf(opt(lookup), Number(raw)) : '—';
-    }
-    return labelOf(opt(lookup), Number(VERIFIED_BANDS[name]));
-  };
+  // Verified metric panels are driven by the backend's imported figures: an
+  // accounting source (QuickBooks / Xero) contributes P&L + balance-sheet +
+  // ratios, Open Banking contributes aggregated cash-flow. When a source is
+  // connected we show its verified figures (read-only) instead of the editable
+  // self-declared bands.
+  const accountingConnected =
+    backendConnectedIds.has('quickbooks') || backendConnectedIds.has('xero');
+  const accountingMetrics = saved?.integrationMetrics ?? null;
+  const bankingMetrics = saved?.bankingIntegrationMetrics ?? null;
+  const showBankingPanel =
+    backendConnectedIds.has('openBanking') && !!bankingMetrics;
+  const showAccountingPanel = accountingConnected && !!accountingMetrics;
+  const showVerified = showBankingPanel || showAccountingPanel;
+  const accountingSourceName = accountingMetrics
+    ? (CONNECTORS[ID_BY_PROVIDER[accountingMetrics.provider]]?.name ??
+      'Accounting')
+    : 'Accounting';
 
   const applyVerified = (apply: boolean) => {
     BAND_KEYS.forEach((k) =>
@@ -246,18 +259,11 @@ export function FinancialProfileForm() {
     applyVerified(false);
   };
 
-  const continueAuthorise = async () => {
-    const id = authoriseId;
-    setAuthoriseId(null);
-    if (!id) return;
-    if (!LIVE_PROVIDERS.has(id)) {
-      startConnect(id);
-      return;
-    }
-    // Real OAuth: navigate this tab to the provider's consent screen. The
-    // backend callback redirects back here with ?integration&status, so the
-    // page reloads into the connected state. `pendingId` shows a "connecting"
-    // state while the authorize call resolves (the API can cold-start).
+  // Real OAuth: navigate this tab to the provider's consent screen. The backend
+  // callback redirects back here with ?integration&status, so the page reloads
+  // into the connected state. `pendingId` shows a "connecting" state while the
+  // authorize call resolves (the API can cold-start).
+  const launchAuthorize = async (id: ConnectorId) => {
     setPendingId(id);
     try {
       const { authorizationUrl } = await authorizeIntegration(SLUG_BY_ID[id]);
@@ -269,6 +275,50 @@ export function FinancialProfileForm() {
           ? err.message
           : `Could not start the ${CONNECTORS[id].name} connection. Please try again.`,
       );
+    }
+  };
+
+  const continueAuthorise = async () => {
+    const id = authoriseId;
+    setAuthoriseId(null);
+    if (!id) return;
+    if (!LIVE_PROVIDERS.has(id)) {
+      startConnect(id);
+      return;
+    }
+    await launchAuthorize(id);
+  };
+
+  // --- Open Banking (multi-bank) ---
+  const obConnections = saved?.connectedBanks ?? [];
+  const obConnected = obConnections.length > 0;
+  const obComplete =
+    saved?.bankingCompleteness?.allRelevantAccountsConnected ?? false;
+  const [removingBankId, setRemovingBankId] = useState<string | null>(null);
+  const [completenessPending, setCompletenessPending] = useState(false);
+
+  const removeBank = async (connectionId: string) => {
+    setRemovingBankId(connectionId);
+    try {
+      await disconnectOpenBankingConnection(connectionId);
+      await qc.invalidateQueries({ queryKey: onboardingKeys.step(SLUG) });
+      qc.invalidateQueries({ queryKey: onboardingKeys.application });
+    } catch {
+      toast.error('Could not remove that bank. Please try again.');
+    } finally {
+      setRemovingBankId(null);
+    }
+  };
+
+  const toggleCompleteness = async (value: boolean) => {
+    setCompletenessPending(true);
+    try {
+      await setBankingCompleteness(value);
+      await qc.invalidateQueries({ queryKey: onboardingKeys.step(SLUG) });
+    } catch {
+      toast.error('Could not update your confirmation. Please try again.');
+    } finally {
+      setCompletenessPending(false);
     }
   };
 
@@ -354,15 +404,30 @@ export function FinancialProfileForm() {
                   note='(Highly Recommended)'
                   description='Securely connect your business bank account to provide verified financial data, improve the accuracy of your Sustainability Finance Score, and unlock more relevant funding opportunities.'
                 />
-                <div className='gap-4 grid md:grid-cols-3'>
-                  <ConnectCard
-                    connector={CONNECTORS.openBanking}
-                    status={statusFor('openBanking')}
-                    onConnect={() => setAuthoriseId('openBanking')}
-                    onDisconnect={() => disconnect('openBanking')}
-                    disconnecting={disconnectingId === 'openBanking'}
+                {obConnected ? (
+                  <OpenBankingPanel
+                    connections={obConnections}
+                    complete={obComplete}
+                    onConnectAnother={() => setAuthoriseId('openBanking')}
+                    connecting={pendingId === 'openBanking'}
+                    onRemoveBank={removeBank}
+                    removingBankId={removingBankId}
+                    onDisconnectAll={() => disconnect('openBanking')}
+                    disconnectingAll={disconnectingId === 'openBanking'}
+                    onToggleComplete={toggleCompleteness}
+                    completenessPending={completenessPending}
                   />
-                </div>
+                ) : (
+                  <div className='gap-4 grid md:grid-cols-3'>
+                    <ConnectCard
+                      connector={CONNECTORS.openBanking}
+                      status={statusFor('openBanking')}
+                      onConnect={() => setAuthoriseId('openBanking')}
+                      onDisconnect={() => disconnect('openBanking')}
+                      disconnecting={disconnectingId === 'openBanking'}
+                    />
+                  </div>
+                )}
               </section>
 
               {/* Connect a financial source */}
@@ -414,42 +479,79 @@ export function FinancialProfileForm() {
                 </div>
               </div>
 
-              {/* Bands — self-declared, or verified once a source is connected */}
+              {/* Verified figures (connected sources) or self-declared bands */}
               <section className='flex flex-col gap-6'>
                 <div className='flex flex-col gap-1'>
                   <h3 className='text-base font-semibold text-carbon-black'>
-                    Self-declared bands
+                    {showVerified ? 'Verified financials' : 'Self-declared financials'}
                   </h3>
                   <p className='text-sm text-muted-foreground'>
-                    Attach a document (accounts, statement, invoice) or a short
-                    justification for each claim. Any information that is not
-                    backed will stay self-declared until your ESG Specialist
-                    reviews it to either confirm or reject your claim.
+                    {showVerified
+                      ? 'These figures were imported from your connected sources and are treated as verified. They cannot be edited while the source is connected.'
+                      : 'No source connected — self-report your figures below. Connecting Open Banking or an accounting source verifies these automatically.'}
                   </p>
                 </div>
-                {BANDS.map((band) =>
-                  connectedId ? (
-                    <VerifiedBand
-                      key={band.name}
-                      label={band.label}
-                      value={verifiedValueFor(band.name, band.lookup)}
-                      provider={CONNECTORS[connectedId].name}
-                    />
-                  ) : (
-                    <div key={band.name} className='flex flex-col gap-3'>
-                      <EnumSelectField
-                        control={form.control}
-                        name={band.name}
-                        label={band.label}
-                        placeholder='Select band'
-                        options={opt(band.lookup)}
+
+                {showVerified ? (
+                  <>
+                    {showBankingPanel && bankingMetrics ? (
+                      <VerifiedMetrics
+                        source='Open Banking'
+                        caption={bankingCaption(bankingMetrics)}
+                        groups={bankingMetricGroups(bankingMetrics)}
                       />
-                      <EvidenceRow
-                        attachLabel='Attach evidence'
-                        hint={EVIDENCE_HINT}
+                    ) : null}
+                    {showAccountingPanel && accountingMetrics ? (
+                      <VerifiedMetrics
+                        source={accountingSourceName}
+                        caption={accountingCaption(accountingMetrics)}
+                        groups={accountingMetricGroups(accountingMetrics)}
                       />
+                    ) : null}
+                  </>
+                ) : (
+                  <>
+                    <div className='flex flex-col gap-1'>
+                      <h4 className='text-sm font-semibold text-carbon-black'>
+                        Reported financials
+                      </h4>
+                      <p className='text-sm text-muted-foreground'>
+                        Enter the same figures a connected accounting source
+                        would provide. Ratios are calculated for you.
+                      </p>
                     </div>
-                  ),
+                    <SelfReportedFinancials
+                      value={reported}
+                      onChange={setReported}
+                    />
+
+                    <div className='flex flex-col gap-1'>
+                      <h4 className='text-sm font-semibold text-carbon-black'>
+                        Funding score bands
+                      </h4>
+                      <p className='text-sm text-muted-foreground'>
+                        Attach a document (accounts, statement, invoice) or a
+                        short justification for each claim. Anything not backed
+                        stays self-declared until your ESG Specialist reviews
+                        it.
+                      </p>
+                    </div>
+                    {BANDS.map((band) => (
+                      <div key={band.name} className='flex flex-col gap-3'>
+                        <EnumSelectField
+                          control={form.control}
+                          name={band.name}
+                          label={band.label}
+                          placeholder='Select band'
+                          options={opt(band.lookup)}
+                        />
+                        <EvidenceRow
+                          attachLabel='Attach evidence'
+                          hint={EVIDENCE_HINT}
+                        />
+                      </div>
+                    ))}
+                  </>
                 )}
               </section>
             </div>
@@ -463,31 +565,6 @@ export function FinancialProfileForm() {
         onContinue={continueAuthorise}
       />
     </>
-  );
-}
-
-/** Read-only band value imported from a connected source. */
-function VerifiedBand({
-  label,
-  value,
-  provider,
-}: {
-  label: string;
-  value: string;
-  provider: string;
-}) {
-  return (
-    <div className='flex flex-col gap-2'>
-      <span className='text-base font-medium text-carbon-black'>{label}</span>
-      <div className='flex h-14 items-center justify-between rounded-xl border border-gray-300 bg-muted/40 px-4 text-base text-carbon-black'>
-        <span>{value}</span>
-        <ChevronDown className='size-4 text-muted-foreground' />
-      </div>
-      <p className='flex items-center gap-1.5 text-sm text-success-600'>
-        <CheckCircle2 className='size-4' />
-        Verified via {provider}
-      </p>
-    </div>
   );
 }
 
