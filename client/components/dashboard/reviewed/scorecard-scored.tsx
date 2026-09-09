@@ -512,7 +512,7 @@ function TrendChart() {
     <div className='overflow-x-auto'>
       <svg
         viewBox={`0 0 ${W} ${H}`}
-        className='h-60 w-full min-w-[720px]'
+        className='h-60 w-full min-w-180'
         preserveAspectRatio='none'
         role='img'
         aria-label='One-year trend of SFS, EIS, BIS and FIS scores'
@@ -740,12 +740,26 @@ export function ScorecardScored() {
               Current SFS™ intelligence weighting
             </p>
             <div className='flex items-center gap-5'>
-              <div
-                className='size-27 shrink-0 rounded-full'
-                style={{
-                  background: `conic-gradient(${WEIGHTING[0].color} 0 ${WEIGHTING[0].pct}%, ${WEIGHTING[1].color} ${WEIGHTING[0].pct}% ${WEIGHTING[0].pct + WEIGHTING[1].pct}%, ${WEIGHTING[2].color} ${WEIGHTING[0].pct + WEIGHTING[1].pct}% 100%)`,
-                }}
-              />
+              <div className='relative size-27 shrink-0'>
+                <div
+                  className='size-full rounded-full'
+                  style={{
+                    // Visual order clockwise from top: ESG (dark) top, FIS
+                    // (teal) lower-right, BIS (gold) left — matches Figma.
+                    background:
+                      'conic-gradient(from -60deg, #0E2F2A 0 33.34%, #1F6F68 33.34% 66.67%, #CBA052 66.67% 100%)',
+                  }}
+                />
+                <span className='absolute left-1/2 top-[26%] -translate-x-1/2 -translate-y-1/2 text-[11px] font-bold text-mineral-white'>
+                  80%
+                </span>
+                <span className='absolute left-[75%] top-[68%] -translate-x-1/2 -translate-y-1/2 text-[11px] font-bold text-mineral-white'>
+                  70%
+                </span>
+                <span className='absolute left-[27%] top-[68%] -translate-x-1/2 -translate-y-1/2 text-[11px] font-bold text-mineral-white'>
+                  50%
+                </span>
+              </div>
               <div className='flex flex-col gap-2'>
                 {WEIGHTING.map((w) => (
                   <div key={w.label} className='flex items-center gap-2'>
