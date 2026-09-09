@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import type { LucideIcon } from 'lucide-react';
@@ -21,7 +20,7 @@ import {
 import { cn } from '@/lib/utils';
 import { ROUTES } from '@/lib/routes';
 import { ApiError } from '@/lib/api/client';
-import { getMe, updateMe, logout } from '@/lib/api/auth';
+import { getMe, updateMe } from '@/lib/api/auth';
 import {
   getNotificationPreferences,
   updateNotificationPreferences,
@@ -40,6 +39,7 @@ import {
   type CreateInviteRequest,
 } from '@/lib/api/settings';
 import { useAuthStore } from '@/stores/authStore';
+import { useLogout } from '@/lib/hooks/use-logout';
 import { DashboardShell } from '@/components/dashboard/dashboard-shell';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
@@ -711,7 +711,7 @@ function timeAgo(iso: string): string {
 
 function SecurityPanel() {
   const qc = useQueryClient();
-  const router = useRouter();
+  const doLogout = useLogout();
 
   const resetCode = useMutation({
     mutationFn: requestPasswordResetCode,
@@ -738,10 +738,8 @@ function SecurityPanel() {
 
   const handleSignOut = (s: Session) => {
     if (s.isCurrent) {
-      // Signing out this browser is a full logout.
-      logout();
-      useAuthStore.getState().clearUser();
-      router.push(ROUTES.auth.login);
+      // Signing out this browser is a full logout (clears cache + stores).
+      doLogout();
       return;
     }
     signOut.mutate(s.id);

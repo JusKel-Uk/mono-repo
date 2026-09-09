@@ -87,13 +87,23 @@ export function useApplication() {
   });
 }
 
+/**
+ * Onboarding is complete once every step is Complete (completedCount reaches
+ * totalSteps). Until then the dashboard stays locked to the Assessment page.
+ */
+export function isOnboardingComplete(
+  app: ApplicationProgress | undefined,
+): boolean {
+  return !!app && app.totalSteps > 0 && app.completedCount >= app.totalSteps;
+}
+
 /** Status for one step's slug (NotStarted when the app hasn't loaded yet). */
 export function stepStatusOf(
   app: ApplicationProgress | undefined,
   slug: string,
 ): StepStatus {
   const step = SLUG_TO_STEP[slug];
-  return app?.steps.find((s) => s.step === step)?.status ?? 0;
+  return app?.steps?.find((s) => s.step === step)?.status ?? 0;
 }
 
 /** Submit the completed application, then refresh progress. */

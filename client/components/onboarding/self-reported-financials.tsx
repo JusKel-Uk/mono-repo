@@ -49,21 +49,6 @@ export const EMPTY_REPORTED: ReportedFinancials = Object.fromEntries(
   ALL_KEYS.map((k) => [k, '']),
 ) as ReportedFinancials;
 
-function num(s: string): number | null {
-  const n = parseFloat(s.replace(/[^0-9.-]/g, ''));
-  return Number.isFinite(n) ? n : null;
-}
-
-function ratioOf(a: number | null, b: number | null): string {
-  if (a == null || b == null || b === 0) return '—';
-  return (a / b).toFixed(2);
-}
-
-function marginOf(net: number | null, revenue: number | null): string {
-  if (net == null || revenue == null || revenue === 0) return '—';
-  return `${((net / revenue) * 100).toFixed(1)}%`;
-}
-
 export function SelfReportedFinancials({
   value,
   onChange,
@@ -73,19 +58,6 @@ export function SelfReportedFinancials({
 }) {
   const set = (key: FieldKey, v: string) =>
     onChange({ ...value, [key]: v });
-
-  const currentRatio = ratioOf(
-    num(value.currentAssets),
-    num(value.currentLiabilities),
-  );
-  const debtToAssets = ratioOf(
-    num(value.totalLiabilities),
-    num(value.totalAssets),
-  );
-  const profitMargin = marginOf(
-    num(value.netIncome),
-    num(value.annualRevenue),
-  );
 
   return (
     <div className='flex flex-col gap-6 rounded-2xl border border-gray-200 bg-white p-5'>
@@ -110,18 +82,6 @@ export function SelfReportedFinancials({
           />
         ))}
       </Group>
-
-      {/* Ratios are computed from the figures above, not entered by hand. */}
-      <div className='flex flex-col gap-2'>
-        <p className='text-label-sm font-medium uppercase tracking-wide text-gray-400'>
-          Ratios (calculated)
-        </p>
-        <dl className='flex flex-col'>
-          <RatioRow label='Current ratio' value={currentRatio} />
-          <RatioRow label='Debt-to-assets' value={debtToAssets} />
-          <RatioRow label='Profit margin' value={profitMargin} />
-        </dl>
-      </div>
     </div>
   );
 }
@@ -169,13 +129,3 @@ function MoneyInput({
   );
 }
 
-function RatioRow({ label, value }: { label: string; value: string }) {
-  return (
-    <div className='flex items-center justify-between gap-4 border-b border-gray-100 py-2 last:border-b-0'>
-      <dt className='text-sm text-gray-500'>{label}</dt>
-      <dd className='text-sm font-medium tabular-nums text-carbon-black'>
-        {value}
-      </dd>
-    </div>
-  );
-}

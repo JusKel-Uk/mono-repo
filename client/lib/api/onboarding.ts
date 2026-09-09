@@ -99,7 +99,7 @@ export type CompanySetup = {
   companiesHouseNumber?: string | null;
   relationship: number;
   region: number;
-  registeredAddressLine1?: string | null;
+  registeredAddress?: string | null;
   registeredAddressLine2?: string | null;
   city?: string | null;
   postcode?: string | null;
@@ -319,10 +319,10 @@ export type IntegrationSlug = 'open-banking' | 'xero' | 'quickbooks';
 export type AuthorizeResponse = { authorizationUrl: string; state: string };
 
 export function authorizeIntegration(slug: IntegrationSlug) {
-  return request<AuthorizeResponse>(
-    `/funding/integrations/${slug}/authorize`,
-    { method: 'POST', auth: true },
-  );
+  return request<AuthorizeResponse>(`/funding/integrations/${slug}/authorize`, {
+    method: 'POST',
+    auth: true,
+  });
 }
 
 export function disconnectIntegration(slug: IntegrationSlug) {

@@ -17,7 +17,7 @@ import {
 import { toast } from 'sonner';
 
 import { cn } from '@/lib/utils';
-import { getStep, nextStepRoute } from '@/lib/onboarding/steps';
+import { getStep, nextStepRoute, ONBOARDING_BASE } from '@/lib/onboarding/steps';
 import { onboardingKeys, useLookupOptions } from '@/lib/hooks/use-onboarding';
 import {
   getCompanySetup,
@@ -147,7 +147,7 @@ export function CompanySetupForm() {
         toast.error('Could not save your details. Please try again.');
       }
     }
-    router.push('/onboarding');
+    router.push(ONBOARDING_BASE);
   };
 
   const handleVerify = () => {

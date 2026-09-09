@@ -63,8 +63,7 @@ export function parseUkAddress(full: string): {
     postcode = parts.pop()!;
   }
   const city = parts.length ? parts[parts.length - 1] : '';
-  const line1 =
-    parts.length > 1 ? parts.slice(0, -1).join(', ') : city || full;
+  const line1 = parts.length > 1 ? parts.slice(0, -1).join(', ') : city || full;
   return { line1: line1 || full, city, postcode };
 }
 
@@ -74,7 +73,7 @@ export function toCompanySetupRequest(
   return {
     legalName: v.legalName,
     companiesHouseNumber: v.companiesHouseNumber || null,
-    registeredAddressLine1: v.registeredAddress,
+    registeredAddress: v.registeredAddress,
     city: v.city,
     postcode: v.postcode,
     relationship: toInt(v.relationship)!,
@@ -89,7 +88,7 @@ export function fromCompanySetup(d: CompanySetup): CompanySetupInput {
   return {
     companiesHouseNumber: d.companiesHouseNumber ?? '',
     legalName: d.legalName ?? '',
-    registeredAddress: d.registeredAddressLine1 ?? '',
+    registeredAddress: d.registeredAddress ?? '',
     city: d.city ?? '',
     postcode: d.postcode ?? '',
     relationship: toStr(d.relationship),

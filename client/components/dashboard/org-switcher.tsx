@@ -14,6 +14,7 @@ import {
   OrganisationRole,
   type OrganisationSummary,
 } from '@/lib/api/settings';
+import { Skeleton } from '@/components/ui/skeleton';
 
 // Shared with the Settings page + Team tab so the cache is one source of truth.
 const ORG_KEY = ['settings', 'organisations'] as const;
@@ -42,6 +43,7 @@ export function OrgSwitcher() {
 
   const current = orgs?.find((o) => o.isCurrent) ?? orgs?.[0];
   const multi = (orgs?.length ?? 0) > 1;
+  const loading = !orgs;
 
   useEffect(() => {
     if (!open) return;
@@ -71,6 +73,21 @@ export function OrgSwitcher() {
     // Land on the dashboard so the app reflects the newly active org's context.
     router.push(ROUTES.sme.dashboard);
   };
+
+  if (loading) {
+    return (
+      <div>
+        <div className='flex items-center gap-2'>
+          <Skeleton className='size-4.5 shrink-0 rounded-md' />
+          <Skeleton className='h-4 flex-1' />
+        </div>
+        <div className='mt-3 flex items-center gap-2'>
+          <Skeleton className='h-7 w-16 rounded-full' />
+          <Skeleton className='h-4 w-24' />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div ref={ref} className='relative'>

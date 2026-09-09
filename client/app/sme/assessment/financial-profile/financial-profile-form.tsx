@@ -7,7 +7,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 
-import { getStep, nextStepRoute } from '@/lib/onboarding/steps';
+import { getStep, nextStepRoute, ONBOARDING_BASE } from '@/lib/onboarding/steps';
 import { onboardingKeys, useLookupOptions } from '@/lib/hooks/use-onboarding';
 import {
   getFinancialProfile,
@@ -349,7 +349,7 @@ export function FinancialProfileForm() {
       toast.error(`Could not connect ${name}. Please try again.`);
     }
     // Strip the params so a refresh doesn't re-fire the toast.
-    router.replace(`/onboarding/${SLUG}`);
+    router.replace(`${ONBOARDING_BASE}/${SLUG}`);
   }, [params, qc, router]);
 
   const save = useMutation({
@@ -365,7 +365,7 @@ export function FinancialProfileForm() {
     try {
       await save.mutateAsync(values);
       const next = nextStepRoute(SLUG);
-      router.push(next ?? '/onboarding');
+      router.push(next ?? ONBOARDING_BASE);
     } catch {
       toast.error('Could not save your financial profile. Please try again.');
     }
@@ -377,7 +377,7 @@ export function FinancialProfileForm() {
     } catch {
       toast.error('Could not save your financial profile. Please try again.');
     }
-    router.push('/onboarding');
+    router.push(ONBOARDING_BASE);
   };
 
   return (

@@ -5,13 +5,14 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Eye, EyeOff } from 'lucide-react';
 
 import { ROUTES, safeInternalPath } from '@/lib/routes';
 import { loginSchema, type LoginInput } from '@/lib/validations/auth';
 import { login, ApiError } from '@/lib/api/auth';
 import { useAuthStore } from '@/stores/authStore';
+import { useReviewStore } from '@/stores/reviewStore';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -27,6 +28,7 @@ import {
 export function LoginForm({ next }: { next?: string }) {
   const [showPassword, setShowPassword] = useState(false);
   const router = useRouter();
+  const qc = useQueryClient();
 
   const form = useForm<LoginInput>({
     resolver: zodResolver(loginSchema),
@@ -40,6 +42,11 @@ export function LoginForm({ next }: { next?: string }) {
     mutationFn: (values: LoginInput) =>
       login({ email: values.email, password: values.password }),
     onSuccess: (data, variables) => {
+      // Start from a clean cache + a fresh submit-for-review gate so no
+      // previous account's state survives into this session (e.g. a login
+      // without a prior explicit logout).
+      qc.clear();
+      useReviewStore.getState().reset();
       // Merge keeps any name captured at signup on this device.
       useAuthStore.getState().setUser({
         id: data.userId,

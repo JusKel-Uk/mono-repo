@@ -8,7 +8,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 
 import { cn } from '@/lib/utils';
-import { getStep, nextStepRoute } from '@/lib/onboarding/steps';
+import { getStep, nextStepRoute, ONBOARDING_BASE } from '@/lib/onboarding/steps';
 import { onboardingKeys } from '@/lib/hooks/use-onboarding';
 import {
   getSustainabilityProfile,
@@ -253,7 +253,7 @@ export function SustainabilityProfileForm() {
     try {
       await save.mutateAsync(values);
       const next = nextStepRoute(SLUG);
-      router.push(next ?? '/onboarding');
+      router.push(next ?? ONBOARDING_BASE);
     } catch {
       toast.error('Could not save your answers. Please try again.');
     }
@@ -267,7 +267,7 @@ export function SustainabilityProfileForm() {
         toast.error('Could not save your answers. Please try again.');
       }
     }
-    router.push('/onboarding');
+    router.push(ONBOARDING_BASE);
   };
 
   return (

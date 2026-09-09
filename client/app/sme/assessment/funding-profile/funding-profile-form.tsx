@@ -7,7 +7,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 
-import { getStep, nextStepRoute } from '@/lib/onboarding/steps';
+import { getStep, nextStepRoute, ONBOARDING_BASE } from '@/lib/onboarding/steps';
 import { onboardingKeys, useLookupOptions } from '@/lib/hooks/use-onboarding';
 import { getFundingProfile, saveFundingProfile } from '@/lib/api/onboarding';
 import {
@@ -64,7 +64,7 @@ export function FundingProfileForm() {
     try {
       await save.mutateAsync(values);
       const next = nextStepRoute(SLUG);
-      router.push(next ?? '/onboarding');
+      router.push(next ?? ONBOARDING_BASE);
     } catch {
       toast.error('Could not save your funding details. Please try again.');
     }
@@ -78,7 +78,7 @@ export function FundingProfileForm() {
         toast.error('Could not save your funding details. Please try again.');
       }
     }
-    router.push('/onboarding');
+    router.push(ONBOARDING_BASE);
   };
 
   return (
