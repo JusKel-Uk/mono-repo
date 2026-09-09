@@ -65,8 +65,8 @@ export function AppSidebar() {
   // Submit-for-review gate drives the nav: skeleton until the persisted flag
   // rehydrates (on mount), then locked (not yet submitted) or unlocked. The
   // flag is a temporary frontend stand-in — see reviewStore.
-  const submitted = useReviewStore((s) => s.submitted);
-  const locked = mounted && !submitted;
+  const unlocked = useReviewStore((s) => s.phase !== 'none');
+  const locked = mounted && !unlocked;
   const navLoading = !mounted;
 
   const handleLogout = useLogout();

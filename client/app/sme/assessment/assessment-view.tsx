@@ -108,8 +108,8 @@ export function AssessmentView() {
   // now: set only when the user submits here, and reset on logout so the submit
   // can be triggered again. It is NOT synced from the backend's submittedAt yet.
   // TODO(backend): drive this from the server's submission status.
-  const submitted = useReviewStore((s) => s.submitted);
-  const setSubmittedForReview = useReviewStore((s) => s.setSubmitted);
+  const submitted = useReviewStore((s) => s.phase !== 'none');
+  const markSubmitted = useReviewStore((s) => s.markSubmitted);
 
   const totalSteps = app?.totalSteps ?? STEPS.length;
   const completedCount = app?.completedCount ?? 0;
@@ -128,7 +128,7 @@ export function AssessmentView() {
     // Temporary: the local gate is the source of truth for now, so unlock
     // regardless of the backend result (which may 409 once already submitted).
     // The backend submit is fired best-effort until the server is the source.
-    setSubmittedForReview(true);
+    markSubmitted();
     toast.success('Submitted for review', {
       description: 'A Sustainability Expert will review your application.',
     });

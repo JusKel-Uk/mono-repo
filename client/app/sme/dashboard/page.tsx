@@ -11,6 +11,7 @@ import {
 
 import { cn } from '@/lib/utils';
 import { useAuthStore, displayName } from '@/stores/authStore';
+import { useReviewStore } from '@/stores/reviewStore';
 import { useMounted } from '@/lib/hooks/use-mounted';
 import { DashboardShell } from '@/components/dashboard/dashboard-shell';
 import { DashboardOverview } from '@/components/dashboard/reviewed/dashboard-overview';
@@ -57,17 +58,6 @@ const IN_REVIEW: ReviewState = {
   completedSteps: 2,
 };
 
-// TODO: derive from the backend review status. PENDING is the post-submit
-// default; the reviewer/info-requests populate once a Specialist picks it up.
-// Toggle while there's no backend driver for the review phase.
-const SHOW_IN_REVIEW = true;
-const state: ReviewState = SHOW_IN_REVIEW ? IN_REVIEW : PENDING;
-
-// Once a Sustainability Expert publishes the score, the dashboard switches from
-// the review-status view to the full scored overview. Toggle while there's no
-// backend driver for the review phase.
-const SHOW_PUBLISHED = true;
-
 const STEPS = [
   {
     title: 'Submitted',
@@ -93,7 +83,18 @@ export default function SmeDashboardPage() {
   const greeting =
     mounted && user ? `Welcome, ${user.firstName || displayName(user)}` : 'Welcome';
 
-  if (SHOW_PUBLISHED) return <DashboardOverview greeting={greeting} />;
+  // Temporary frontend review phase (no backend driver yet). The floating
+  // ReviewPhaseSwitcher (in DashboardShell) toggles it.
+  const phase = useReviewStore((s) => s.phase);
+
+  // Review complete → the full scored dashboard.
+  if (mounted && phase === 'published') {
+    return <DashboardOverview greeting={greeting} />;
+  }
+
+  // Otherwise the assessment-status view: "in review" adds the reviewer +
+  // information-request cards, "submitted" is the pending default.
+  const state: ReviewState = mounted && phase === 'review' ? IN_REVIEW : PENDING;
 
   return (
     <DashboardShell

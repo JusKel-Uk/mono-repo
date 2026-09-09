@@ -13,6 +13,7 @@ import { useMounted } from '@/lib/hooks/use-mounted';
 import { useUnreadCount } from '@/lib/dashboard/notifications';
 import { JusKelLogo } from '@/components/brand/juskel-logo';
 import { AppSidebar } from '@/components/app-sidebar';
+import { ReviewPhaseSwitcher } from '@/components/dev/review-phase-switcher';
 import {
   Sheet,
   SheetContent,
@@ -77,8 +78,8 @@ export function DashboardShell({
   // we don't lock or redirect until mounted, to avoid a wrong-state flash.
   const router = useRouter();
   const pathname = usePathname();
-  const submitted = useReviewStore((s) => s.submitted);
-  const locked = mounted && !submitted;
+  const unlocked = useReviewStore((s) => s.phase !== 'none');
+  const locked = mounted && !unlocked;
   const onAssessment =
     pathname === ROUTES.sme.assessment ||
     pathname.startsWith(`${ROUTES.sme.assessment}/`);
@@ -90,6 +91,9 @@ export function DashboardShell({
 
   return (
     <div className='min-h-screen bg-mineral-white lg:flex'>
+      {/* TEMP dev control (no backend driver yet) — floats over every page. */}
+      <ReviewPhaseSwitcher />
+
       {/* Mobile top bar */}
       <header className='flex items-center justify-between border-b border-border bg-white px-6 py-4 lg:hidden'>
         <JusKelLogo className='text-carbon-black' />
