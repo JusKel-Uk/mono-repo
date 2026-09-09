@@ -602,6 +602,24 @@ export function ScorecardScored() {
         </div>
       }
     >
+      {/* Mobile header actions (the header action slot is desktop-only). */}
+      <div className='flex gap-3 lg:hidden'>
+        <button
+          type='button'
+          className='inline-flex h-12 flex-1 items-center justify-center gap-2 whitespace-nowrap rounded-lg border border-gray-300 bg-mineral-white px-5 text-body-md font-semibold text-carbon-black shadow-xs transition-colors hover:bg-muted'
+        >
+          <RefreshCw className='size-5' />
+          Refresh
+        </button>
+        <button
+          type='button'
+          className='inline-flex h-12 flex-1 items-center justify-center gap-2 whitespace-nowrap rounded-lg bg-primary px-5 text-body-md font-semibold text-mineral-white shadow-xs transition-opacity hover:opacity-90'
+        >
+          <Download className='size-5' />
+          Download PDF
+        </button>
+      </div>
+
       {/* ---- Score summary ---- */}
       <div className='grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-4'>
         <div className='flex min-h-86 flex-col gap-5 overflow-hidden rounded-2xl border border-gray-200 bg-primary p-3.75 sm:col-span-2 xl:col-span-1 xl:row-span-2'>
