@@ -27,18 +27,18 @@ export function ReviewPhaseSwitcher() {
   if (!mounted || phase === 'none') return null;
 
   return (
-    <div className='fixed bottom-4 right-4 z-50 flex flex-col gap-1.5 rounded-xl border border-gray-300 bg-white p-2 shadow-lg'>
+    <div className='fixed bottom-4 right-4 z-50 flex max-w-[calc(100vw-2rem)] flex-col gap-1.5 rounded-xl border border-gray-300 bg-white p-2 shadow-lg'>
       <span className='px-1 text-[10px] font-semibold uppercase tracking-wide text-gray-400'>
         Dev · review phase
       </span>
-      <div className='flex gap-1'>
+      <div className='flex flex-col gap-1 sm:flex-row'>
         {OPTIONS.map((o) => (
           <button
             key={o.phase}
             type='button'
             onClick={() => setPhase(o.phase)}
             className={cn(
-              'rounded-lg px-3 py-1.5 text-xs font-medium transition-colors',
+              'rounded-lg px-2.5 py-1.5 text-left text-xs font-medium transition-colors sm:text-center',
               phase === o.phase
                 ? 'bg-primary text-mineral-white'
                 : 'text-gray-700 hover:bg-muted',

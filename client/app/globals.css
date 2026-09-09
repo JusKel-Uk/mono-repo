@@ -28,6 +28,7 @@
   --color-carbon-green-black: #0f1e1a;  /* Structural */
 
   /* ---- Figma neutral ramp (Gray/*) — use bg-gray-300, text-gray-500, … ---- */
+  --color-gray-50: #fafafa;
   --color-gray-200: #e9eaeb;
   --color-gray-300: #d5d7da;
   --color-gray-400: #a4a7ae;
