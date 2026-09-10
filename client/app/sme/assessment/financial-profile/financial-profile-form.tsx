@@ -266,6 +266,13 @@ export function FinancialProfileForm() {
   const launchAuthorize = async (id: ConnectorId) => {
     setPendingId(id);
     try {
+      // Return to this page after the OAuth round-trip (overwrites any stale
+      // return path a different page may have left).
+      try {
+        sessionStorage.setItem('oauthReturn', `${ONBOARDING_BASE}/${SLUG}`);
+      } catch {
+        /* sessionStorage unavailable — the redirect defaults here anyway */
+      }
       const { authorizationUrl } = await authorizeIntegration(SLUG_BY_ID[id]);
       window.location.href = authorizationUrl;
     } catch (err) {
@@ -337,6 +344,24 @@ export function FinancialProfileForm() {
     const status = params.get('status');
     if (!integration || !status || handledCallback.current) return;
     handledCallback.current = true;
+
+    // If another page started the connect (e.g. Integrations), hand the
+    // callback back to it, preserving the query — it does its own toast.
+    const self = `${ONBOARDING_BASE}/${SLUG}`;
+    let returnTo: string | null = null;
+    try {
+      returnTo = sessionStorage.getItem('oauthReturn');
+      sessionStorage.removeItem('oauthReturn');
+    } catch {
+      /* sessionStorage unavailable */
+    }
+    if (returnTo && returnTo !== self) {
+      router.replace(
+        `${returnTo}?integration=${encodeURIComponent(integration)}&status=${encodeURIComponent(status)}`,
+      );
+      return;
+    }
+
     const name = NAME_BY_SLUG[integration] ?? integration;
     if (status === 'connected') {
       toast.success(`${name} connected`, {
@@ -349,7 +374,7 @@ export function FinancialProfileForm() {
       toast.error(`Could not connect ${name}. Please try again.`);
     }
     // Strip the params so a refresh doesn't re-fire the toast.
-    router.replace(`${ONBOARDING_BASE}/${SLUG}`);
+    router.replace(self);
   }, [params, qc, router]);
 
   const save = useMutation({
