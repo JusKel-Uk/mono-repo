@@ -141,7 +141,9 @@ export function RecommendationsReviewed() {
               <p className='text-h4 font-semibold text-carbon-black'>
                 {EMPTY_COPY[tab].title}
               </p>
-              <p className='text-body-md text-gray-500'>{EMPTY_COPY[tab].body}</p>
+              <p className='text-body-md text-gray-500'>
+                {EMPTY_COPY[tab].body}
+              </p>
             </div>
           </div>
         </div>
@@ -167,17 +169,17 @@ export function RecommendationsReviewed() {
               </div>
 
               <div className='flex flex-col gap-2'>
-                <p className='text-body-md text-gray-500'>
+                <p className='text-body-sm md:text-body-md text-gray-500'>
                   <span className='font-semibold text-carbon-black'>Why: </span>
                   {r.why}
                 </p>
-                <p className='text-body-md text-gray-500'>
+                <p className='text-body-sm md:text-body-md text-gray-500'>
                   <span className='font-semibold text-carbon-black'>
                     Impact:{' '}
                   </span>
                   {r.impact}
                 </p>
-                <p className='text-body-sm text-gray-500'>
+                <p className='text-label-md md:text-body-md text-gray-500'>
                   Linked to: {r.linkedTo}
                 </p>
               </div>
