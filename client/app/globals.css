@@ -29,6 +29,7 @@
 
   /* ---- Figma neutral ramp (Gray/*) — use bg-gray-300, text-gray-500, … ---- */
   --color-gray-50: #fafafa;
+  --color-gray-100: #f5f5f5;
   --color-gray-200: #e9eaeb;
   --color-gray-300: #d5d7da;
   --color-gray-400: #a4a7ae;
@@ -45,10 +46,12 @@
   --color-warning-100: #fef0c7;
   --color-warning-200: #fedf89;
   --color-warning-600: #dc6803;
+  --color-warning-700: #b54708;
   --color-warning-800: #93370d;
   --color-error-50: #fef3f2;
   --color-error-100: #fee4e2;
   --color-error-600: #d92d20;
+  --color-error-700: #b42318;
 
   /* ---- Figma type scale (SF Pro). Each is size + line-height; pick the weight
    *      with font-normal (400) / font-medium (~510→500) / font-semibold
