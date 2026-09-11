@@ -1,9 +1,15 @@
 'use client';
 
 /**
- * Editable, QBO-shaped self-report of financial figures — mirrors the fields a
- * connected accounting source (QuickBooks / Xero) would provide, so a user
- * without an integration can self-declare the same picture.
+ * Editable, QBO-shaped self-report of financial figures — mirrors the CORE
+ * fields a connected accounting source (QuickBooks / Xero) would provide, so a
+ * user without an integration can self-declare the same picture.
+ *
+ * Fields are the canonical CORE accounting inputs grouped by financial
+ * dimension (Profitability, Liquidity, Financial resilience). We only collect
+ * inputs here — working capital, EBITDA, ratios and trends are DERIVED from
+ * these, not self-declared. (Operational Efficiency, Growth & Stability and
+ * Financial Governance carry no self-entered monetary inputs.)
  *
  * NOTE: the raw figures below are NOT yet persisted — the backend financial
  * profile only stores the 5 enum bands. These are captured in form state until
@@ -12,38 +18,47 @@
  * these to the PUT payload (see AddSelfDeclaredFinancials).
  */
 
-const INCOME_FIELDS = [
-  ['annualRevenue', 'Annual revenue'],
-  ['grossProfit', 'Gross profit'],
-  ['operatingProfit', 'Operating profit'],
-  ['netIncome', 'Net income'],
-  ['ebitda', 'EBITDA'],
-  ['operatingCashFlow', 'Operating cash flow'],
+const DIMENSION_GROUPS = [
+  {
+    heading: 'Profitability',
+    fields: [
+      ['annualRevenue', 'Annual revenue'],
+      ['grossProfit', 'Gross profit'],
+      ['operatingExpenses', 'Operating expenses'],
+      ['operatingProfit', 'Operating profit / loss'],
+      ['netIncome', 'Net profit / loss'],
+      ['interestExpense', 'Interest / finance expense'],
+    ],
+  },
+  {
+    heading: 'Liquidity',
+    fields: [
+      ['cashBalance', 'Cash & cash equivalents'],
+      ['accountsReceivable', 'Accounts receivable'],
+      ['accountsPayable', 'Accounts payable'],
+      ['currentAssets', 'Current assets'],
+      ['currentLiabilities', 'Current liabilities'],
+      ['operatingCashFlow', 'Operating cash flow'],
+    ],
+  },
+  {
+    heading: 'Financial resilience',
+    fields: [
+      ['totalAssets', 'Total assets'],
+      ['totalLiabilities', 'Total liabilities'],
+      ['totalEquity', 'Net assets / equity'],
+      ['outstandingDebt', 'Outstanding borrowings'],
+    ],
+  },
 ] as const;
 
-const BALANCE_FIELDS = [
-  ['cashBalance', 'Cash balance'],
-  ['accountsReceivable', 'Accounts receivable'],
-  ['accountsPayable', 'Accounts payable'],
-  ['workingCapital', 'Working capital'],
-  ['currentAssets', 'Current assets'],
-  ['currentLiabilities', 'Current liabilities'],
-  ['totalAssets', 'Total assets'],
-  ['totalLiabilities', 'Total liabilities'],
-  ['totalEquity', 'Total equity'],
-  ['outstandingDebt', 'Outstanding debt'],
-] as const;
-
-type FieldKey =
-  | (typeof INCOME_FIELDS)[number][0]
-  | (typeof BALANCE_FIELDS)[number][0];
+type FieldKey = (typeof DIMENSION_GROUPS)[number]['fields'][number][0];
 
 export type ReportedFinancials = Record<FieldKey, string>;
 
-const ALL_KEYS: FieldKey[] = [
-  ...INCOME_FIELDS.map((f) => f[0]),
-  ...BALANCE_FIELDS.map((f) => f[0]),
-];
+const ALL_KEYS: FieldKey[] = DIMENSION_GROUPS.flatMap((g) =>
+  g.fields.map((f) => f[0]),
+);
 
 export const EMPTY_REPORTED: ReportedFinancials = Object.fromEntries(
   ALL_KEYS.map((k) => [k, '']),
@@ -56,32 +71,22 @@ export function SelfReportedFinancials({
   value: ReportedFinancials;
   onChange: (next: ReportedFinancials) => void;
 }) {
-  const set = (key: FieldKey, v: string) =>
-    onChange({ ...value, [key]: v });
+  const set = (key: FieldKey, v: string) => onChange({ ...value, [key]: v });
 
   return (
     <div className='flex flex-col gap-6 rounded-2xl border border-gray-200 bg-white p-5'>
-      <Group heading='Income'>
-        {INCOME_FIELDS.map(([key, label]) => (
-          <MoneyInput
-            key={key}
-            label={label}
-            value={value[key]}
-            onChange={(v) => set(key, v)}
-          />
-        ))}
-      </Group>
-
-      <Group heading='Balance sheet'>
-        {BALANCE_FIELDS.map(([key, label]) => (
-          <MoneyInput
-            key={key}
-            label={label}
-            value={value[key]}
-            onChange={(v) => set(key, v)}
-          />
-        ))}
-      </Group>
+      {DIMENSION_GROUPS.map((group) => (
+        <Group key={group.heading} heading={group.heading}>
+          {group.fields.map(([key, label]) => (
+            <MoneyInput
+              key={key}
+              label={label}
+              value={value[key]}
+              onChange={(v) => set(key, v)}
+            />
+          ))}
+        </Group>
+      ))}
     </div>
   );
 }
@@ -95,7 +100,7 @@ function Group({
 }) {
   return (
     <div className='flex flex-col gap-3'>
-      <p className='text-label-sm font-medium uppercase tracking-wide text-gray-400'>
+      <p className='text-label-sm font-semibold uppercase tracking-wide text-gray-400'>
         {heading}
       </p>
       <div className='grid gap-4 sm:grid-cols-2'>{children}</div>
@@ -128,4 +133,3 @@ function MoneyInput({
     </div>
   );
 }
-

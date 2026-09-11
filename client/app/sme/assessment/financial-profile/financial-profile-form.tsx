@@ -541,8 +541,10 @@ export function FinancialProfileForm() {
                         Reported financials
                       </h4>
                       <p className='text-sm text-muted-foreground'>
-                        Enter the same figures a connected accounting source
-                        would provide. Ratios are calculated for you.
+                        Enter your core figures, grouped by financial dimension —
+                        the same inputs a connected accounting source provides.
+                        Working capital, EBITDA, ratios and trends are calculated
+                        for you.
                       </p>
                     </div>
                     <SelfReportedFinancials

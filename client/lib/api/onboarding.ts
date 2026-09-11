@@ -205,9 +205,11 @@ export type FinancialIntegrationMetrics = {
   annualRevenue?: number | null;
   priorAnnualRevenue?: number | null;
   grossProfit?: number | null;
+  operatingExpenses?: number | null;
   operatingProfit?: number | null;
   netIncome?: number | null;
   priorNetIncome?: number | null;
+  interestExpense?: number | null;
   ebitda?: number | null;
   cashBalance?: number | null;
   accountsReceivable?: number | null;

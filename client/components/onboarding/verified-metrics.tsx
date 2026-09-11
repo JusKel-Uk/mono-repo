@@ -68,44 +68,57 @@ const row = (label: string, value: string | null): MetricRow | null =>
 
 /* ---- source-specific row builders ---- */
 
-/** Accounting source (QuickBooks / Xero): P&L, balance sheet, ratios. */
+/**
+ * Accounting source (QuickBooks / Xero). CORE inputs grouped by financial
+ * dimension (Profitability, Liquidity, Financial resilience), followed by the
+ * DERIVED figures JusKel calculates from them (working capital, EBITDA, ratios,
+ * growth). Empty rows/groups are dropped by `compact`.
+ */
 export function accountingMetricGroups(
   m: FinancialIntegrationMetrics,
 ): MetricGroup[] {
   const c = m.currency;
   return compact([
     {
-      heading: 'Income',
+      heading: 'Profitability',
       rows: [
         row('Annual revenue', money(m.annualRevenue, c)),
         row('Gross profit', money(m.grossProfit, c)),
+        row('Operating expenses', money(m.operatingExpenses, c)),
         row('Operating profit', money(m.operatingProfit, c)),
         row('Net income', money(m.netIncome, c)),
-        row('EBITDA', money(m.ebitda, c)),
-        row('Operating cash flow', money(m.operatingCashFlow, c)),
+        row('Interest expense', money(m.interestExpense, c)),
       ],
     },
     {
-      heading: 'Balance sheet',
+      heading: 'Liquidity',
       rows: [
         row('Cash balance', money(m.cashBalance, c)),
         row('Accounts receivable', money(m.accountsReceivable, c)),
         row('Accounts payable', money(m.accountsPayable, c)),
-        row('Working capital', money(m.workingCapital, c)),
         row('Current assets', money(m.currentAssets, c)),
         row('Current liabilities', money(m.currentLiabilities, c)),
+        row('Operating cash flow', money(m.operatingCashFlow, c)),
+      ],
+    },
+    {
+      heading: 'Financial resilience',
+      rows: [
         row('Total assets', money(m.totalAssets, c)),
         row('Total liabilities', money(m.totalLiabilities, c)),
-        row('Total equity', money(m.totalEquity, c)),
+        row('Net assets / equity', money(m.totalEquity, c)),
         row('Outstanding debt', money(m.outstandingDebt, c)),
       ],
     },
     {
-      heading: 'Ratios',
+      heading: 'Derived',
       rows: [
+        row('Working capital', money(m.workingCapital, c)),
+        row('EBITDA', money(m.ebitda, c)),
         row('Current ratio', ratio(m.currentRatio)),
         row('Debt-to-assets', ratio(m.debtToAssets)),
         row('Profit margin', percent(m.profitMargin)),
+        row('Revenue growth (YoY)', percent(m.revenueGrowthYoY)),
       ],
     },
   ]);
