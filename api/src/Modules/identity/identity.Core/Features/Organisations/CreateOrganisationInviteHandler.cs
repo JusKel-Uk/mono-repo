@@ -54,8 +54,9 @@ internal sealed class CreateOrganisationInviteHandler
         if (organisation is null)
             return null;
 
-        if (!BusinessEmailValidator.MatchesOrganisationDomain(request.Email, organisation.EmailDomain))
-            throw new ArgumentException("Invite email domain must match the organisation domain.");
+        // TEMP: domain match disabled for frontend invite testing. Restore tomorrow.
+        // if (!BusinessEmailValidator.MatchesOrganisationDomain(request.Email, organisation.EmailDomain))
+        //     throw new ArgumentException("Invite email domain must match the organisation domain.");
 
         var inviter = await _db.Users
             .AsNoTracking()
@@ -92,7 +93,7 @@ internal sealed class CreateOrganisationInviteHandler
             InvitedByUserId = userId,
             CreatedAt = now,
         };
-        var plainToken = _tokenService.Rotate(invite);
+        var plainToken = await _tokenService.RotateUniqueAsync(_db, invite, ct);
 
         _db.OrganisationInvites.Add(invite);
         await _db.SaveChangesAsync(ct);

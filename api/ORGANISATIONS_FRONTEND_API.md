@@ -94,7 +94,7 @@ Invitee email must:
 - Be a **business email** (personal providers like Gmail are rejected)
 - Use the **same domain** as the organisation (set from the Owner’s email at registration), e.g. if the org domain is `acme.co.uk`, only `*@acme.co.uk` addresses are allowed
 
-Response includes `acceptToken` in Development for E2E; production sends email.
+`acceptToken` is a **6-digit code** (Development responses include it for E2E). The invite email shows the same code plus a button to `{JUSKEL_FRONTEND_URL}/accept-invite`.
 
 ### Resend invite
 
@@ -108,7 +108,7 @@ Response shape matches create-invite (`inviteId`, `email`, `role`, `expiresAt`, 
 
 `POST /identity/invites/{token}/accept`
 
-Authenticated; invitee email must match signed-in user.
+Authenticated; invitee email must match signed-in user. `{token}` is the 6-digit invite code from the email (spaces optional).
 
 ### Update member role
 

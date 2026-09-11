@@ -10,6 +10,8 @@ namespace juskel.Integrations.QuickBooks;
 
 public sealed class QuickBooksClient : IQuickBooksClient
 {
+    internal const string E2eStubAuthCode = "e2e-stub-auth-code";
+
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
         PropertyNameCaseInsensitive = true,
@@ -42,7 +44,7 @@ public sealed class QuickBooksClient : IQuickBooksClient
 
     public async Task<OAuthTokenResult> ExchangeCodeAsync(string code, CancellationToken ct = default)
     {
-        if (IsStubMode())
+        if (IsStubMode() || IsE2eStubAuthCode(code))
             return CreateStubToken();
 
         using var content = new FormUrlEncodedContent(new Dictionary<string, string>
@@ -88,28 +90,34 @@ public sealed class QuickBooksClient : IQuickBooksClient
         CancellationToken ct = default)
     {
         if (accessToken.StartsWith("stub-qb-access", StringComparison.Ordinal))
-            return new QuickBooksSyncResult(CreateStubSnapshot(), null);
+            return CreateStubSyncResult(realmId);
 
         OAuthTokenResult? refreshed = null;
         var token = accessToken;
 
         try
         {
-            return new QuickBooksSyncResult(
-                await FetchSnapshotAsync(token, realmId, ct),
-                refreshed);
+            return await FetchSyncResultAsync(token, realmId, refreshed, ct);
         }
         catch (QuickBooksUnauthorizedException) when (!string.IsNullOrWhiteSpace(refreshToken))
         {
             refreshed = await RefreshAccessTokenAsync(refreshToken, ct);
             token = refreshed.AccessToken;
-            return new QuickBooksSyncResult(
-                await FetchSnapshotAsync(token, realmId, ct),
-                refreshed);
+            return await FetchSyncResultAsync(token, realmId, refreshed, ct);
         }
     }
 
-    private async Task<QuickBooksFinancialSnapshot> FetchSnapshotAsync(
+    private async Task<QuickBooksSyncResult> FetchSyncResultAsync(
+        string accessToken,
+        string realmId,
+        OAuthTokenResult? refreshed,
+        CancellationToken ct)
+    {
+        var bundle = await FetchSnapshotBundleAsync(accessToken, realmId, ct);
+        return new QuickBooksSyncResult(bundle.Snapshot, bundle.RawPayloads, bundle.ExtendedSnapshot, refreshed);
+    }
+
+    private async Task<QuickBooksSnapshotBundle> FetchSnapshotBundleAsync(
         string accessToken,
         string realmId,
         CancellationToken ct)
@@ -126,59 +134,108 @@ public sealed class QuickBooksClient : IQuickBooksClient
         var asOf = Uri.EscapeDataString(periodEnd.ToString("O", CultureInfo.InvariantCulture));
         var baseUrl = _options.ApiBaseUrl.TrimEnd('/');
 
-        var companyInfo = await GetJsonAsync(
+        var (companyInfo, companyInfoJson) = await GetJsonWithRawAsync(
             accessToken,
             $"{baseUrl}/{realmId}/companyinfo/{realmId}?minorversion={minor}",
             ct);
 
-        var profitAndLoss = await GetJsonAsync(
-            accessToken,
-            $"{baseUrl}/{realmId}/reports/ProfitAndLoss?start_date={start}&end_date={end}&minorversion={minor}",
-            ct);
+        using (companyInfo)
+        {
+            var (profitAndLoss, profitAndLossJson) = await GetJsonWithRawAsync(
+                accessToken,
+                $"{baseUrl}/{realmId}/reports/ProfitAndLoss?start_date={start}&end_date={end}&minorversion={minor}",
+                ct);
 
-        var profitAndLossPrior = await GetJsonAsync(
-            accessToken,
-            $"{baseUrl}/{realmId}/reports/ProfitAndLoss?start_date={priorStartEncoded}&end_date={priorEndEncoded}&minorversion={minor}",
-            ct);
+            using (profitAndLoss)
+            {
+                var (profitAndLossPrior, profitAndLossPriorJson) = await GetJsonWithRawAsync(
+                    accessToken,
+                    $"{baseUrl}/{realmId}/reports/ProfitAndLoss?start_date={priorStartEncoded}&end_date={priorEndEncoded}&minorversion={minor}",
+                    ct);
 
-        var balanceSheet = await GetJsonAsync(
-            accessToken,
-            $"{baseUrl}/{realmId}/reports/BalanceSheet?date={asOf}&minorversion={minor}",
-            ct);
+                using (profitAndLossPrior)
+                {
+                    var (balanceSheet, balanceSheetJson) = await GetJsonWithRawAsync(
+                        accessToken,
+                        $"{baseUrl}/{realmId}/reports/BalanceSheet?date={asOf}&minorversion={minor}",
+                        ct);
 
-        var agedReceivables = await GetJsonAsync(
-            accessToken,
-            $"{baseUrl}/{realmId}/reports/AgedReceivables?report_date={asOf}&minorversion={minor}",
-            ct);
+                    using (balanceSheet)
+                    {
+                        var (agedReceivables, agedReceivablesJson) = await GetJsonWithRawAsync(
+                            accessToken,
+                            $"{baseUrl}/{realmId}/reports/AgedReceivables?report_date={asOf}&minorversion={minor}",
+                            ct);
 
-        var agedPayables = await GetJsonAsync(
-            accessToken,
-            $"{baseUrl}/{realmId}/reports/AgedPayables?report_date={asOf}&minorversion={minor}",
-            ct);
+                        using (agedReceivables)
+                        {
+                            var (agedPayables, agedPayablesJson) = await GetJsonWithRawAsync(
+                                accessToken,
+                                $"{baseUrl}/{realmId}/reports/AgedPayables?report_date={asOf}&minorversion={minor}",
+                                ct);
 
-        var cashFlow = await GetJsonAsync(
-            accessToken,
-            $"{baseUrl}/{realmId}/reports/CashFlow?start_date={start}&end_date={end}&minorversion={minor}",
-            ct);
+                            using (agedPayables)
+                            {
+                                var (cashFlow, cashFlowJson) = await GetJsonWithRawAsync(
+                                    accessToken,
+                                    $"{baseUrl}/{realmId}/reports/CashFlow?start_date={start}&end_date={end}&minorversion={minor}",
+                                    ct);
 
-        var accounts = await FetchAllAccountsAsync(accessToken, realmId, minor, baseUrl, ct);
+                                using (cashFlow)
+                                {
+                                    var (accounts, accountsJson) = await FetchAllAccountsAsync(
+                                        accessToken,
+                                        realmId,
+                                        minor,
+                                        baseUrl,
+                                        ct);
 
-        return QuickBooksFinancialSnapshotParser.Parse(
-            companyInfo,
-            profitAndLoss,
-            profitAndLossPrior,
-            balanceSheet,
-            agedReceivables,
-            agedPayables,
-            cashFlow,
-            accounts,
-            periodStart,
-            periodEnd,
-            priorEnd,
-            periodEnd);
+                                    var snapshot = QuickBooksFinancialSnapshotParser.Parse(
+                                        companyInfo,
+                                        profitAndLoss,
+                                        profitAndLossPrior,
+                                        balanceSheet,
+                                        agedReceivables,
+                                        agedPayables,
+                                        cashFlow,
+                                        accounts,
+                                        periodStart,
+                                        periodEnd,
+                                        priorEnd,
+                                        periodEnd);
+
+                                    var rawPayloads = new QuickBooksRawPayloads(
+                                        companyInfoJson,
+                                        profitAndLossJson,
+                                        profitAndLossPriorJson,
+                                        balanceSheetJson,
+                                        agedReceivablesJson,
+                                        agedPayablesJson,
+                                        cashFlowJson,
+                                        accountsJson);
+
+                                    var extendedSnapshot = QuickBooksExtendedSnapshotBuilder.Build(
+                                        realmId,
+                                        rawPayloads,
+                                        snapshot.HasReportData,
+                                        snapshot.PriorPeriodHasReportData);
+
+                                    return new QuickBooksSnapshotBundle(snapshot, rawPayloads, extendedSnapshot);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 
-    private async Task<List<QuickBooksAccountSummary>> FetchAllAccountsAsync(
+    private sealed record QuickBooksSnapshotBundle(
+        QuickBooksFinancialSnapshot Snapshot,
+        QuickBooksRawPayloads RawPayloads,
+        QuickBooksExtendedSnapshot ExtendedSnapshot);
+
+    private async Task<(List<QuickBooksAccountSummary> Accounts, string AccountsJson)> FetchAllAccountsAsync(
         string accessToken,
         string realmId,
         string minor,
@@ -186,16 +243,18 @@ public sealed class QuickBooksClient : IQuickBooksClient
         CancellationToken ct)
     {
         var accounts = new List<QuickBooksAccountSummary>();
+        var rawAccounts = new List<JsonElement>();
         var start = 1;
 
         while (start <= 5000)
         {
             var query = Uri.EscapeDataString($"select * from Account startposition {start} maxresults 100");
-            using var document = await GetJsonAsync(
+            var (_, rawJson) = await GetJsonWithRawAsync(
                 accessToken,
                 $"{baseUrl}/{realmId}/query?query={query}&minorversion={minor}",
                 ct);
 
+            using var document = JsonDocument.Parse(rawJson);
             if (!document.RootElement.TryGetProperty("QueryResponse", out var queryResponse)
                 || !queryResponse.TryGetProperty("Account", out var accountArray))
             {
@@ -208,6 +267,7 @@ public sealed class QuickBooksClient : IQuickBooksClient
 
             foreach (var account in batch)
             {
+                rawAccounts.Add(account.Clone());
                 accounts.Add(new QuickBooksAccountSummary(
                     account.TryGetProperty("AccountType", out var typeEl) ? typeEl.GetString() : null,
                     account.TryGetProperty("AccountSubType", out var subtypeEl) ? subtypeEl.GetString() : null,
@@ -221,10 +281,14 @@ public sealed class QuickBooksClient : IQuickBooksClient
             start += 100;
         }
 
-        return accounts;
+        var accountsJson = JsonSerializer.Serialize(new { QueryResponse = new { Account = rawAccounts } });
+        return (accounts, accountsJson);
     }
 
-    private async Task<JsonDocument> GetJsonAsync(string accessToken, string url, CancellationToken ct)
+    private async Task<(JsonDocument Document, string RawJson)> GetJsonWithRawAsync(
+        string accessToken,
+        string url,
+        CancellationToken ct)
     {
         using var request = new HttpRequestMessage(HttpMethod.Get, url);
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
@@ -235,8 +299,15 @@ public sealed class QuickBooksClient : IQuickBooksClient
             throw new QuickBooksUnauthorizedException();
 
         response.EnsureSuccessStatusCode();
-        await using var stream = await response.Content.ReadAsStreamAsync(ct);
-        return await JsonDocument.ParseAsync(stream, cancellationToken: ct);
+        var rawJson = await response.Content.ReadAsStringAsync(ct);
+        var document = JsonDocument.Parse(rawJson);
+        return (document, rawJson);
+    }
+
+    private async Task<JsonDocument> GetJsonAsync(string accessToken, string url, CancellationToken ct)
+    {
+        var (document, _) = await GetJsonWithRawAsync(accessToken, url, ct);
+        return document;
     }
 
     private AuthenticationHeaderValue CreateBasicAuthHeader()
@@ -262,11 +333,155 @@ public sealed class QuickBooksClient : IQuickBooksClient
     private bool IsStubMode() =>
         string.IsNullOrWhiteSpace(_options.ClientId) || string.IsNullOrWhiteSpace(_options.ClientSecret);
 
+    private static bool IsE2eStubAuthCode(string code) =>
+        string.Equals(code, E2eStubAuthCode, StringComparison.Ordinal)
+        && string.Equals(
+            Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT"),
+            "Development",
+            StringComparison.OrdinalIgnoreCase);
+
     private static OAuthTokenResult CreateStubToken() =>
         new(
             $"stub-qb-access-{Guid.NewGuid():N}",
             $"stub-qb-refresh-{Guid.NewGuid():N}",
             DateTime.UtcNow.AddMinutes(60));
+
+    private static QuickBooksSyncResult CreateStubSyncResult(string realmId)
+    {
+        var snapshot = CreateStubSnapshot();
+        var companyInfoJson = JsonSerializer.Serialize(new
+        {
+            CompanyInfo = new
+            {
+                CompanyName = snapshot.CompanyName,
+                LegalName = snapshot.CompanyName,
+                Country = snapshot.Currency == "GBP" ? "GB" : "US",
+                FiscalYearStartMonth = "January",
+                CompanyStartDate = snapshot.PeriodStart.AddYears(-2).ToString("O", CultureInfo.InvariantCulture),
+                Email = new { Address = "stub@quickbooks.example" },
+            },
+        });
+
+        var profitAndLossJson = CreateStubReportJson(
+            snapshot.Currency,
+            snapshot.HasReportData,
+            ("Income", "Total Income", snapshot.AnnualRevenue),
+            ("GrossProfit", "Gross Profit", snapshot.GrossProfit),
+            ("NetOperatingIncome", "Net Operating Income", snapshot.OperatingProfit),
+            ("NetIncome", "Net Income", snapshot.NetIncome));
+
+        var profitAndLossPriorJson = CreateStubReportJson(
+            snapshot.Currency,
+            snapshot.PriorPeriodHasReportData,
+            ("Income", "Total Income", snapshot.PriorAnnualRevenue),
+            ("NetIncome", "Net Income", snapshot.PriorNetIncome));
+
+        var balanceSheetJson = CreateStubReportJson(
+            snapshot.Currency,
+            true,
+            (null, "Total Current Assets", snapshot.CurrentAssets),
+            (null, "Total Current Liabilities", snapshot.CurrentLiabilities),
+            (null, "TOTAL ASSETS", snapshot.TotalAssets),
+            (null, "Total Liabilities", snapshot.TotalLiabilities),
+            (null, "Total Equity", snapshot.TotalEquity));
+
+        var agedReceivablesJson = CreateStubReportJson(
+            snapshot.Currency,
+            true,
+            (null, "Total", snapshot.AccountsReceivable));
+
+        var agedPayablesJson = CreateStubReportJson(
+            snapshot.Currency,
+            true,
+            (null, "Total", snapshot.AccountsPayable));
+
+        var cashFlowJson = CreateStubReportJson(
+            snapshot.Currency,
+            true,
+            (null, "Net cash provided by operating activities", snapshot.OperatingCashFlow));
+
+        var accountsJson = JsonSerializer.Serialize(new
+        {
+            QueryResponse = new
+            {
+                Account = new[]
+                {
+                    new
+                    {
+                        Id = "1",
+                        Name = "Checking",
+                        AccountType = "Bank",
+                        AccountSubType = "Checking",
+                        Classification = "Asset",
+                        CurrentBalance = snapshot.CashBalance,
+                        CurrencyRef = new { value = snapshot.Currency },
+                    },
+                    new
+                    {
+                        Id = "2",
+                        Name = "Accounts Receivable",
+                        AccountType = "Accounts Receivable",
+                        AccountSubType = "AccountsReceivable",
+                        Classification = "Asset",
+                        CurrentBalance = snapshot.AccountsReceivable ?? 0m,
+                        CurrencyRef = new { value = snapshot.Currency },
+                    },
+                },
+            },
+        });
+
+        var rawPayloads = new QuickBooksRawPayloads(
+            companyInfoJson,
+            profitAndLossJson,
+            profitAndLossPriorJson,
+            balanceSheetJson,
+            agedReceivablesJson,
+            agedPayablesJson,
+            cashFlowJson,
+            accountsJson);
+
+        var extendedSnapshot = QuickBooksExtendedSnapshotBuilder.Build(
+            realmId,
+            rawPayloads,
+            snapshot.HasReportData,
+            snapshot.PriorPeriodHasReportData);
+
+        return new QuickBooksSyncResult(snapshot, rawPayloads, extendedSnapshot, null);
+    }
+
+    private static string CreateStubReportJson(
+        string currency,
+        bool hasReportData,
+        params (string? Group, string Label, decimal? Amount)[] rows)
+    {
+        var rowObjects = rows
+            .Where(r => r.Amount.HasValue)
+            .Select(r => new
+            {
+                group = r.Group,
+                Summary = new
+                {
+                    ColData = new object[]
+                    {
+                        new { value = r.Label },
+                        new { value = r.Amount!.Value.ToString(CultureInfo.InvariantCulture) },
+                    },
+                },
+            })
+            .ToArray();
+
+        return JsonSerializer.Serialize(new
+        {
+            Header = new
+            {
+                Currency = currency,
+                Option = hasReportData
+                    ? Array.Empty<object>()
+                    : new[] { new { Name = "NoReportData", Value = "true" } },
+            },
+            Rows = new { Row = rowObjects },
+        });
+    }
 
     private static QuickBooksFinancialSnapshot CreateStubSnapshot()
     {

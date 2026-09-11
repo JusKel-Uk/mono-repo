@@ -72,7 +72,7 @@ public sealed class CreateOrganisationInviteResponseExample : IExamplesProvider<
         "teammate@example.com",
         OrganisationRole.Contributor,
         DateTime.Parse("2026-01-22T10:00:00Z"),
-        "invite-token-example");
+        "482917");
 }
 
 public sealed class AcceptOrganisationInviteResponseExample : IExamplesProvider<AcceptOrganisationInviteResponse>

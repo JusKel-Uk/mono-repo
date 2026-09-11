@@ -251,6 +251,15 @@ internal sealed class IntegrationService
 
         FinancialProfileService.ApplyQuickBooksBands(profile, sync.Snapshot);
         await FinancialProfileService.UpsertQuickBooksMetricsAsync(_db, applicationId, sync.Snapshot, ct);
+        await QuickBooksSyncArchiveService.UpsertAsync(
+            _db,
+            applicationId,
+            resolvedRealmId,
+            sync.Snapshot.PeriodStart,
+            sync.Snapshot.PeriodEnd,
+            sync.RawPayloads,
+            sync.ExtendedSnapshot,
+            ct);
 
         if (_db.Entry(profile).State == EntityState.Detached)
             _db.FinancialProfiles.Add(profile);
@@ -300,6 +309,11 @@ internal sealed class IntegrationService
                 .FirstOrDefaultAsync(m => m.ApplicationId == applicationId, ct);
             if (metrics is not null)
                 _db.FinancialIntegrationMetrics.Remove(metrics);
+
+            var archive = await _db.QuickBooksSyncArchives
+                .FirstOrDefaultAsync(a => a.ApplicationId == applicationId, ct);
+            if (archive is not null)
+                _db.QuickBooksSyncArchives.Remove(archive);
         }
 
         await _db.SaveChangesAsync(ct);

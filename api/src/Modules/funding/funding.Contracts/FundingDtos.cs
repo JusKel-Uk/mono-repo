@@ -41,6 +41,64 @@ public sealed record FinancialIntegrationMetricsDto(
     bool HasReportData,
     bool PriorPeriodHasReportData);
 
+public sealed record QuickBooksCompanyInfoDto(
+    string CompanyName,
+    string? LegalName,
+    string? Country,
+    string? Email,
+    string? FiscalYearStartMonth,
+    DateOnly? CompanyStartDate);
+
+public sealed record QuickBooksAccountDto(
+    string? Id,
+    string? Name,
+    string? AccountType,
+    string? AccountSubType,
+    string? Classification,
+    decimal CurrentBalance,
+    string? Currency);
+
+public sealed record QuickBooksReportLineDto(
+    string Report,
+    string Label,
+    string? Group,
+    decimal? Amount);
+
+public sealed record QuickBooksAgingBucketsDto(
+    decimal? Total,
+    decimal? Current,
+    decimal? Days1To30,
+    decimal? Days31To60,
+    decimal? Days61To90,
+    decimal? DaysOver90);
+
+public sealed record QuickBooksCashFlowSectionsDto(
+    decimal? Operating,
+    decimal? Investing,
+    decimal? Financing,
+    decimal? NetChangeInCash);
+
+public sealed record QuickBooksExtendedSnapshotDto(
+    string ExternalRealmId,
+    QuickBooksCompanyInfoDto Company,
+    IReadOnlyList<QuickBooksAccountDto> Accounts,
+    IReadOnlyList<QuickBooksReportLineDto> ReportLines,
+    QuickBooksAgingBucketsDto? AgingReceivables,
+    QuickBooksAgingBucketsDto? AgingPayables,
+    QuickBooksCashFlowSectionsDto? CashFlow,
+    bool HasReportData,
+    bool PriorPeriodHasReportData);
+
+public sealed record QuickBooksRawReportsDto(
+    string? CompanyInfo,
+    string? ProfitAndLoss,
+    string? ProfitAndLossPrior,
+    string? BalanceSheet,
+    string? AgedReceivables,
+    string? AgedPayables,
+    string? CashFlow,
+    string? Accounts);
+
 public sealed record FinancialProfileResponse(
     Guid ApplicationId,
     AnnualRevenueBand? AnnualRevenueBand,
@@ -53,6 +111,8 @@ public sealed record FinancialProfileResponse(
     IReadOnlyList<IntegrationStatusDto> Integrations,
     IReadOnlyList<EvidenceResponse> Evidence,
     FinancialIntegrationMetricsDto? IntegrationMetrics,
+    QuickBooksExtendedSnapshotDto? QuickBooksExtended,
+    QuickBooksRawReportsDto? QuickBooksRaw,
     IReadOnlyList<OpenBankingConnectionDto> ConnectedBanks,
     BankingIntegrationMetricsDto? BankingIntegrationMetrics,
     BankingCompletenessAttestationDto? BankingCompleteness,

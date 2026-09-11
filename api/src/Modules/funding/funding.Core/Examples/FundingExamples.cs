@@ -29,6 +29,34 @@ public sealed class FinancialProfileResponseExample : IExamplesProvider<Financia
                 DateTime.UtcNow),
         ],
         null,
+        new QuickBooksExtendedSnapshotDto(
+            "1234567890",
+            new QuickBooksCompanyInfoDto(
+                "Acme Ltd",
+                "Acme Limited",
+                "GB",
+                "finance@acme.example",
+                "April",
+                new DateOnly(2018, 4, 1)),
+            [
+                new QuickBooksAccountDto(
+                    "1",
+                    "Business Current Account",
+                    "Bank",
+                    "Checking",
+                    "Asset",
+                    125_000m,
+                    "GBP"),
+            ],
+            [
+                new QuickBooksReportLineDto("profitAndLoss", "Total Income", "Income", 750_000m),
+            ],
+            new QuickBooksAgingBucketsDto(42_000m, 30_000m, 8_000m, 2_000m, 1_500m, 500m),
+            new QuickBooksAgingBucketsDto(18_000m, 12_000m, 4_000m, 1_000m, 800m, 200m),
+            new QuickBooksCashFlowSectionsDto(72_000m, -15_000m, -20_000m, 37_000m),
+            true,
+            true),
+        null,
         [
             new OpenBankingConnectionDto(
                 Guid.Parse("33333333-3333-3333-3333-333333333333"),

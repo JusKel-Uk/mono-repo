@@ -1,3 +1,4 @@
+using System.Text.Json;
 using funding.Contracts;
 using funding.Core.Entities;
 using funding.Core.Persistence;
@@ -23,7 +24,10 @@ internal sealed class FinancialProfileService
         _funding = funding;
     }
 
-    public async Task<FinancialProfileResponse?> GetAsync(Guid organisationId, CancellationToken ct = default)
+    public async Task<FinancialProfileResponse?> GetAsync(
+        Guid organisationId,
+        bool includeRaw = false,
+        CancellationToken ct = default)
     {
         var applicationId = await _onboarding.GetCurrentApplicationIdAsync(organisationId, ct);
         if (applicationId is null)
@@ -39,6 +43,10 @@ internal sealed class FinancialProfileService
 
         var evidence = await LoadEvidenceAsync(applicationId.Value, ct);
         var integrationMetrics = await LoadIntegrationMetricsAsync(applicationId.Value, ct);
+        var (quickBooksExtended, quickBooksRaw) = await LoadQuickBooksArchiveAsync(
+            applicationId.Value,
+            includeRaw,
+            ct);
         var connectedBanks = await LoadConnectedBanksAsync(applicationId.Value, ct);
         var bankingMetrics = await LoadBankingMetricsAsync(applicationId.Value, ct);
         var bankingCompleteness = await LoadBankingCompletenessAsync(applicationId.Value, ct);
@@ -47,6 +55,7 @@ internal sealed class FinancialProfileService
             && !integrations.Any(i => i.IsConnected)
             && evidence.Count == 0
             && integrationMetrics is null
+            && quickBooksExtended is null
             && connectedBanks.Count == 0
             && bankingMetrics is null)
             return null;
@@ -59,6 +68,8 @@ internal sealed class FinancialProfileService
             isOpenBankingConnected,
             evidence,
             integrationMetrics,
+            quickBooksExtended,
+            quickBooksRaw,
             connectedBanks,
             bankingMetrics,
             bankingCompleteness);
@@ -111,6 +122,7 @@ internal sealed class FinancialProfileService
             i.Provider == IntegrationProvider.OpenBanking && i.IsConnected);
         var evidence = await LoadEvidenceAsync(applicationId, ct);
         var integrationMetrics = await LoadIntegrationMetricsAsync(applicationId, ct);
+        var (quickBooksExtended, quickBooksRaw) = await LoadQuickBooksArchiveAsync(applicationId, includeRaw: false, ct);
         var connectedBanks = await LoadConnectedBanksAsync(applicationId, ct);
         var bankingMetrics = await LoadBankingMetricsAsync(applicationId, ct);
         var bankingCompleteness = await LoadBankingCompletenessAsync(applicationId, ct);
@@ -120,6 +132,8 @@ internal sealed class FinancialProfileService
             isOpenBankingConnected,
             evidence,
             integrationMetrics,
+            quickBooksExtended,
+            quickBooksRaw,
             connectedBanks,
             bankingMetrics,
             bankingCompleteness);
@@ -144,6 +158,7 @@ internal sealed class FinancialProfileService
             i.Provider == IntegrationProvider.OpenBanking && i.IsConnected);
         var evidence = await LoadEvidenceAsync(applicationId, ct);
         var integrationMetrics = await LoadIntegrationMetricsAsync(applicationId, ct);
+        var (quickBooksExtended, quickBooksRaw) = await LoadQuickBooksArchiveAsync(applicationId, includeRaw: false, ct);
         var connectedBanks = await LoadConnectedBanksAsync(applicationId, ct);
         var bankingMetrics = await LoadBankingMetricsAsync(applicationId, ct);
         var bankingCompleteness = await LoadBankingCompletenessAsync(applicationId, ct);
@@ -153,6 +168,8 @@ internal sealed class FinancialProfileService
             isOpenBankingConnected,
             evidence,
             integrationMetrics,
+            quickBooksExtended,
+            quickBooksRaw,
             connectedBanks,
             bankingMetrics,
             bankingCompleteness);
@@ -350,12 +367,56 @@ internal sealed class FinancialProfileService
         metrics.PriorPeriodHasReportData = mapped.PriorPeriodHasReportData;
     }
 
+    private static readonly JsonSerializerOptions QuickBooksArchiveJsonOptions = new()
+    {
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        PropertyNameCaseInsensitive = true,
+    };
+
+    private async Task<(QuickBooksExtendedSnapshotDto? Extended, QuickBooksRawReportsDto? Raw)> LoadQuickBooksArchiveAsync(
+        Guid applicationId,
+        bool includeRaw,
+        CancellationToken ct)
+    {
+        var archive = await _db.QuickBooksSyncArchives
+            .AsNoTracking()
+            .FirstOrDefaultAsync(a => a.ApplicationId == applicationId, ct);
+
+        if (archive is null || string.IsNullOrWhiteSpace(archive.ExtendedSnapshotJson))
+            return (null, null);
+
+        var extendedModel = JsonSerializer.Deserialize<QuickBooksExtendedSnapshot>(
+            archive.ExtendedSnapshotJson,
+            QuickBooksArchiveJsonOptions);
+
+        if (extendedModel is null)
+            return (null, null);
+
+        var extendedDto = QuickBooksExtendedSnapshotMapper.ToDto(extendedModel);
+        if (!includeRaw)
+            return (extendedDto, null);
+
+        var rawDto = QuickBooksExtendedSnapshotMapper.ToRawDto(new QuickBooksSyncArchiveRaw(
+            archive.CompanyInfoJson,
+            archive.ProfitAndLossJson,
+            archive.ProfitAndLossPriorJson,
+            archive.BalanceSheetJson,
+            archive.AgedReceivablesJson,
+            archive.AgedPayablesJson,
+            archive.CashFlowJson,
+            archive.AccountsJson));
+
+        return (extendedDto, rawDto);
+    }
+
     private static FinancialProfileResponse Map(
         FinancialProfile profile,
         IReadOnlyList<IntegrationStatusDto> integrations,
         bool isOpenBankingConnected,
         IReadOnlyList<EvidenceResponse> evidence,
         FinancialIntegrationMetricsDto? integrationMetrics,
+        QuickBooksExtendedSnapshotDto? quickBooksExtended,
+        QuickBooksRawReportsDto? quickBooksRaw,
         IReadOnlyList<OpenBankingConnectionDto> connectedBanks,
         BankingIntegrationMetricsDto? bankingIntegrationMetrics,
         BankingCompletenessAttestationDto? bankingCompleteness) =>
@@ -371,6 +432,8 @@ internal sealed class FinancialProfileService
             integrations,
             evidence,
             integrationMetrics,
+            quickBooksExtended,
+            quickBooksRaw,
             connectedBanks,
             bankingIntegrationMetrics,
             bankingCompleteness,

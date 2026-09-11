@@ -186,7 +186,7 @@ export type CreateInviteResponse = {
   email: string;
   role: OrganisationRole;
   expiresAt: string;
-  acceptToken: string; // present in API response today; production UX should rely on email link
+  acceptToken: string; // 6-digit code; email also links to /accept-invite
 };
 
 export type AcceptInviteResponse = {
@@ -212,7 +212,7 @@ Owner/Admin                    Invitee
     |                              |
     | POST .../invites             |
     | (email + role)               |
-    |----------------------------->| email with accept token
+    |----------------------------->| email with 6-digit code + /accept-invite link
     |                              |
     |                              | Sign up or sign in (SAME email)
     |                              |
@@ -229,14 +229,14 @@ Owner/Admin                    Invitee
 
 ### Suggested accept-invite route
 
-Example: `/accept-invite?token={token}`
+Email link: `{JUSKEL_FRONTEND_URL}/accept-invite` (no code in the URL — the user types the 6-digit code).
 
-1. If not logged in → redirect to sign-in/sign-up with `returnUrl` back to accept page.
-2. If logged in → `POST /identity/invites/{token}/accept`.
+1. If not logged in → redirect to sign-in/sign-up with `returnUrl` back to `/accept-invite`.
+2. If logged in → collect the 6-digit code → `POST /identity/invites/{code}/accept`.
 3. On **200** → redirect to dashboard or onboarding; optionally `PUT .../organisations/current` to the new org.
 4. On **404** → show “Invalid, expired, or already used invite” or “Email doesn’t match invite”.
 
-**Security:** Token alone is not enough — JWT + matching email required.
+**Security:** The code alone is not enough — JWT + matching email required.
 
 ---
 
@@ -322,7 +322,7 @@ No. Single-org users: never. Multi-org users: set current org once via PUT, or s
 No — business email + same domain as the organisation.
 
 **Does invite email contain a deep link?**  
-Currently the email includes the **token** (MVP). Frontend should build the accept URL, e.g. `{FRONTEND_URL}/accept-invite?token=...`.
+Yes. The email shows a **6-digit code** and a button/link to `{JUSKEL_FRONTEND_URL}/accept-invite`. The user types the code on that page; do not put the code in the URL.
 
 ---
 
