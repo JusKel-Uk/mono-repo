@@ -247,9 +247,10 @@ export function EnumSelectField<T extends FieldValues>({
       control={control}
       name={name}
       render={({ field }) => {
-        const value = field.value === '' || field.value == null
-          ? undefined
-          : String(field.value);
+        const value =
+          field.value === '' || field.value == null
+            ? undefined
+            : String(field.value);
         return (
           <FormItem className='flex flex-col gap-2'>
             <FormLabel className={LABEL}>{label}</FormLabel>
@@ -278,7 +279,9 @@ export function EnumSelectField<T extends FieldValues>({
                 ))}
               </SelectContent>
             </Select>
-            {helper && <p className='text-sm text-muted-foreground'>{helper}</p>}
+            {helper && (
+              <p className='text-sm text-muted-foreground'>{helper}</p>
+            )}
             <FormMessage />
           </FormItem>
         );

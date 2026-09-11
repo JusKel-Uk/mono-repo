@@ -9,6 +9,7 @@ import { logout } from '@/lib/api/auth';
 import { useAuthStore } from '@/stores/authStore';
 import { useOnboardingStore } from '@/stores/onboardingStore';
 import { useReviewStore } from '@/stores/reviewStore';
+import { useFundingStore } from '@/stores/fundingStore';
 
 /**
  * Full sign-out for this browser: best-effort server logout + clear the JWT,
@@ -25,6 +26,7 @@ export function useLogout() {
     useAuthStore.getState().clearUser();
     useOnboardingStore.getState().reset();
     useReviewStore.getState().reset(); // temporary submit-for-review gate
+    useFundingStore.getState().reset(); // temporary saved/applied funding state
     qc.clear(); // drop all cached queries so the next account starts clean
     router.push(ROUTES.auth.login);
   }, [qc, router]);
