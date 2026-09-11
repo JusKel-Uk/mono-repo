@@ -258,6 +258,12 @@ deploy_app() {
   local qb_api_base="${INTEGRATIONS__QUICKBOOKS__APIBASEURL:-https://sandbox-quickbooks.api.intuit.com/v3/company}"
   local qb_report_start="${INTEGRATIONS__QUICKBOOKS__REPORTSTARTDATE:-2026-01-01}"
   local qb_report_end="${INTEGRATIONS__QUICKBOOKS__REPORTENDDATE:-2026-12-31}"
+  local ob_client_id="${INTEGRATIONS__OPENBANKING__CLIENTID:-}"
+  local ob_client_secret="${INTEGRATIONS__OPENBANKING__CLIENTSECRET:-}"
+  local ob_auth_base="${INTEGRATIONS__OPENBANKING__AUTHBASEURL:-https://auth.truelayer-sandbox.com}"
+  local ob_api_base="${INTEGRATIONS__OPENBANKING__APIBASEURL:-https://api.truelayer-sandbox.com}"
+  local ob_providers="${INTEGRATIONS__OPENBANKING__PROVIDERS:-uk-cs-mock}"
+  local ob_provider_id="${INTEGRATIONS__OPENBANKING__PROVIDERID:-}"
   local juskel_frontend_url="${JUSKEL_FRONTEND_URL:-https://mono-repo-n96q.vercel.app}"
 
   local env_vars=(
@@ -278,6 +284,9 @@ deploy_app() {
     "Email__Resend__ApiKey=secretref:resend-api-key"
     "Integrations__CompaniesHouse__BaseUrl=${ch_base_url}"
     "Integrations__OpenBanking__RedirectUri=${api_base_url}/funding/integrations/open-banking/callback"
+    "Integrations__OpenBanking__AuthBaseUrl=${ob_auth_base}"
+    "Integrations__OpenBanking__ApiBaseUrl=${ob_api_base}"
+    "Integrations__OpenBanking__Providers=${ob_providers}"
     "Integrations__Xero__RedirectUri=${api_base_url}/funding/integrations/xero/callback"
     "Integrations__QuickBooks__RedirectUri=${api_base_url}/funding/integrations/quickbooks/callback"
     "Integrations__QuickBooks__ApiBaseUrl=${qb_api_base}"
@@ -286,6 +295,10 @@ deploy_app() {
     "Integrations__BlobStorage__Provider=${INTEGRATIONS__BLOBSTORAGE__PROVIDER}"
     "Integrations__BlobStorage__AzureContainerName=${INTEGRATIONS__BLOBSTORAGE__AZURECONTAINERNAME}"
   )
+
+  if [[ -n "$ob_provider_id" ]]; then
+    env_vars+=("Integrations__OpenBanking__ProviderId=${ob_provider_id}")
+  fi
 
   if [[ "${INTEGRATIONS__BLOBSTORAGE__PROVIDER}" == "Azure" ]]; then
     env_vars+=("Integrations__BlobStorage__AzureConnectionString=secretref:blob-storage-connection-string")
@@ -304,6 +317,13 @@ deploy_app() {
     echo "Warning: INTEGRATIONS__QUICKBOOKS__CLIENTID/CLIENTSECRET not set — QuickBooks OAuth uses stub mode."
   fi
 
+  if [[ -n "$ob_client_id" && -n "$ob_client_secret" ]]; then
+    env_vars+=("Integrations__OpenBanking__ClientId=secretref:truelayer-client-id")
+    env_vars+=("Integrations__OpenBanking__ClientSecret=secretref:truelayer-client-secret")
+  else
+    echo "Warning: INTEGRATIONS__OPENBANKING__CLIENTID/CLIENTSECRET not set — Open Banking authorize will fail at TrueLayer."
+  fi
+
   local app_secrets=(
     "sql-connection-string=${CONNECTIONSTRINGS__IDENTITY}"
     "jwt-secret=${JWT__SECRET}"
@@ -317,6 +337,10 @@ deploy_app() {
   if [[ -n "$qb_client_id" && -n "$qb_client_secret" ]]; then
     app_secrets+=("quickbooks-client-id=${qb_client_id}")
     app_secrets+=("quickbooks-client-secret=${qb_client_secret}")
+  fi
+  if [[ -n "$ob_client_id" && -n "$ob_client_secret" ]]; then
+    app_secrets+=("truelayer-client-id=${ob_client_id}")
+    app_secrets+=("truelayer-client-secret=${ob_client_secret}")
   fi
   if [[ -n "$blob_connection_string" ]]; then
     app_secrets+=("blob-storage-connection-string=${blob_connection_string}")

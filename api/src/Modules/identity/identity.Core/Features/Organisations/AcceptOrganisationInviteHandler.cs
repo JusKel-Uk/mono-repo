@@ -28,8 +28,9 @@ internal sealed class AcceptOrganisationInviteHandler
         string token,
         CancellationToken ct = default)
     {
-        if (string.IsNullOrWhiteSpace(token))
-            throw new ArgumentException("Invite token is required.");
+        var code = OtpCodes.Normalize(token);
+        if (code.Length != OtpCodes.Length)
+            return null;
 
         var user = await _db.Users
             .FirstOrDefaultAsync(u => u.Id == userId && u.DeletedAt == null, ct);
@@ -37,7 +38,7 @@ internal sealed class AcceptOrganisationInviteHandler
         if (user is null)
             return null;
 
-        var tokenHash = _tokenService.HashToken(token.Trim());
+        var tokenHash = _tokenService.HashToken(code);
         var invite = await _db.OrganisationInvites
             .Include(i => i.Organisation)
             .FirstOrDefaultAsync(

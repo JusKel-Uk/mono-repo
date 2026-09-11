@@ -189,7 +189,7 @@ async function readOtpFromFile(targetEmail, timeoutMs = 15_000) {
   return null;
 }
 
-async function resolveOtpFromAzureLogs(targetEmail, timeoutMs = 60_000) {
+async function resolveOtpFromAzureLogs(targetEmail, timeoutMs = 120_000) {
   const normalized = targetEmail.trim().toLowerCase();
   const appName = process.env.AZURE_CONTAINER_APP || 'juskel-api';
   const resourceGroup = process.env.AZURE_RESOURCE_GROUP || 'DevTest';
@@ -198,11 +198,24 @@ async function resolveOtpFromAzureLogs(targetEmail, timeoutMs = 60_000) {
   while (Date.now() - start < timeoutMs) {
     try {
       const logs = execSync(
-        `az containerapp logs show -n "${appName}" -g "${resourceGroup}" --tail 80 2>/dev/null`,
-        { encoding: 'utf8', maxBuffer: 4 * 1024 * 1024 },
+        `az containerapp logs show -n "${appName}" -g "${resourceGroup}" --tail 300 --type console 2>/dev/null`,
+        { encoding: 'utf8', maxBuffer: 8 * 1024 * 1024 },
       );
       for (const line of logs.split('\n')) {
-        const match = line.match(otpPattern);
+        const payload = line.trim();
+        if (!payload) continue;
+
+        let text = payload;
+        if (payload.startsWith('{')) {
+          try {
+            const parsed = JSON.parse(payload);
+            text = parsed.Log ?? parsed.log ?? payload;
+          } catch {
+            // keep raw line
+          }
+        }
+
+        const match = text.match(otpPattern);
         if (match && match[1].trim().toLowerCase() === normalized) return match[2];
       }
     } catch {

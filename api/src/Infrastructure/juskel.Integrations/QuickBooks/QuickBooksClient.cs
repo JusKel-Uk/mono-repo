@@ -10,6 +10,8 @@ namespace juskel.Integrations.QuickBooks;
 
 public sealed class QuickBooksClient : IQuickBooksClient
 {
+    internal const string E2eStubAuthCode = "e2e-stub-auth-code";
+
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
         PropertyNameCaseInsensitive = true,
@@ -42,7 +44,7 @@ public sealed class QuickBooksClient : IQuickBooksClient
 
     public async Task<OAuthTokenResult> ExchangeCodeAsync(string code, CancellationToken ct = default)
     {
-        if (IsStubMode())
+        if (IsStubMode() || IsE2eStubAuthCode(code))
             return CreateStubToken();
 
         using var content = new FormUrlEncodedContent(new Dictionary<string, string>
@@ -330,6 +332,13 @@ public sealed class QuickBooksClient : IQuickBooksClient
 
     private bool IsStubMode() =>
         string.IsNullOrWhiteSpace(_options.ClientId) || string.IsNullOrWhiteSpace(_options.ClientSecret);
+
+    private static bool IsE2eStubAuthCode(string code) =>
+        string.Equals(code, E2eStubAuthCode, StringComparison.Ordinal)
+        && string.Equals(
+            Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT"),
+            "Development",
+            StringComparison.OrdinalIgnoreCase);
 
     private static OAuthTokenResult CreateStubToken() =>
         new(

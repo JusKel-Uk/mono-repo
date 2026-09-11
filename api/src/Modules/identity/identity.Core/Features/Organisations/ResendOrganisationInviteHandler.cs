@@ -60,7 +60,7 @@ internal sealed class ResendOrganisationInviteHandler
             return null;
 
         var email = invite.Email!;
-        var plainToken = _tokenService.Rotate(invite);
+        var plainToken = await _tokenService.RotateUniqueAsync(_db, invite, ct);
         await _db.SaveChangesAsync(ct);
 
         E2eInviteBridge.LogInviteIfDevelopment(email, plainToken);
