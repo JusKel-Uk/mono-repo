@@ -23,6 +23,7 @@ internal sealed class IntegrationService
     private readonly IXeroClient _xero;
     private readonly IQuickBooksClient _quickBooks;
     private readonly IFieldEncryptor _encryptor;
+    private readonly IntegrationNotifications _integrationNotifications;
 
     public IntegrationService(
         FundingDbContext db,
@@ -32,7 +33,8 @@ internal sealed class IntegrationService
         OpenBankingSyncService openBankingSync,
         IXeroClient xero,
         IQuickBooksClient quickBooks,
-        IFieldEncryptor encryptor)
+        IFieldEncryptor encryptor,
+        IntegrationNotifications integrationNotifications)
     {
         _db = db;
         _onboarding = onboarding;
@@ -42,6 +44,7 @@ internal sealed class IntegrationService
         _xero = xero;
         _quickBooks = quickBooks;
         _encryptor = encryptor;
+        _integrationNotifications = integrationNotifications;
     }
 
     public async Task<OAuthAuthorizeResponse?> BuildOpenBankingAuthorizationAsync(
@@ -62,7 +65,7 @@ internal sealed class IntegrationService
         string state,
         CancellationToken ct = default)
     {
-        var (applicationId, _) = ParseState(state);
+        var (applicationId, userId) = ParseState(state);
         await _openBankingSync.ConnectFromCallbackAsync(applicationId, code, ct);
 
         var complete = await _funding.IsFinancialStepCompleteAsync(applicationId, ct);
@@ -71,6 +74,8 @@ internal sealed class IntegrationService
             OnboardingStep.Financial,
             complete ? StepStatus.Complete : StepStatus.InProgress,
             ct);
+
+        await _integrationNotifications.NotifySyncAsync(userId, applicationId, "Open Banking", ct);
 
         return true;
     }
@@ -99,6 +104,7 @@ internal sealed class IntegrationService
     }
 
     public async Task<bool> DisconnectOpenBankingConnectionAsync(
+        Guid userId,
         Guid organisationId,
         Guid connectionId,
         CancellationToken ct = default)
@@ -127,6 +133,8 @@ internal sealed class IntegrationService
             OnboardingStep.Financial,
             complete ? StepStatus.Complete : StepStatus.InProgress,
             ct);
+
+        await _integrationNotifications.NotifyRevokedAsync(userId, organisationId, "Open Banking", ct);
 
         return true;
     }
@@ -186,7 +194,7 @@ internal sealed class IntegrationService
 
     public async Task<bool> HandleXeroCallbackAsync(string code, string state, CancellationToken ct = default)
     {
-        var (applicationId, _) = ParseState(state);
+        var (applicationId, userId) = ParseState(state);
         var token = await _xero.ExchangeCodeAsync(code, ct);
         await UpsertIntegrationConnectionAsync(
             applicationId,
@@ -197,6 +205,8 @@ internal sealed class IntegrationService
             null,
             null,
             ct);
+
+        await _integrationNotifications.NotifySyncAsync(userId, applicationId, "Xero", ct);
         return true;
     }
 
@@ -219,7 +229,7 @@ internal sealed class IntegrationService
         string? realmId,
         CancellationToken ct = default)
     {
-        var (applicationId, _) = ParseState(state);
+        var (applicationId, userId) = ParseState(state);
         var token = await _quickBooks.ExchangeCodeAsync(code, ct);
         var resolvedRealmId = string.IsNullOrWhiteSpace(realmId) ? "stub-realm" : realmId.Trim();
 
@@ -273,16 +283,19 @@ internal sealed class IntegrationService
             complete ? StepStatus.Complete : StepStatus.InProgress,
             ct);
 
+        await _integrationNotifications.NotifySyncAsync(userId, applicationId, "QuickBooks", ct);
+
         return true;
     }
 
     public async Task<bool> DisconnectAsync(
+        Guid userId,
         Guid organisationId,
         IntegrationProvider provider,
         CancellationToken ct = default)
     {
         if (provider == IntegrationProvider.OpenBanking)
-            return await DisconnectAllOpenBankingAsync(organisationId, ct);
+            return await DisconnectAllOpenBankingAsync(userId, organisationId, ct);
 
         var applicationId = await _onboarding.GetDraftApplicationIdAsync(organisationId, ct);
         if (applicationId is null)
@@ -328,10 +341,19 @@ internal sealed class IntegrationService
                 ct);
         }
 
+        await _integrationNotifications.NotifyRevokedAsync(
+            userId,
+            organisationId,
+            IntegrationNotifications.ProviderLabel(provider),
+            ct);
+
         return true;
     }
 
-    private async Task<bool> DisconnectAllOpenBankingAsync(Guid organisationId, CancellationToken ct)
+    private async Task<bool> DisconnectAllOpenBankingAsync(
+        Guid userId,
+        Guid organisationId,
+        CancellationToken ct)
     {
         var applicationId = await _onboarding.GetDraftApplicationIdAsync(organisationId, ct);
         if (applicationId is null)
@@ -371,6 +393,8 @@ internal sealed class IntegrationService
             OnboardingStep.Financial,
             complete ? StepStatus.Complete : StepStatus.InProgress,
             ct);
+
+        await _integrationNotifications.NotifyRevokedAsync(userId, organisationId, "Open Banking", ct);
 
         return true;
     }

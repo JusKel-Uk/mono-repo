@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using notifications.Contracts;
 using onboarding.Contracts;
 using scoring.Contracts;
 using scoring.Core.Entities;
@@ -11,15 +12,18 @@ internal sealed class SustainabilityProfileService
     private readonly ScoringDbContext _db;
     private readonly IOnboardingModule _onboarding;
     private readonly IScoringModule _scoring;
+    private readonly INotificationModule _notifications;
 
     public SustainabilityProfileService(
         ScoringDbContext db,
         IOnboardingModule onboarding,
-        IScoringModule scoring)
+        IScoringModule scoring,
+        INotificationModule notifications)
     {
         _db = db;
         _onboarding = onboarding;
         _scoring = scoring;
+        _notifications = notifications;
     }
 
     public async Task<SustainabilityProfileResponse?> GetAsync(Guid organisationId, CancellationToken ct = default)
@@ -47,6 +51,7 @@ internal sealed class SustainabilityProfileService
     }
 
     public async Task<SustainabilityProfileResponse?> UpsertAsync(
+        Guid userId,
         Guid organisationId,
         UpsertSustainabilityProfileRequest request,
         CancellationToken ct = default)
@@ -81,6 +86,18 @@ internal sealed class SustainabilityProfileService
             ? StepStatus.Complete
             : StepStatus.InProgress;
         await _onboarding.MarkStepAsync(applicationId, OnboardingStep.Sustainability, status, ct);
+
+        if (status == StepStatus.Complete)
+        {
+            await _notifications.NotifyAsync(
+                ProductNotifications.AssessmentProgress(
+                    userId,
+                    organisationId,
+                    "Sustainability profile complete",
+                    "You've finished filling the sustainability questionnaire. Great work.",
+                    "/sme/assessment"),
+                ct);
+        }
 
         var evidence = await LoadEvidenceAsync(applicationId, ct);
         return Map(profile, evidence);

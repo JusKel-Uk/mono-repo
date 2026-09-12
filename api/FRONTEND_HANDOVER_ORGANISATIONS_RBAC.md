@@ -15,7 +15,7 @@ The API moved from **one user → one application** to **one organisation → ma
 | Onboarding data tied to the signed-in user | Onboarding/funding/scoring data tied to the **active organisation** |
 | Account closure on the user | **Organisation closure** (Owner only) |
 | No team / invites | Full team RBAC + email invites |
-| Register returns `userId`, `email`, `emailVerified` | Register also returns **`defaultOrganisationId`** |
+| Register returns `userId`, `email`, `emailVerified` | Register also returns **`defaultOrganisationId`** (`null` on invite signup) |
 
 **Good news for MVP:** If a user belongs to **only one organisation** (every new founder today), existing `/applications/current/*` calls **keep working without changes** — no `X-Organisation-Id` header required.
 
@@ -46,7 +46,7 @@ No new fields on those request/response bodies for org support.
 | Item | Action |
 |------|--------|
 | `POST /identity/me/account-closure` | **Removed** — returns **410 Gone**. Use `POST /identity/organisations/{organisationId}/closure` (Owner only). See [SETTINGS_FRONTEND_API.md](./SETTINGS_FRONTEND_API.md). |
-| `RegisterResponse` | Add optional `defaultOrganisationId: string` (`client/lib/api/auth.ts`). |
+| `RegisterResponse` | Add `defaultOrganisationId: string \| null` (`client/lib/api/auth.ts`). `null` on invite signup. |
 | Settings Team / Privacy UI | Wire to real endpoints (currently mock-only in `client/`). |
 
 ---
@@ -134,7 +134,8 @@ All require `Authorization: Bearer {jwt}` unless noted.
 | `GET` | `/identity/organisations/{id}/invites` | Owner / Admin | Pending invites (including expired) |
 | `POST` | `/identity/organisations/{id}/invites` | Owner / Admin | Body: `{ "email", "role" }` |
 | `POST` | `/identity/organisations/{id}/invites/{inviteId}/resend` | Owner / Admin | Rotates token, resets 7-day expiry, re-sends email |
-| `POST` | `/identity/invites/{token}/accept` | Invitee (JWT) | No body; token in path |
+| `POST` | `/identity/invites/preview` | Anonymous | Body: `{ "code" }`. Returns email, org name, role, expiresAt. Rate-limited (5/min/IP). |
+| `POST` | `/identity/invites/{token}/accept` | Invitee (JWT) | No body; 6-digit code in path. Rate-limited (30/min/IP). |
 | `PATCH` | `/identity/organisations/{id}/members/{userId}` | Owner / Admin | Body: `{ "role" }` |
 | `DELETE` | `/identity/organisations/{id}/members/{userId}` | Owner / Admin | Cannot remove last Owner (409) |
 | `POST` | `/identity/organisations/{id}/closure` | Owner | Empty body; idempotent |
@@ -199,7 +200,16 @@ export type RegisterResponse = {
   userId: string;
   email: string;
   emailVerified: boolean;
-  defaultOrganisationId: string;
+  defaultOrganisationId: string | null; // null when registering with inviteCode
+};
+
+export type PreviewInviteRequest = { code: string };
+
+export type PreviewInviteResponse = {
+  email: string;
+  organisationName: string;
+  role: OrganisationRole;
+  expiresAt: string;
 };
 ```
 
@@ -207,42 +217,59 @@ export type RegisterResponse = {
 
 ## 7. Invite flow — frontend pages to build
 
+Happy path: **type the 6-digit code once**. Do not send them back to email. Do **not** put the code in the URL.
+
+Suggested `sessionStorage` key: `juskel.pendingInvite` → `{ code, email, organisationName, role }`.
+
 ```text
-Owner/Admin                    Invitee
-    |                              |
-    | POST .../invites             |
-    | (email + role)               |
-    |----------------------------->| email with 6-digit code + /accept-invite link
-    |                              |
-    |                              | Sign up or sign in (SAME email)
-    |                              |
-    |                              | POST /identity/invites/{token}/accept
-    |                              | (Bearer JWT required)
-    |                              |
-    |                              | Now member; may have 2 orgs
+Owner/Admin                         Invitee
+    |                                   |
+    | POST .../invites                  |
+    |---------------------------------->| email: 6-digit code + /accept-invite
+    |                                   |
+    |                                   | Open /accept-invite (no ?token=)
+    |                                   | Type code once
+    |                                   | POST /identity/invites/preview
+    |                                   |
+    |              +--------------------+--------------------+
+    |              | Signed in, email matches                |
+    |              |   POST accept → current org             |
+    |              |   → /onboarding/company-setup           |
+    |              +--------------------+--------------------+
+    |              | No account                              |
+    |              |   Signup (email locked) + inviteCode    |
+    |              |   Login?next=/accept-invite             |
+    |              |   Auto-accept from sessionStorage       |
+    |              |   → /onboarding/company-setup           |
+    |              +--------------------+--------------------+
+    |              | Existing account, signed out            |
+    |              |   Login (email locked) + next           |
+    |              |   Auto-accept from sessionStorage       |
+    |              +-----------------------------------------+
 ```
+
+| Step | Behaviour |
+|------|-----------|
+| `/accept-invite` | Code field first. On valid preview, persist `{ code, email, organisationName, role }` in `sessionStorage`. Show org + role. |
+| Signed in, email matches | `POST /identity/invites/{code}/accept` immediately → `PUT .../organisations/current` → `/onboarding/company-setup`. |
+| Signed in, email differs | Block; tell them to switch to the invited address. |
+| Create account | Signup with email **locked** to preview email; `POST /identity/users` includes `inviteCode`. Response: `emailVerified: true`, `defaultOrganisationId: null`. Then login with `next=/accept-invite`. **No verification OTP.** |
+| Sign in | Prefill/lock email; `next=/accept-invite`. After login, page reads storage and auto-accepts. |
+| Lost storage | Idle paste form remains as backup (the email still has the code). |
+| After accept | Always `/onboarding/company-setup` for that org, even if already submitted. Viewer: read-only (writes 403). |
 
 ### Invite validation (show in form + handle 400)
 
 - **Business email only** — Gmail, Yahoo, Outlook, iCloud, etc. rejected.
 - **Same domain as organisation** — e.g. owner `@acme.co.uk` → only `*@acme.co.uk` invites allowed. Domain is set at org creation from the Owner’s email.
 
-### Suggested accept-invite route
-
-Email link: `{JUSKEL_FRONTEND_URL}/accept-invite` (no code in the URL — the user types the 6-digit code).
-
-1. If not logged in → redirect to sign-in/sign-up with `returnUrl` back to `/accept-invite`.
-2. If logged in → collect the 6-digit code → `POST /identity/invites/{code}/accept`.
-3. On **200** → redirect to dashboard or onboarding; optionally `PUT .../organisations/current` to the new org.
-4. On **404** → show “Invalid, expired, or already used invite” or “Email doesn’t match invite”.
-
-**Security:** The code alone is not enough — JWT + matching email required.
+**Security:** Preview proves the code exists; accept still requires JWT + matching email. Do not put the code in the URL (access logs / referrers).
 
 ---
 
 ## 8. Registration change
 
-`POST /identity/users` response:
+`POST /identity/users` — founder (omit `inviteCode`):
 
 ```json
 {
@@ -253,7 +280,9 @@ Email link: `{JUSKEL_FRONTEND_URL}/accept-invite` (no code in the URL — the us
 }
 ```
 
-Each new user gets a default org (they are **Owner**). Name is derived from email domain (e.g. `company.co.uk` → “Company”). You may store `defaultOrganisationId` after signup; solo users never need the org header.
+Each **founder** gets a default org (Owner). Name is derived from email domain (e.g. `company.co.uk` → “Company”). Solo users never need the org header.
+
+Invite signup (include `inviteCode`): `emailVerified: true`, `defaultOrganisationId: null`, no OTP. They still **log in**, then accept from `sessionStorage`. They join the inviting org only — no personal workspace.
 
 ---
 
@@ -287,7 +316,9 @@ Copy in UI should say **organisation closure**, not “delete my account”.
 
 ### Phase 3 — Invite accept + multi-org
 
-- [ ] `/accept-invite` page + post-login redirect
+- [ ] `/accept-invite`: preview → sessionStorage → signup with `inviteCode` or login with `next`
+- [ ] Signup/verify: do **not** drop pending invite; invite signup skips OTP
+- [ ] After accept → `/onboarding/company-setup` (read-only if Viewer / already submitted)
 - [ ] Org switcher when `organisations.length > 1`
 - [ ] `PUT /identity/me/organisations/current` on switch
 - [ ] Handle 400 `organisation-context-required`
@@ -322,7 +353,10 @@ No. Single-org users: never. Multi-org users: set current org once via PUT, or s
 No — business email + same domain as the organisation.
 
 **Does invite email contain a deep link?**  
-Yes. The email shows a **6-digit code** and a button/link to `{JUSKEL_FRONTEND_URL}/accept-invite`. The user types the code on that page; do not put the code in the URL.
+Yes — to `{JUSKEL_FRONTEND_URL}/accept-invite` **without** the code in the URL. The user types the 6-digit code **once**; persist it (sessionStorage) through signup/login. Do not send them back to the inbox.
+
+**Does every signup create a personal organisation?**  
+Founders: yes. Invite signup (`inviteCode` matching that email): **no**. They join the inviting org only, after login + accept.
 
 ---
 
@@ -330,7 +364,10 @@ Yes. The email shows a **6-digit code** and a button/link to `{JUSKEL_FRONTEND_U
 
 | File | Notes |
 |------|--------|
-| `client/lib/api/auth.ts` | Add `defaultOrganisationId`; no org APIs yet |
+| `client/lib/api/auth.ts` | `inviteCode?` on register; `defaultOrganisationId: string \| null` |
+| `client/app/accept-invite/accept-invite.tsx` | Preview first; persist invite; do not rely on `?token=` |
+| `client/app/(auth)/signup/signup-form.tsx` | Honour locked email + `inviteCode` + `next` |
+| `client/app/(auth)/login/login-form.tsx` | Already honours `next`; lock/prefill email from pending invite |
 | `client/lib/api/onboarding.ts` | No org header support yet |
 | `client/lib/api/client.ts` | Extend for `X-Organisation-Id` |
 | `client/app/sme/settings/page.tsx` | Team + closure UI exists; not wired to API |

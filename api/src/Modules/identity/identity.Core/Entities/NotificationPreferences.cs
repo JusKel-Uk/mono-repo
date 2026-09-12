@@ -15,4 +15,8 @@ internal sealed class NotificationPreferences
     public bool ScoreUpdates { get; set; } = true;
 
     public bool NewFundingMatches { get; set; } = true;
+
+    public bool InAppEnabled { get; set; } = true;
+
+    public bool EmailEnabled { get; set; } = true;
 }

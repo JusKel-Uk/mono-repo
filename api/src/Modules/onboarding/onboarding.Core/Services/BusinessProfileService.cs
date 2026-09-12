@@ -1,5 +1,6 @@
 using System.Text.RegularExpressions;
 using Microsoft.EntityFrameworkCore;
+using notifications.Contracts;
 using onboarding.Contracts;
 using onboarding.Core.Entities;
 using onboarding.Core.Persistence;
@@ -14,11 +15,16 @@ internal sealed class BusinessProfileService
 
     private readonly OnboardingDbContext _db;
     private readonly IOnboardingModule _onboarding;
+    private readonly INotificationModule _notifications;
 
-    public BusinessProfileService(OnboardingDbContext db, IOnboardingModule onboarding)
+    public BusinessProfileService(
+        OnboardingDbContext db,
+        IOnboardingModule onboarding,
+        INotificationModule notifications)
     {
         _db = db;
         _onboarding = onboarding;
+        _notifications = notifications;
     }
 
     public async Task<BusinessProfileResponse?> GetAsync(Guid organisationId, CancellationToken ct = default)
@@ -31,6 +37,7 @@ internal sealed class BusinessProfileService
     }
 
     public async Task<BusinessProfileResponse?> UpsertAsync(
+        Guid userId,
         Guid organisationId,
         UpsertBusinessProfileRequest request,
         CancellationToken ct = default)
@@ -61,6 +68,15 @@ internal sealed class BusinessProfileService
         await _db.SaveChangesAsync(ct);
 
         await _onboarding.MarkStepAsync(application.Id, OnboardingStep.Business, StepStatus.Complete, ct);
+
+        await _notifications.NotifyAsync(
+            ProductNotifications.AssessmentProgress(
+                userId,
+                organisationId,
+                "Business profile complete",
+                "You've finished filling the business profile. Great work.",
+                "/sme/assessment"),
+            ct);
 
         return Map(application.Id, profile);
     }

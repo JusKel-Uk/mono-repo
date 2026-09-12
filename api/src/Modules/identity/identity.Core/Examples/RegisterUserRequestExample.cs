@@ -9,5 +9,6 @@ public sealed class RegisterUserRequestExample : IExamplesProvider<RegisterUserR
         FirstName: "Ada",
         LastName: "Lovelace",
         Email: "ada@example.com",
-        Password: "P@ssw0rd!");
+        Password: "P@ssw0rd!",
+        InviteCode: null);
 }

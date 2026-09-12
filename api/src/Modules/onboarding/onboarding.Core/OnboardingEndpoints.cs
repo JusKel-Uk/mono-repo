@@ -110,7 +110,7 @@ public static class OnboardingEndpoints
 
             try
             {
-                var response = await service.UpsertAsync(access.OrganisationId, body, ct);
+                var response = await service.UpsertAsync(userId, access.OrganisationId, body, ct);
                 return response is null ? Results.NotFound() : Results.Ok(response);
             }
             catch (ArgumentException ex)
@@ -193,7 +193,7 @@ public static class OnboardingEndpoints
 
             try
             {
-                var response = await service.UpsertAsync(access.OrganisationId, body, ct);
+                var response = await service.UpsertAsync(userId, access.OrganisationId, body, ct);
                 return response is null ? Results.NotFound() : Results.Ok(response);
             }
             catch (ArgumentException ex)

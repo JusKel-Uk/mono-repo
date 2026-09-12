@@ -10,6 +10,7 @@
     <ProjectReference Include="..\..\identity\identity.Contracts\identity.Contracts.csproj" />
     <ProjectReference Include="..\..\funding\funding.Contracts\funding.Contracts.csproj" />
     <ProjectReference Include="..\..\scoring\scoring.Contracts\scoring.Contracts.csproj" />
+    <ProjectReference Include="..\..\notifications\notifications.Contracts\notifications.Contracts.csproj" />
     <ProjectReference Include="..\onboarding.Contracts\onboarding.Contracts.csproj" />
   </ItemGroup>
 

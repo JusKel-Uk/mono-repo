@@ -33,6 +33,8 @@
     <ProjectReference Include="..\..\Modules\onboarding\onboarding.Contracts\onboarding.Contracts.csproj" />
     <ProjectReference Include="..\..\Modules\scoring\scoring.Contracts\scoring.Contracts.csproj" />
     <ProjectReference Include="..\..\Modules\scoring\scoring.Core\scoring.Core.csproj" />
+    <ProjectReference Include="..\..\Modules\notifications\notifications.Contracts\notifications.Contracts.csproj" />
+    <ProjectReference Include="..\..\Modules\notifications\notifications.Core\notifications.Core.csproj" />
   </ItemGroup>
 
 </Project>

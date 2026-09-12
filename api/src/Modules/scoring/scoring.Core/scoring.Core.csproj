@@ -9,6 +9,7 @@
     <ProjectReference Include="..\..\..\Shared\juskel.Shared\juskel.Shared.csproj" />
     <ProjectReference Include="..\..\identity\identity.Contracts\identity.Contracts.csproj" />
     <ProjectReference Include="..\..\onboarding\onboarding.Contracts\onboarding.Contracts.csproj" />
+    <ProjectReference Include="..\..\notifications\notifications.Contracts\notifications.Contracts.csproj" />
     <ProjectReference Include="..\scoring.Contracts\scoring.Contracts.csproj" />
   </ItemGroup>
 

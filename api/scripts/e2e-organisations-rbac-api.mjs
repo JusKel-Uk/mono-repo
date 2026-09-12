@@ -23,6 +23,7 @@ const BASE = process.env.BASE_URL || (process.env.E2E_SPAWN_API === '1'
 const tag = Date.now();
 const ownerEmail = `e2e-org-owner-${tag}@juskel.co.uk`;
 const teammateEmail = `e2e-org-teammate-${tag}@juskel.co.uk`;
+const multiEmail = `e2e-org-multi-${tag}@juskel.co.uk`;
 const password = 'E2eTestPass123!';
 
 /** OrganisationRole enum values (identity.Contracts). */
@@ -244,6 +245,60 @@ async function registerVerifySignIn(email, firstName, lastName) {
   };
 }
 
+async function registerViaInviteThenSignIn(email, firstName, lastName, inviteCode) {
+  const preview = await api('POST', '/identity/invites/preview', null, { code: inviteCode });
+  log(`POST /identity/invites/preview (${email})`, preview.status === 200
+    && preview.data?.email === email
+    && typeof preview.data?.organisationName === 'string'
+    && preview.data.organisationName.length > 0, {
+    status: preview.status,
+    email: preview.data?.email,
+    role: preview.data?.role,
+  });
+
+  const mismatch = await api('POST', '/identity/users', null, {
+    firstName,
+    lastName,
+    email: `wrong-${tag}@juskel.co.uk`,
+    password,
+    inviteCode,
+  });
+  log('POST /identity/users (inviteCode + wrong email → 400)', mismatch.status === 400, {
+    status: mismatch.status,
+  });
+
+  const reg = await api('POST', '/identity/users', null, {
+    firstName,
+    lastName,
+    email,
+    password,
+    inviteCode,
+  });
+  log(`POST /identity/users inviteCode (${email})`, reg.status === 201
+    && !!reg.data?.userId
+    && reg.data?.emailVerified === true
+    && (reg.data?.defaultOrganisationId === null
+      || reg.data?.defaultOrganisationId === undefined), {
+    status: reg.status,
+    userId: reg.data?.userId,
+    emailVerified: reg.data?.emailVerified,
+    defaultOrganisationId: reg.data?.defaultOrganisationId,
+  });
+
+  const login = await api('POST', '/identity/sessions', null, { email, password });
+  log(`POST /identity/sessions (invitee, no OTP) (${email})`, login.status === 201
+    && !!login.data?.accessToken, {
+    status: login.status,
+  });
+
+  return {
+    userId: reg.data.userId,
+    defaultOrganisationId: reg.data.defaultOrganisationId ?? null,
+    token: login.data.accessToken,
+    preview: preview.data,
+  };
+}
+
 function findOrg(orgs, orgId) {
   return orgs?.find((o) => o.id === orgId);
 }
@@ -340,20 +395,25 @@ async function runOrganisationRbacCoverage() {
     source: resend.data?.acceptToken ? 'resend' : (invite.data?.acceptToken ? 'create' : 'E2E_INVITE_FILE/console'),
   });
 
-  // ── 4. User B registers — starts with own orgB ───────────────────────────
-  const teammate = await registerVerifySignIn(teammateEmail, 'Org', 'Teammate');
+  const badPreview = await api('POST', '/identity/invites/preview', null, { code: '000000' });
+  log('POST /identity/invites/preview (invalid → 404)', badPreview.status === 404, {
+    status: badPreview.status,
+  });
+
+  // ── 4. Invitee registers with inviteCode (no personal org, already verified) ─
+  const teammate = await registerViaInviteThenSignIn(
+    teammateEmail,
+    'Org',
+    'Teammate',
+    inviteToken,
+  );
 
   const teammateOrgsBefore = await apiGet('/identity/me/organisations', teammate.token);
-  const orgB = teammateOrgsBefore.data?.[0];
-  log('GET /identity/me/organisations (teammate before accept — count 1)', teammateOrgsBefore.status === 200
-    && teammateOrgsBefore.data?.length === 1, {
+  log('GET /identity/me/organisations (invitee before accept — count 0)', teammateOrgsBefore.status === 200
+    && Array.isArray(teammateOrgsBefore.data)
+    && teammateOrgsBefore.data.length === 0, {
     status: teammateOrgsBefore.status,
     count: teammateOrgsBefore.data?.length,
-  });
-  log('GET /identity/me/organisations (teammate — own orgB Owner)', orgB?.role === Role.Owner
-    && orgB?.id === teammate.defaultOrganisationId, {
-    orgB: orgB?.id,
-    role: orgB?.role,
   });
 
   // ── 5. Accept invite ─────────────────────────────────────────────────────
@@ -396,14 +456,42 @@ async function runOrganisationRbacCoverage() {
   });
 
   const teammateOrgsAfter = await apiGet('/identity/me/organisations', teammate.token);
-  log('GET /identity/me/organisations (teammate after accept — count 2)', teammateOrgsAfter.status === 200
-    && teammateOrgsAfter.data?.length === 2, {
+  log('GET /identity/me/organisations (invitee after accept — count 1)', teammateOrgsAfter.status === 200
+    && teammateOrgsAfter.data?.length === 1, {
     status: teammateOrgsAfter.status,
     count: teammateOrgsAfter.data?.length,
   });
   const teammateOrgA = findOrg(teammateOrgsAfter.data, orgA.id);
-  log('GET /identity/me/organisations (teammate — orgA role Viewer)', teammateOrgA?.role === Role.Viewer, {
+  log('GET /identity/me/organisations (invitee — only orgA Viewer)', teammateOrgA?.role === Role.Viewer
+    && teammateOrgsAfter.data?.length === 1, {
     role: teammateOrgA?.role,
+  });
+
+  // Founder who later accepts → two orgs (org switcher coverage)
+  const multiInvite = await api(
+    'POST',
+    `/identity/organisations/${orgA.id}/invites`,
+    owner.token,
+    { email: multiEmail, role: Role.Viewer },
+    orgA.id,
+  );
+  log('POST invite multi-org user', multiInvite.status === 201 && !!multiInvite.data?.acceptToken, {
+    status: multiInvite.status,
+    inviteId: multiInvite.data?.inviteId,
+  });
+  const multiToken = multiInvite.data?.acceptToken ?? await waitForInvite(multiEmail);
+  const multi = await registerVerifySignIn(multiEmail, 'Org', 'Multi');
+  const orgB = (await apiGet('/identity/me/organisations', multi.token)).data?.[0];
+  const multiAccept = await api('POST', `/identity/invites/${multiToken}/accept`, multi.token);
+  log('POST accept (founder + invite → two orgs)', multiAccept.status === 200
+    && multiAccept.data?.organisationId === orgA.id, {
+    status: multiAccept.status,
+  });
+  const multiOrgs = await apiGet('/identity/me/organisations', multi.token);
+  log('GET /identity/me/organisations (multi — count 2)', multiOrgs.status === 200
+    && multiOrgs.data?.length === 2, {
+    status: multiOrgs.status,
+    count: multiOrgs.data?.length,
   });
 
   const wrongOrg = await apiGet('/onboarding/applications/current', teammate.token, randomUUID());
@@ -443,7 +531,7 @@ async function runOrganisationRbacCoverage() {
   });
 
   // ── 6. Multi-org: default context uses LastOrganisationId (orgB) without header ─
-  const currentNoHeader = await apiGet('/onboarding/applications/current', teammate.token);
+  const currentNoHeader = await apiGet('/onboarding/applications/current', multi.token);
   log('GET /onboarding/applications/current (2 orgs, no header → last org context)', (currentNoHeader.status === 404
     || (currentNoHeader.status === 200
       && currentNoHeader.data?.applicationId !== createApp.data.applicationId)), {
@@ -455,7 +543,7 @@ async function runOrganisationRbacCoverage() {
   // ── 7. Multi-org: explicit org header works ──────────────────────────────
   const currentWithOrgA = await apiGet(
     '/onboarding/applications/current',
-    teammate.token,
+    multi.token,
     orgA.id,
   );
   log('GET /onboarding/applications/current (X-Organisation-Id orgA)', currentWithOrgA.status === 200
@@ -662,8 +750,8 @@ async function runOrganisationRbacCoverage() {
   const memberList = Array.isArray(members.data) ? members.data : [];
   const ownerMember = memberList.find((m) => m.userId === owner.userId);
   const teammateMember = memberList.find((m) => m.userId === teammate.userId);
-  log('GET /identity/organisations/{orgA}/members (count 2)', members.status === 200
-    && memberList.length === 2, {
+  log('GET /identity/organisations/{orgA}/members (count 3 — owner, teammate, multi)', members.status === 200
+    && memberList.length === 3, {
     status: members.status,
     count: memberList.length,
   });
@@ -679,7 +767,7 @@ async function runOrganisationRbacCoverage() {
   const switchOrg = await api(
     'PUT',
     '/identity/me/organisations/current',
-    teammate.token,
+    multi.token,
     { organisationId: orgB.id },
   );
   log('PUT /identity/me/organisations/current (switch to orgB)', switchOrg.status === 200
@@ -689,9 +777,9 @@ async function runOrganisationRbacCoverage() {
     organisationId: switchOrg.data?.id,
   });
 
-  const teammateOrgsSwitched = await apiGet('/identity/me/organisations', teammate.token);
-  const orgBCurrent = findOrg(teammateOrgsSwitched.data, orgB.id);
-  const orgANotCurrent = findOrg(teammateOrgsSwitched.data, orgA.id);
+  const multiOrgsSwitched = await apiGet('/identity/me/organisations', multi.token);
+  const orgBCurrent = findOrg(multiOrgsSwitched.data, orgB.id);
+  const orgANotCurrent = findOrg(multiOrgsSwitched.data, orgA.id);
   log('GET /identity/me/organisations (orgB isCurrent after switch)', orgBCurrent?.isCurrent === true, {
     orgBIsCurrent: orgBCurrent?.isCurrent,
   });
@@ -741,10 +829,10 @@ async function runOrganisationRbacCoverage() {
     status: teammateClosedOrgA.status,
   });
 
-  // ── 15. Teammate can still access own orgB after orgA closed ─────────────
+  // ── 15. Multi-org user can still access own orgB after orgA closed ─────
   const teammateOrgBApp = await apiGet(
     '/onboarding/applications/current',
-    teammate.token,
+    multi.token,
     orgB.id,
   );
   log('GET /onboarding/applications/current (orgB after orgA closed — not 403)', teammateOrgBApp.status !== 403, {
@@ -752,7 +840,7 @@ async function runOrganisationRbacCoverage() {
     note: teammateOrgBApp.status === 404 ? 'no application yet on orgB (expected)' : 'application found',
   });
 
-  const createOrgBApp = await api('POST', '/onboarding/applications', teammate.token, null, orgB.id);
+  const createOrgBApp = await api('POST', '/onboarding/applications', multi.token, null, orgB.id);
   log('POST /onboarding/applications (orgB after orgA closed)', createOrgBApp.status === 201
     && !!createOrgBApp.data?.applicationId, {
     status: createOrgBApp.status,

@@ -16,6 +16,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
+using notifications.Core;
+using notifications.Core.Examples;
 using onboarding.Core;
 using onboarding.Core.Examples;
 using scoring.Core;
@@ -68,6 +70,7 @@ builder.Services.AddSwaggerExamplesFromAssemblyOf<UserSummaryExample>();
 builder.Services.AddSwaggerExamplesFromAssemblyOf<CreateApplicationResponseExample>();
 builder.Services.AddSwaggerExamplesFromAssemblyOf<FinancialProfileResponseExample>();
 builder.Services.AddSwaggerExamplesFromAssemblyOf<SustainabilityProfileResponseExample>();
+builder.Services.AddSwaggerExamplesFromAssemblyOf<InboxListResponseExample>();
 builder.Services.AddHealthChecks();
 
 builder.Services.AddRateLimiter(options =>
@@ -76,6 +79,20 @@ builder.Services.AddRateLimiter(options =>
     {
         limiter.Window = TimeSpan.FromMinutes(1);
         limiter.PermitLimit = 5;
+        limiter.QueueLimit = 0;
+    });
+
+    options.AddFixedWindowLimiter("invite-preview", limiter =>
+    {
+        limiter.Window = TimeSpan.FromMinutes(1);
+        limiter.PermitLimit = 5;
+        limiter.QueueLimit = 0;
+    });
+
+    options.AddFixedWindowLimiter("invite-accept", limiter =>
+    {
+        limiter.Window = TimeSpan.FromMinutes(1);
+        limiter.PermitLimit = 30;
         limiter.QueueLimit = 0;
     });
 
@@ -89,6 +106,7 @@ builder.Services.AddIdentityModule(builder.Configuration);
 builder.Services.AddOnboardingModule(builder.Configuration);
 builder.Services.AddFundingModule(builder.Configuration);
 builder.Services.AddScoringModule(builder.Configuration);
+builder.Services.AddNotificationsModule(builder.Configuration);
 builder.Services.AddEmail(builder.Configuration);
 
 var jwtOptions = builder.Configuration
@@ -155,6 +173,7 @@ await app.MigrateAndBackfillPiiAsync();
 await app.MigrateOnboardingAsync();
 await app.MigrateFundingAsync();
 await app.MigrateScoringAsync();
+await app.MigrateNotificationsAsync();
 
 app.UseExceptionHandler();
 app.UseStaticFiles();
@@ -191,6 +210,7 @@ app.MapIdentityEndpoints();
 app.MapOnboardingEndpoints();
 app.MapFundingEndpoints();
 app.MapScoringEndpoints();
+app.MapNotificationEndpoints();
 
 app.MapGet("/", () => Results.Ok(new RootResponse("online", ApiConstants.ApiVersion)))
     .WithName("GetRoot")

@@ -67,7 +67,7 @@ public static class FundingEndpoints
 
             try
             {
-                var response = await service.UpsertAsync(access.OrganisationId, requestBody, ct);
+                var response = await service.UpsertAsync(userId, access.OrganisationId, requestBody, ct);
                 return response is null ? Results.NotFound() : Results.Ok(response);
             }
             catch (InvalidOperationException ex)
@@ -233,7 +233,7 @@ public static class FundingEndpoints
             if (!access!.CanWrite)
                 return OrganisationApiResults.Forbidden();
 
-            var disconnected = await service.DisconnectAsync(access.OrganisationId, IntegrationProvider.OpenBanking, ct);
+            var disconnected = await service.DisconnectAsync(userId, access.OrganisationId, IntegrationProvider.OpenBanking, ct);
             return disconnected ? Results.NoContent() : Results.NotFound();
         })
         .WithName("DisconnectOpenBanking")
@@ -285,6 +285,7 @@ public static class FundingEndpoints
                 return OrganisationApiResults.Forbidden();
 
             var disconnected = await service.DisconnectOpenBankingConnectionAsync(
+                userId,
                 access.OrganisationId,
                 connectionId,
                 ct);
@@ -400,7 +401,7 @@ public static class FundingEndpoints
             if (!access!.CanWrite)
                 return OrganisationApiResults.Forbidden();
 
-            var disconnected = await service.DisconnectAsync(access.OrganisationId, IntegrationProvider.Xero, ct);
+            var disconnected = await service.DisconnectAsync(userId, access.OrganisationId, IntegrationProvider.Xero, ct);
             return disconnected ? Results.NoContent() : Results.NotFound();
         })
         .WithName("DisconnectXero")
@@ -483,7 +484,7 @@ public static class FundingEndpoints
             if (!access!.CanWrite)
                 return OrganisationApiResults.Forbidden();
 
-            var disconnected = await service.DisconnectAsync(access.OrganisationId, IntegrationProvider.QuickBooks, ct);
+            var disconnected = await service.DisconnectAsync(userId, access.OrganisationId, IntegrationProvider.QuickBooks, ct);
             return disconnected ? Results.NoContent() : Results.NotFound();
         })
         .WithName("DisconnectQuickBooks")

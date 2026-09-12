@@ -701,6 +701,12 @@ GET    /identity/me
 PATCH  /identity/me
 GET    /identity/me/notification-preferences
 PUT    /identity/me/notification-preferences
+GET    /notifications
+GET    /notifications/unread-count
+POST   /notifications/{id}/read
+POST   /notifications/read-all
+GET    /notifications/me/preferences
+PUT    /notifications/me/preferences
 POST   /identity/me/password-reset
 POST   /identity/password-reset
 POST   /identity/password-reset/verify

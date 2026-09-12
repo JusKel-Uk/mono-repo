@@ -17,4 +17,13 @@ public interface IIdentityModule
         Guid userId,
         Guid? requestedOrganisationId,
         CancellationToken ct = default);
+
+    Task<NotificationPreferencesDto> GetNotificationPreferencesAsync(
+        Guid userId,
+        CancellationToken ct = default);
+
+    Task<NotificationPreferencesDto?> PutNotificationPreferencesAsync(
+        Guid userId,
+        NotificationPreferencesDto preferences,
+        CancellationToken ct = default);
 }

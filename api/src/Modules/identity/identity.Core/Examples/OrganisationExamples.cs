@@ -75,6 +75,20 @@ public sealed class CreateOrganisationInviteResponseExample : IExamplesProvider<
         "482917");
 }
 
+public sealed class PreviewOrganisationInviteRequestExample : IExamplesProvider<PreviewOrganisationInviteRequest>
+{
+    public PreviewOrganisationInviteRequest GetExamples() => new("482917");
+}
+
+public sealed class PreviewOrganisationInviteResponseExample : IExamplesProvider<PreviewOrganisationInviteResponse>
+{
+    public PreviewOrganisationInviteResponse GetExamples() => new(
+        "teammate@example.com",
+        "JusKel E2E Ltd",
+        OrganisationRole.Contributor,
+        DateTime.Parse("2026-01-22T10:00:00Z"));
+}
+
 public sealed class AcceptOrganisationInviteResponseExample : IExamplesProvider<AcceptOrganisationInviteResponse>
 {
     public AcceptOrganisationInviteResponse GetExamples() => new(

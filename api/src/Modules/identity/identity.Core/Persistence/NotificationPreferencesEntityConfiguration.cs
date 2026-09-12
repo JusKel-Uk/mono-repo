@@ -18,5 +18,7 @@ internal sealed class NotificationPreferencesEntityConfiguration
         entity.Property(p => p.IntegrationSyncEvents).HasDefaultValue(true).IsRequired();
         entity.Property(p => p.ScoreUpdates).HasDefaultValue(true).IsRequired();
         entity.Property(p => p.NewFundingMatches).HasDefaultValue(true).IsRequired();
+        entity.Property(p => p.InAppEnabled).HasDefaultValue(true).IsRequired();
+        entity.Property(p => p.EmailEnabled).HasDefaultValue(true).IsRequired();
     }
 }
