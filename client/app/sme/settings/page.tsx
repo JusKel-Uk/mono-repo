@@ -19,6 +19,7 @@ import {
 
 import { cn } from '@/lib/utils';
 import { ROUTES } from '@/lib/routes';
+import { fromNow } from '@/lib/datetime';
 import { ApiError } from '@/lib/api/client';
 import { getMe, updateMe } from '@/lib/api/auth';
 import {
@@ -595,6 +596,23 @@ const NOTIF_ROWS: {
   },
 ];
 
+const CHANNEL_ROWS: {
+  key: keyof NotificationPreferences;
+  title: string;
+  desc: string;
+}[] = [
+  {
+    key: 'inAppEnabled',
+    title: 'In-app notifications',
+    desc: 'Show updates in your notification bell and inbox.',
+  },
+  {
+    key: 'emailEnabled',
+    title: 'Email notifications',
+    desc: 'Send updates to your email inbox.',
+  },
+];
+
 const ALL_ON: NotificationPreferences = {
   assessmentProgress: true,
   submissionsNeedAttention: true,
@@ -602,6 +620,8 @@ const ALL_ON: NotificationPreferences = {
   integrationSyncEvents: true,
   scoreUpdates: true,
   newFundingMatches: true,
+  inAppEnabled: true,
+  emailEnabled: true,
 };
 
 function Toggle({
@@ -694,20 +714,46 @@ function NotificationsPanel() {
           </div>
         ))}
       </div>
+
+      <div className='flex flex-col gap-3'>
+        <p className='text-body-sm font-semibold text-carbon-black'>
+          Delivery channels
+        </p>
+        <div className='rounded-lg border border-gray-200 bg-white px-5'>
+          {CHANNEL_ROWS.map((n, i) => (
+            <div
+              key={n.key}
+              className={cn(
+                'flex items-center justify-between gap-6 py-4',
+                i > 0 && 'border-t border-gray-200',
+              )}
+            >
+              <div className='flex flex-col gap-1'>
+                <p className='text-body-sm font-semibold text-carbon-black'>
+                  {n.title}
+                </p>
+                <p className='text-body-sm text-gray-500'>{n.desc}</p>
+              </div>
+              {isLoading ? (
+                <Skeleton className='h-5 w-9 shrink-0 rounded-full' />
+              ) : (
+                <Toggle
+                  on={view[n.key]}
+                  disabled={!prefs || mutation.isPending}
+                  onToggle={() =>
+                    mutation.mutate({ ...view, [n.key]: !view[n.key] })
+                  }
+                />
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
     </section>
   );
 }
 
 /* ---------------- Security ---------------- */
-
-function timeAgo(iso: string): string {
-  const then = new Date(iso).getTime();
-  if (!Number.isFinite(then)) return '';
-  const days = Math.floor((Date.now() - then) / 86_400_000);
-  if (days <= 0) return 'Today';
-  if (days === 1) return 'Yesterday';
-  return `${days} days ago`;
-}
 
 function SecurityPanel() {
   const qc = useQueryClient();
@@ -801,7 +847,7 @@ function SecurityPanel() {
                       : s.deviceLabel}
                   </p>
                   <p className='text-label-md text-gray-600'>
-                    {s.isCurrent ? 'Now' : timeAgo(s.createdAt)}
+                    {s.isCurrent ? 'Now' : fromNow(s.createdAt)}
                   </p>
                 </div>
                 <button
