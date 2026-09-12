@@ -5,6 +5,7 @@ using juskel.Shared.Organisation;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.AspNetCore.Routing;
 using Swashbuckle.AspNetCore.Filters;
 using System.Security.Claims;
@@ -15,6 +16,29 @@ internal static partial class OrganisationsEndpoints
 {
     private static void MapInviteListAndResend(IEndpointRouteBuilder app)
     {
+        app.MapPost("/identity/invites/preview", async (
+            PreviewOrganisationInviteRequest request,
+            PreviewOrganisationInviteHandler handler,
+            CancellationToken ct) =>
+        {
+            var preview = await handler.HandleAsync(request, ct);
+            return preview is null ? Results.NotFound() : Results.Ok(preview);
+        })
+        .AllowAnonymous()
+        .RequireRateLimiting("invite-preview")
+        .WithName("PreviewOrganisationInvite")
+        .WithTags("identity-organisations")
+        .Accepts<PreviewOrganisationInviteRequest>("application/json")
+        .Produces<PreviewOrganisationInviteResponse>(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status404NotFound)
+        .Produces(StatusCodes.Status429TooManyRequests)
+        .WithMetadata(new SwaggerRequestExampleAttribute(
+            typeof(PreviewOrganisationInviteRequest),
+            typeof(PreviewOrganisationInviteRequestExample)))
+        .WithMetadata(new SwaggerResponseExampleAttribute(
+            StatusCodes.Status200OK,
+            typeof(PreviewOrganisationInviteResponseExample)));
+
         app.MapGet("/identity/organisations/{organisationId:guid}/invites", async (
             ClaimsPrincipal user,
             Guid organisationId,

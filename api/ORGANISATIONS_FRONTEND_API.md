@@ -94,7 +94,30 @@ Invitee email must:
 - Be a **business email** (personal providers like Gmail are rejected)
 - Use the **same domain** as the organisation (set from the Owner’s email at registration), e.g. if the org domain is `acme.co.uk`, only `*@acme.co.uk` addresses are allowed
 
-`acceptToken` is a **6-digit code** (Development responses include it for E2E). The invite email shows the same code plus a button to `{JUSKEL_FRONTEND_URL}/accept-invite`.
+`acceptToken` is a **6-digit code** (Development responses include it for E2E). The invite email shows the same code plus a button to `{JUSKEL_FRONTEND_URL}/accept-invite` (**no code in the URL**).
+
+### Preview invite (anonymous)
+
+`POST /identity/invites/preview`
+
+No JWT. Rate-limited (**429** after 5 requests/minute/IP). Body:
+
+```json
+{ "code": "123456" }
+```
+
+Spaces in the code are ignored. `200`:
+
+```json
+{
+  "email": "teammate@company.co.uk",
+  "organisationName": "Acme Ltd",
+  "role": 2,
+  "expiresAt": "2026-09-14T12:00:00Z"
+}
+```
+
+`404` if the code is invalid, expired, or already used (same as accept — do not distinguish). Use this to lock the signup email and show “You’re joining {org} as {role}” before the user has an account.
 
 ### Resend invite
 
@@ -108,7 +131,9 @@ Response shape matches create-invite (`inviteId`, `email`, `role`, `expiresAt`, 
 
 `POST /identity/invites/{token}/accept`
 
-Authenticated; invitee email must match signed-in user. `{token}` is the 6-digit invite code from the email (spaces optional).
+Authenticated; invitee email must match signed-in user. `{token}` is the 6-digit invite code from the email (spaces optional). Rate-limited (**429** after 30 requests/minute/IP).
+
+After **200**, call `PUT /identity/me/organisations/current` then send the user to `/onboarding/company-setup` for that org (even if the application is already submitted — Viewer is read-only).
 
 ### Update member role
 
@@ -134,7 +159,9 @@ Owner only. Idempotent. Sets `isClosed` on the organisation; blocks all org-scop
 
 ## Registration
 
-`POST /identity/users` response now includes:
+`POST /identity/users`
+
+Founder (no `inviteCode`):
 
 ```json
 {
@@ -145,7 +172,27 @@ Owner only. Idempotent. Sets `isClosed` on the organisation; blocks all org-scop
 }
 ```
 
-Each new user gets a default organisation (Owner) derived from email domain.
+Each founder gets a default organisation (Owner) derived from email domain, plus a verification OTP email.
+
+Invitee (optional `inviteCode` — the 6-digit code from preview):
+
+```json
+{
+  "firstName": "Pat",
+  "lastName": "Lee",
+  "email": "teammate@company.co.uk",
+  "password": "…",
+  "inviteCode": "123456"
+}
+```
+
+When the code is valid **and** the email matches the invite:
+
+- No personal/default organisation is created (`defaultOrganisationId` is `null`)
+- `emailVerified` is `true` (no verification OTP)
+- The invite stays **pending** until `POST /identity/invites/{code}/accept` after login
+
+`400` if the code is invalid/expired/already used, or the email does not match. `400` “already registered” if that email has an account — send them to login with the stored invite.
 
 ## Onboarding / funding / scoring
 

@@ -6,6 +6,7 @@ using juskel.Shared.Organisation;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.AspNetCore.Routing;
 using Swashbuckle.AspNetCore.Filters;
 using System.Security.Claims;
@@ -158,9 +159,13 @@ internal static partial class OrganisationsEndpoints
             return response is null ? Results.NotFound() : Results.Ok(response);
         })
         .RequireAuthorization()
+        .RequireRateLimiting("invite-accept")
         .WithName("AcceptOrganisationInvite")
         .WithTags("identity-organisations")
         .Produces<AcceptOrganisationInviteResponse>(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status401Unauthorized)
+        .Produces(StatusCodes.Status404NotFound)
+        .Produces(StatusCodes.Status429TooManyRequests)
         .WithMetadata(new SwaggerResponseExampleAttribute(
             StatusCodes.Status200OK,
             typeof(AcceptOrganisationInviteResponseExample)));

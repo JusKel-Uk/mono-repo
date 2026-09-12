@@ -13,6 +13,14 @@ public sealed record CreateOrganisationInviteResponse(
     DateTime ExpiresAt,
     string AcceptToken);
 
+public sealed record PreviewOrganisationInviteRequest(string Code);
+
+public sealed record PreviewOrganisationInviteResponse(
+    string Email,
+    string OrganisationName,
+    OrganisationRole Role,
+    DateTime ExpiresAt);
+
 public sealed record AcceptOrganisationInviteResponse(
     Guid OrganisationId,
     string OrganisationName,
@@ -24,4 +32,4 @@ public sealed record RegisterUserResponse(
     Guid UserId,
     string Email,
     bool EmailVerified,
-    Guid DefaultOrganisationId);
+    Guid? DefaultOrganisationId);

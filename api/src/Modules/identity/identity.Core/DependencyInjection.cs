@@ -62,6 +62,7 @@ public static class DependencyInjection
         services.AddScoped<ListOrganisationsHandler>();
         services.AddScoped<SetCurrentOrganisationHandler>();
         services.AddScoped<ListOrganisationMembersHandler>();
+        services.AddScoped<PreviewOrganisationInviteHandler>();
         services.AddScoped<CreateOrganisationInviteHandler>();
         services.AddScoped<ListOrganisationInvitesHandler>();
         services.AddScoped<ResendOrganisationInviteHandler>();

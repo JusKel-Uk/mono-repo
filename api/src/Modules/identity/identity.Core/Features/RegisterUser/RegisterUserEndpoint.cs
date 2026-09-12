@@ -21,7 +21,8 @@ internal static class RegisterUserEndpoint
                 request.FirstName,
                 request.LastName,
                 request.Email,
-                request.Password);
+                request.Password,
+                request.InviteCode);
 
             var response = await handler.HandleAsync(command, ct);
             return Results.Created($"/identity/users/{response.UserId}", response);

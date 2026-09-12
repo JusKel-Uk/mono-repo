@@ -2,7 +2,6 @@ using identity.Contracts;
 using identity.Core.Entities;
 using identity.Core.Persistence;
 using identity.Core.Services;
-using juskel.Shared.Security;
 using Microsoft.EntityFrameworkCore;
 
 namespace identity.Core.Features.Organisations;
@@ -10,16 +9,13 @@ namespace identity.Core.Features.Organisations;
 internal sealed class AcceptOrganisationInviteHandler
 {
     private readonly IdentityDbContext _db;
-    private readonly IEmailLookupHasher _emailLookupHasher;
     private readonly IOrganisationInviteTokenService _tokenService;
 
     public AcceptOrganisationInviteHandler(
         IdentityDbContext db,
-        IEmailLookupHasher emailLookupHasher,
         IOrganisationInviteTokenService tokenService)
     {
         _db = db;
-        _emailLookupHasher = emailLookupHasher;
         _tokenService = tokenService;
     }
 
@@ -28,24 +24,19 @@ internal sealed class AcceptOrganisationInviteHandler
         string token,
         CancellationToken ct = default)
     {
-        var code = OtpCodes.Normalize(token);
-        if (code.Length != OtpCodes.Length)
-            return null;
-
         var user = await _db.Users
             .FirstOrDefaultAsync(u => u.Id == userId && u.DeletedAt == null, ct);
 
         if (user is null)
             return null;
 
-        var tokenHash = _tokenService.HashToken(code);
-        var invite = await _db.OrganisationInvites
-            .Include(i => i.Organisation)
-            .FirstOrDefaultAsync(
-                i => i.TokenHash == tokenHash && i.AcceptedAt == null,
-                ct);
+        var invite = await OrganisationInviteQueries.FindPendingByCodeAsync(
+            _db,
+            _tokenService,
+            token,
+            ct);
 
-        if (invite is null || invite.ExpiresAt < DateTime.UtcNow)
+        if (invite is null)
             return null;
 
         if (!string.Equals(user.EmailLookupHash, invite.EmailLookupHash, StringComparison.Ordinal))

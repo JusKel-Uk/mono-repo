@@ -1,11 +1,12 @@
 using identity.Contracts;
 using identity.Core.Entities;
+using identity.Core.Features.Organisations;
 using identity.Core.Persistence;
+using identity.Core.Services;
+using identity.Core.Validation;
 using juskel.Shared.Security;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using identity.Core.Validation;
-using identity.Core.Services;
 
 namespace identity.Core.Features.RegisterUser;
 
@@ -16,17 +17,20 @@ internal sealed class RegisterUserHandler
     private readonly IEmailOtpService _emailOtpService;
     private readonly IEmailVerificationNotifier _emailVerificationNotifier;
     private readonly IEmailLookupHasher _emailLookupHasher;
+    private readonly IOrganisationInviteTokenService _inviteTokens;
 
     public RegisterUserHandler(
         IdentityDbContext db,
         IEmailOtpService emailOtpService,
         IEmailVerificationNotifier emailVerificationNotifier,
-        IEmailLookupHasher emailLookupHasher)
+        IEmailLookupHasher emailLookupHasher,
+        IOrganisationInviteTokenService inviteTokens)
     {
         _db = db;
         _emailOtpService = emailOtpService;
         _emailVerificationNotifier = emailVerificationNotifier;
         _emailLookupHasher = emailLookupHasher;
+        _inviteTokens = inviteTokens;
     }
 
     public async Task<RegisterUserResponse> HandleAsync(
@@ -35,7 +39,8 @@ internal sealed class RegisterUserHandler
     {
         if (!BusinessEmailValidator.IsBusinessEmail(command.Email))
         {
-            throw new ArgumentException("A business email address is required. Personal email providers (e.g. Gmail, Yahoo) are not allowed.");
+            throw new ArgumentException(
+                "A business email address is required. Personal email providers (e.g. Gmail, Yahoo) are not allowed.");
         }
 
         if (string.IsNullOrWhiteSpace(command.FirstName))
@@ -59,9 +64,9 @@ internal sealed class RegisterUserHandler
         if (emailExists)
             throw new ArgumentException("Email is already registered.");
 
-        var now = DateTime.UtcNow;
-        var organisationId = Guid.NewGuid();
+        var invite = await ResolveInviteAsync(command.InviteCode, emailLookupHash, ct);
 
+        var now = DateTime.UtcNow;
         var user = new User
         {
             Id = Guid.NewGuid(),
@@ -72,14 +77,62 @@ internal sealed class RegisterUserHandler
             CreatedAt = now,
             UpdatedAt = now,
             LastPasswordChangeAt = now,
-            LastOrganisationId = organisationId,
         };
-
         user.PasswordHash = _passwordHasher.HashPassword(user, command.Password);
-        user.EmailVerified = false;
 
+        if (invite is not null)
+            return await RegisterInvitedUserAsync(user, ct);
+
+        return await RegisterFounderAsync(user, email, now, ct);
+    }
+
+    private async Task<OrganisationInvite?> ResolveInviteAsync(
+        string? inviteCode,
+        string emailLookupHash,
+        CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(inviteCode))
+            return null;
+
+        var invite = await OrganisationInviteQueries.FindPendingByCodeAsync(
+            _db,
+            _inviteTokens,
+            inviteCode,
+            ct);
+
+        if (invite is null)
+            throw new ArgumentException("This invite is invalid, expired, or already used.");
+
+        if (!string.Equals(emailLookupHash, invite.EmailLookupHash, StringComparison.Ordinal))
+            throw new ArgumentException("Email must match the invitation.");
+
+        return invite;
+    }
+
+    private async Task<RegisterUserResponse> RegisterInvitedUserAsync(
+        User user,
+        CancellationToken ct)
+    {
+        user.EmailVerified = true;
+        user.LastOrganisationId = null;
+        _db.Users.Add(user);
+        await _db.SaveChangesAsync(ct);
+
+        return new RegisterUserResponse(user.Id, user.Email, user.EmailVerified, null);
+    }
+
+    private async Task<RegisterUserResponse> RegisterFounderAsync(
+        User user,
+        string email,
+        DateTime now,
+        CancellationToken ct)
+    {
         if (!BusinessEmailValidator.TryGetDomain(email, out var emailDomain))
             throw new ArgumentException("A valid business email address is required.");
+
+        var organisationId = Guid.NewGuid();
+        user.EmailVerified = false;
+        user.LastOrganisationId = organisationId;
 
         var organisation = new Organisation
         {
@@ -102,7 +155,6 @@ internal sealed class RegisterUserHandler
         _db.Users.Add(user);
         _db.Organisations.Add(organisation);
         _db.OrganisationMembers.Add(membership);
-
         await _db.SaveChangesAsync(ct);
 
         E2eOtpBridge.LogOtpIfDevelopment(user.Email, otp.PlainCode);
