@@ -11,6 +11,11 @@ import { Eye, EyeOff } from 'lucide-react';
 import { ROUTES, safeInternalPath } from '@/lib/routes';
 import { loginSchema, type LoginInput } from '@/lib/validations/auth';
 import { login, ApiError } from '@/lib/api/auth';
+import {
+  getOrganisations,
+  setCurrentOrganisation,
+  OrganisationRole,
+} from '@/lib/api/settings';
 import { useAuthStore } from '@/stores/authStore';
 import { useReviewStore } from '@/stores/reviewStore';
 import { Button } from '@/components/ui/button';
@@ -41,7 +46,7 @@ export function LoginForm({ next }: { next?: string }) {
   const mutation = useMutation({
     mutationFn: (values: LoginInput) =>
       login({ email: values.email, password: values.password }),
-    onSuccess: (data, variables) => {
+    onSuccess: async (data, variables) => {
       // Start from a clean cache + a fresh submit-for-review gate so no
       // previous account's state survives into this session (e.g. a login
       // without a prior explicit logout).
@@ -54,6 +59,22 @@ export function LoginForm({ next }: { next?: string }) {
         firstName: data.firstName,
         lastName: data.lastName,
       });
+      // When the user belongs to several orgs, default the active workspace to
+      // one they own (the server may default to a different one). Best-effort.
+      try {
+        const orgs = await getOrganisations();
+        if (orgs.length > 1) {
+          const current = orgs.find((o) => o.isCurrent);
+          const owned = orgs.find(
+            (o) => o.role === OrganisationRole.Owner && !o.isClosed,
+          );
+          if (owned && current?.role !== OrganisationRole.Owner) {
+            await setCurrentOrganisation(owned.id);
+          }
+        }
+      } catch {
+        /* non-fatal — keep the server's default active org */
+      }
       // Return to the page they were bounced from (validated), else the app.
       // TODO(auth): route by role once user roles exist in the backend.
       router.push(safeInternalPath(next));
@@ -63,7 +84,9 @@ export function LoginForm({ next }: { next?: string }) {
       if (error instanceof ApiError && error.code === 'EMAIL_NOT_VERIFIED') {
         const email = error.email ?? form.getValues('email');
         router.push(
-          `${ROUTES.auth.verifyEmail}?email=${encodeURIComponent(email)}`,
+          `${ROUTES.auth.verifyEmail}?email=${encodeURIComponent(email)}${
+            next ? `&next=${encodeURIComponent(next)}` : ''
+          }`,
         );
       }
     },
@@ -186,7 +209,11 @@ export function LoginForm({ next }: { next?: string }) {
             <p className='text-foreground-secondary text-xs xl:text-base'>
               New to JusKel?{' '}
               <Link
-                href={ROUTES.auth.signup}
+                href={
+                  next
+                    ? `${ROUTES.auth.signup}?next=${encodeURIComponent(next)}`
+                    : ROUTES.auth.signup
+                }
                 className='text-teal-charcoal font-bold text-xs xl:text-base'
               >
                 Create an Account

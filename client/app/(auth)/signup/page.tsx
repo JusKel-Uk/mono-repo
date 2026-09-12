@@ -3,7 +3,12 @@ import { SignupForm } from './signup-form';
 
 export const metadata: Metadata = { title: 'Sign up' };
 
-export default function SignupPage() {
+export default async function SignupPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ next?: string }>;
+}) {
+  const { next } = await searchParams;
   return (
     <section className='flex w-full flex-col gap-10 xl:gap-14'>
       <div className='flex flex-col gap-1 xl:items-center xl:gap-2 xl:text-center'>
@@ -15,7 +20,7 @@ export default function SignupPage() {
         </p>
       </div>
 
-      <SignupForm />
+      <SignupForm next={next} />
     </section>
   );
 }

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { CircleAlert, CircleCheck, Loader2 } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
@@ -17,10 +17,9 @@ const PRIMARY =
 const GENERIC_ERROR =
   'This invite is invalid, expired, already used, or for a different email address.';
 
-type Phase = 'idle' | 'working' | 'success' | 'error';
+type Phase = 'idle' | 'working' | 'success' | 'error' | 'needsAuth';
 
 export function AcceptInvite() {
-  const router = useRouter();
   const params = useSearchParams();
   const queryToken = params.get('token');
 
@@ -28,45 +27,41 @@ export function AcceptInvite() {
   // pastes the token from their invitation email.
   const [phase, setPhase] = useState<Phase>(queryToken ? 'working' : 'idle');
   const [tokenInput, setTokenInput] = useState('');
+  const [pendingToken, setPendingToken] = useState('');
   const [orgName, setOrgName] = useState('');
   const [message, setMessage] = useState(GENERIC_ERROR);
   const ran = useRef(false);
 
-  const runAccept = useCallback(
-    (rawToken: string) => {
-      const token = rawToken.trim();
-      if (!token) return;
+  const runAccept = useCallback((rawToken: string) => {
+    const token = rawToken.trim();
+    if (!token) return;
 
-      // Not signed in → sign in first, then return here to accept. (Acceptance
-      // requires the signed-in user's email to match the invite.)
-      if (!getToken()) {
-        router.replace(
-          `${ROUTES.auth.login}?next=${encodeURIComponent(
-            `${ROUTES.acceptInvite}?token=${token}`,
-          )}`,
-        );
-        return;
-      }
+    // Accepting requires being signed in as the invited email. If there's no
+    // session, offer sign-in OR create-account — the invitee may not have a
+    // JusKel account yet. Either path returns here (with the token) to accept.
+    if (!getToken()) {
+      setPendingToken(token);
+      setPhase('needsAuth');
+      return;
+    }
 
-      setPhase('working');
-      acceptInvite(token)
-        .then(async (res) => {
-          // Switch into the new org (best-effort; single-org users don't need it).
-          try {
-            await setCurrentOrganisation(res.organisationId);
-          } catch {
-            /* non-fatal */
-          }
-          setOrgName(res.organisationName);
-          setPhase('success');
-        })
-        .catch((e) => {
-          setMessage(e instanceof ApiError && e.message ? e.message : GENERIC_ERROR);
-          setPhase('error');
-        });
-    },
-    [router],
-  );
+    setPhase('working');
+    acceptInvite(token)
+      .then(async (res) => {
+        // Switch into the new org (best-effort; single-org users don't need it).
+        try {
+          await setCurrentOrganisation(res.organisationId);
+        } catch {
+          /* non-fatal */
+        }
+        setOrgName(res.organisationName);
+        setPhase('success');
+      })
+      .catch((e) => {
+        setMessage(e instanceof ApiError && e.message ? e.message : GENERIC_ERROR);
+        setPhase('error');
+      });
+  }, []);
 
   // Auto-accept when a token arrives in the URL.
   useEffect(() => {
@@ -123,6 +118,42 @@ export function AcceptInvite() {
         >
           Back to dashboard
         </Link>
+      </div>
+    );
+  } else if (phase === 'needsAuth') {
+    // No session — the invitee signs in or creates an account, then returns
+    // here (token preserved via ?next) to accept.
+    const returnTo = encodeURIComponent(
+      `${ROUTES.acceptInvite}?token=${pendingToken}`,
+    );
+    content = (
+      <div className='flex w-full flex-col items-center gap-5'>
+        <div className='flex flex-col gap-2'>
+          <p className='text-h4 font-semibold text-carbon-black'>
+            Sign in to accept your invitation
+          </p>
+          <p className='text-body-md text-gray-500'>
+            Use the email address your invitation was sent to. New to JusKel?
+            Create an account and you&apos;ll come straight back here to accept.
+          </p>
+        </div>
+        <div className='flex w-full flex-col gap-3'>
+          <Link
+            href={`${ROUTES.auth.login}?next=${returnTo}`}
+            className={cn(PRIMARY, 'w-full')}
+          >
+            Sign in
+          </Link>
+          <Link
+            href={`${ROUTES.auth.signup}?next=${returnTo}`}
+            className={cn(
+              PRIMARY,
+              'w-full border border-gray-300 bg-white text-carbon-black shadow-none hover:bg-muted hover:opacity-100',
+            )}
+          >
+            Create an account
+          </Link>
+        </div>
       </div>
     );
   } else {

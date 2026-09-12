@@ -14,9 +14,9 @@ function maskEmail(email: string): string {
 export default async function VerifyEmailPage({
   searchParams,
 }: {
-  searchParams: Promise<{ email?: string }>;
+  searchParams: Promise<{ email?: string; next?: string }>;
 }) {
-  const { email = '' } = await searchParams;
+  const { email = '', next } = await searchParams;
   const target = email ? maskEmail(email) : 'your email';
 
   return (
@@ -31,7 +31,7 @@ export default async function VerifyEmailPage({
         </p>
       </div>
 
-      <VerifyEmailForm email={email} />
+      <VerifyEmailForm email={email} next={next} />
     </section>
   );
 }
