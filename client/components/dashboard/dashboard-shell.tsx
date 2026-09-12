@@ -1,16 +1,19 @@
 'use client';
 
-import type { ReactNode } from 'react';
+import { useEffect, type ReactNode } from 'react';
 import Link from 'next/link';
-import { Bell, Menu } from 'lucide-react';
+import { usePathname, useRouter } from 'next/navigation';
+import { Bell, Loader2, Menu } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 import { ROUTES } from '@/lib/routes';
 import { useAuthStore, displayName, initials } from '@/stores/authStore';
+import { useReviewStore } from '@/stores/reviewStore';
 import { useMounted } from '@/lib/hooks/use-mounted';
 import { useUnreadCount } from '@/lib/dashboard/notifications';
 import { JusKelLogo } from '@/components/brand/juskel-logo';
-import { DashboardSidebar } from '@/components/dashboard/dashboard-sidebar';
+import { AppSidebar } from '@/components/app-sidebar';
+import { ReviewPhaseSwitcher } from '@/components/dev/review-phase-switcher';
 import {
   Sheet,
   SheetContent,
@@ -69,8 +72,28 @@ export function DashboardShell({
   const avatar = mounted && user ? initials(displayName(user)) : '';
   const unread = useUnreadCount();
 
+  // Submit-for-review gate: only once the assessment has been submitted are the
+  // dashboard pages reachable; until then only the Assessment page (+ its step
+  // sub-routes) is. `submitted` is a temporary frontend flag (see reviewStore);
+  // we don't lock or redirect until mounted, to avoid a wrong-state flash.
+  const router = useRouter();
+  const pathname = usePathname();
+  const unlocked = useReviewStore((s) => s.phase !== 'none');
+  const locked = mounted && !unlocked;
+  const onAssessment =
+    pathname === ROUTES.sme.assessment ||
+    pathname.startsWith(`${ROUTES.sme.assessment}/`);
+  const blocked = locked && !onAssessment;
+
+  useEffect(() => {
+    if (blocked) router.replace(ROUTES.sme.assessment);
+  }, [blocked, router]);
+
   return (
     <div className='min-h-screen bg-mineral-white lg:flex'>
+      {/* TEMP dev control (no backend driver yet) — floats over every page. */}
+      <ReviewPhaseSwitcher />
+
       {/* Mobile top bar */}
       <header className='flex items-center justify-between border-b border-border bg-white px-6 py-4 lg:hidden'>
         <JusKelLogo className='text-carbon-black' />
@@ -85,7 +108,7 @@ export function DashboardShell({
             </SheetTrigger>
             <SheetContent side='left' className='w-78 p-0'>
               <SheetTitle className='sr-only'>Navigation</SheetTitle>
-              <DashboardSidebar />
+              <AppSidebar />
             </SheetContent>
           </Sheet>
         </div>
@@ -93,7 +116,7 @@ export function DashboardShell({
 
       {/* Desktop sidebar */}
       <aside className='sticky top-0 hidden h-screen w-78 shrink-0 border-r border-border lg:block'>
-        <DashboardSidebar />
+        <AppSidebar />
       </aside>
 
       {/* Main */}
@@ -122,7 +145,13 @@ export function DashboardShell({
             <div className='hidden h-px w-full bg-gray-200 lg:block' />
           </div>
 
-          {children}
+          {blocked ? (
+            <div className='flex min-h-60 items-center justify-center'>
+              <Loader2 className='size-6 animate-spin text-muted-foreground' />
+            </div>
+          ) : (
+            children
+          )}
         </div>
       </main>
     </div>

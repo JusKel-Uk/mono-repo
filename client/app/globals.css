@@ -28,6 +28,8 @@
   --color-carbon-green-black: #0f1e1a;  /* Structural */
 
   /* ---- Figma neutral ramp (Gray/*) — use bg-gray-300, text-gray-500, … ---- */
+  --color-gray-50: #fafafa;
+  --color-gray-100: #f5f5f5;
   --color-gray-200: #e9eaeb;
   --color-gray-300: #d5d7da;
   --color-gray-400: #a4a7ae;
@@ -39,15 +41,21 @@
   /* ---- Figma status scales — use bg-success-50, text-success-600, … ---- */
   --color-success-50: #ecfdf3;
   --color-success-200: #a6f4c5;
+  --color-success-500: #12b76a;
   --color-success-600: #039855;
+  --color-success-700: #027a48;
   --color-warning-50: #fffaeb;
   --color-warning-100: #fef0c7;
+  --color-warning-500: #f79009;
   --color-warning-200: #fedf89;
   --color-warning-600: #dc6803;
+  --color-warning-700: #b54708;
   --color-warning-800: #93370d;
   --color-error-50: #fef3f2;
   --color-error-100: #fee4e2;
+  --color-error-300: #fda29b;
   --color-error-600: #d92d20;
+  --color-error-700: #b42318;
 
   /* ---- Figma type scale (SF Pro). Each is size + line-height; pick the weight
    *      with font-normal (400) / font-medium (~510→500) / font-semibold
@@ -200,6 +208,23 @@
   body {
     @apply bg-background text-foreground;
   }
+  /* Tailwind v4 dropped the default pointer cursor on buttons — restore it for
+   * every enabled button. In the base layer, so an explicit `cursor-*` utility
+   * still wins, and disabled buttons keep their (not-allowed/default) cursor. */
+  button:not(:disabled) {
+    cursor: pointer;
+  }
+}
+
+/* Error toasts render solid red with white content per Figma (node 265:2497):
+ * error-600 surface, error-300 border, mineral-white text + icon. Scoped to the
+ * error type only, so success/info/default toasts keep the white surface set by
+ * the Toaster's --normal-* vars (components/ui/sonner.tsx). Icon and description
+ * inherit --normal-text, so overriding it here recolors the whole toast. */
+[data-sonner-toast][data-type='error'] {
+  --normal-bg: var(--color-error-600);
+  --normal-border: var(--color-error-300);
+  --normal-text: var(--color-mineral-white);
 }
 
 .c-border {

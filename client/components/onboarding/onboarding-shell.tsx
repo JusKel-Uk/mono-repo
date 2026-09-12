@@ -6,7 +6,7 @@ import { Bell, CircleCheckBig, Menu } from 'lucide-react';
 import { useAuthStore, displayName, initials } from '@/stores/authStore';
 import { useMounted } from '@/lib/hooks/use-mounted';
 import { JusKelLogo } from '@/components/brand/juskel-logo';
-import { OnboardingSidebar } from '@/components/onboarding/onboarding-sidebar';
+import { AppSidebar } from '@/components/app-sidebar';
 import {
   Sheet,
   SheetContent,
@@ -21,15 +21,18 @@ import {
  * landing/timeline page can reuse the same chrome without them.
  */
 export function OnboardingShell({
-  currentStepTitle,
   title,
   subtitle,
   whyWeAsk,
   actions,
   children,
 }: {
-  /** Step name shown as the sidebar's current-step context. */
-  currentStepTitle: string;
+  /**
+   * @deprecated The sidebar now derives its context (org) and lock state from
+   * the application status; this is accepted for call-site compatibility but
+   * no longer used.
+   */
+  currentStepTitle?: string;
   title: string;
   subtitle: string;
   whyWeAsk?: string;
@@ -60,7 +63,7 @@ export function OnboardingShell({
             </SheetTrigger>
             <SheetContent side='left' className='w-78 p-0'>
               <SheetTitle className='sr-only'>Navigation</SheetTitle>
-              <OnboardingSidebar currentStepTitle={currentStepTitle} />
+              <AppSidebar />
             </SheetContent>
           </Sheet>
         </div>
@@ -68,7 +71,7 @@ export function OnboardingShell({
 
       {/* Desktop sidebar */}
       <aside className='sticky top-0 hidden h-screen w-78 shrink-0 border-r border-border lg:block'>
-        <OnboardingSidebar currentStepTitle={currentStepTitle} />
+        <AppSidebar />
       </aside>
 
       {/* Main */}

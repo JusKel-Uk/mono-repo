@@ -7,7 +7,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 
-import { getStep, nextStepRoute } from '@/lib/onboarding/steps';
+import { getStep, nextStepRoute, ONBOARDING_BASE } from '@/lib/onboarding/steps';
 import { onboardingKeys, useLookupOptions } from '@/lib/hooks/use-onboarding';
 import {
   getBusinessProfile,
@@ -95,7 +95,7 @@ export function BusinessProfileForm() {
         toast.error('Could not save your business profile. Please try again.');
       }
     }
-    router.push('/onboarding');
+    router.push(ONBOARDING_BASE);
   };
 
   return (

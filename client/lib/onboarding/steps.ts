@@ -5,7 +5,7 @@ import { Briefcase, Building2, Coins, Landmark, Leaf } from 'lucide-react';
  * Onboarding step registry — the multi-step SME assessment wizard.
  * Order here drives the timeline, sidebar context, progress, and
  * Save-and-Continue navigation. Add a step + a page under
- * app/onboarding/<slug> to build it.
+ * app/sme/assessment/<slug> to build it.
  */
 
 export type OnboardingStep = {
@@ -24,7 +24,12 @@ export type OnboardingStep = {
   built: boolean;
 };
 
-export const ONBOARDING_BASE = '/onboarding';
+/**
+ * The assessment hub path. Step pages live beneath it (e.g.
+ * `/sme/assessment/company-setup`) and it is also where Save-and-Exit and the
+ * post-final-step navigation return to.
+ */
+export const ONBOARDING_BASE = '/sme/assessment';
 
 export const ONBOARDING_STEPS: OnboardingStep[] = [
   {

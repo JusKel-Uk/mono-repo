@@ -99,7 +99,7 @@ export type CompanySetup = {
   companiesHouseNumber?: string | null;
   relationship: number;
   region: number;
-  registeredAddressLine1?: string | null;
+  registeredAddress?: string | null;
   registeredAddressLine2?: string | null;
   city?: string | null;
   postcode?: string | null;
@@ -205,9 +205,11 @@ export type FinancialIntegrationMetrics = {
   annualRevenue?: number | null;
   priorAnnualRevenue?: number | null;
   grossProfit?: number | null;
+  operatingExpenses?: number | null;
   operatingProfit?: number | null;
   netIncome?: number | null;
   priorNetIncome?: number | null;
+  interestExpense?: number | null;
   ebitda?: number | null;
   cashBalance?: number | null;
   accountsReceivable?: number | null;
@@ -230,22 +232,59 @@ export type FinancialIntegrationMetrics = {
   priorPeriodHasReportData?: boolean;
 };
 
+/** One connected bank (Open Banking supports several per organisation). */
+export type OpenBankingConnection = {
+  connectionId: string;
+  institutionId: string;
+  institutionName: string;
+  accountCount: number;
+  connectedAt: string;
+  expiresAt?: string | null;
+};
+
+/**
+ * Aggregated Open Banking figures across all connected banks — mirrors the
+ * backend `BankingIntegrationMetricsDto`. Money fields are in `currency`.
+ */
+export type BankingIntegrationMetrics = {
+  currency: string;
+  periodStart: string;
+  periodEnd: string;
+  syncedAt: string;
+  connectionCount: number;
+  accountCount: number;
+  totalCashBalance: number;
+  totalCredits: number;
+  totalDebits: number;
+  netCashFlow: number;
+  avgMonthlyInflow: number;
+  avgMonthlyOutflow: number;
+  transactionCount: number;
+  hasNonGbpAccounts: boolean;
+};
+
+/** "I've connected all my relevant business accounts" attestation. */
+export type BankingCompleteness = {
+  allRelevantAccountsConnected: boolean;
+  attestedAt: string;
+  attestedByUserId: string;
+};
+
 export type FinancialProfile = {
   annualRevenueBand?: number | null;
   ebitdaBand?: number | null;
   existingDebtBand?: number | null;
   cashReserves?: number | null;
   avgMonthlyRevenue?: number | null;
-  // New bands — backend support pending; until then these arrive empty and are
-  // derived client-side from `integrationMetrics`.
-  grossMarginBand?: number | null;
-  revenueGrowthBand?: number | null;
-  receivablesBand?: number | null;
   /** When true, connected-source fields are read-only; skip them on PUT. */
   bandsLockedByIntegration?: boolean;
   isOpenBankingConnected?: boolean;
   integrations?: FinancialIntegration[];
   integrationMetrics?: FinancialIntegrationMetrics | null;
+  /** Open Banking: connected banks, aggregated metrics + completeness. */
+  connectedBanks?: OpenBankingConnection[];
+  bankingIntegrationMetrics?: BankingIntegrationMetrics | null;
+  bankingCompleteness?: BankingCompleteness | null;
 };
 
 /** All bands are optional — the financial profile is self-declared. */
@@ -255,9 +294,6 @@ export type UpsertFinancialProfileRequest = {
   existingDebtBand?: number | null;
   cashReserves?: number | null;
   avgMonthlyRevenue?: number | null;
-  grossMarginBand?: number | null;
-  revenueGrowthBand?: number | null;
-  receivablesBand?: number | null;
 };
 
 export function getFinancialProfile() {
@@ -285,15 +321,42 @@ export type IntegrationSlug = 'open-banking' | 'xero' | 'quickbooks';
 export type AuthorizeResponse = { authorizationUrl: string; state: string };
 
 export function authorizeIntegration(slug: IntegrationSlug) {
-  return request<AuthorizeResponse>(
-    `/funding/integrations/${slug}/authorize`,
-    { method: 'POST', auth: true },
-  );
+  return request<AuthorizeResponse>(`/funding/integrations/${slug}/authorize`, {
+    method: 'POST',
+    auth: true,
+  });
 }
 
 export function disconnectIntegration(slug: IntegrationSlug) {
   return request<void>(`/funding/integrations/${slug}`, {
     method: 'DELETE',
+    auth: true,
+  });
+}
+
+/* ---- Open Banking (multi-bank) ---- */
+
+/** List the org's connected banks (also present on the financial profile GET). */
+export function getOpenBankingConnections() {
+  return request<{ connections: OpenBankingConnection[] }>(
+    '/funding/integrations/open-banking/connections',
+    { method: 'GET', auth: true },
+  );
+}
+
+/** Disconnect a single bank (leaving the others connected). */
+export function disconnectOpenBankingConnection(connectionId: string) {
+  return request<void>(
+    `/funding/integrations/open-banking/connections/${connectionId}`,
+    { method: 'DELETE', auth: true },
+  );
+}
+
+/** Attest whether all relevant business accounts have been connected. */
+export function setBankingCompleteness(allRelevantAccountsConnected: boolean) {
+  return request<void>('/funding/integrations/open-banking/completeness', {
+    method: 'PUT',
+    body: { allRelevantAccountsConnected },
     auth: true,
   });
 }

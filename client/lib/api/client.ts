@@ -21,6 +21,8 @@ export class ApiError extends Error {
     readonly code?: string,
     /** Email echoed back on EMAIL_NOT_VERIFIED, for the verify redirect. */
     readonly email?: string,
+    /** Per-field validation messages (ASP.NET ValidationProblemDetails.errors). */
+    readonly fieldErrors?: Record<string, string[]>,
   ) {
     super(message);
     this.name = 'ApiError';
@@ -60,7 +62,24 @@ type ProblemDetails = {
   detail?: string | null;
   errorCode?: string;
   email?: string;
+  /** ASP.NET ValidationProblemDetails: field → messages. */
+  errors?: Record<string, string[]> | null;
 };
+
+/**
+ * Best user-facing message from a problem response. Validation problems carry a
+ * generic `title` ("One or more validation errors occurred.") with the useful
+ * detail inside `errors` — so prefer `detail`, then the flattened field errors,
+ * then `title`.
+ */
+function problemMessage(p: ProblemDetails, fallback: string): string {
+  if (p.detail) return p.detail;
+  if (p.errors) {
+    const msgs = Object.values(p.errors).flat().filter(Boolean);
+    if (msgs.length) return msgs.join(' ');
+  }
+  return p.title || fallback;
+}
 
 export type RequestOptions = {
   method?: string;
@@ -113,10 +132,11 @@ export async function request<T>(
   if (!res.ok) {
     const problem = (data ?? {}) as ProblemDetails;
     throw new ApiError(
-      problem.detail || problem.title || 'Something went wrong. Please try again.',
+      problemMessage(problem, 'Something went wrong. Please try again.'),
       res.status,
       problem.errorCode,
       problem.email,
+      problem.errors ?? undefined,
     );
   }
 
@@ -174,9 +194,11 @@ export async function requestBlob(
     const problem = (safeJsonParse(await res.text().catch(() => '')) ??
       {}) as ProblemDetails;
     throw new ApiError(
-      problem.detail || problem.title || 'Could not load the file. Please try again.',
+      problemMessage(problem, 'Could not load the file. Please try again.'),
       res.status,
       problem.errorCode,
+      problem.email,
+      problem.errors ?? undefined,
     );
   }
 
