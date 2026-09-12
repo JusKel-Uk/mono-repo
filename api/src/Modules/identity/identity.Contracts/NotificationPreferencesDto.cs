@@ -6,8 +6,10 @@ public sealed record NotificationPreferencesDto(
     bool ExpertReviewUpdates,
     bool IntegrationSyncEvents,
     bool ScoreUpdates,
-    bool NewFundingMatches)
+    bool NewFundingMatches,
+    bool InAppEnabled = true,
+    bool EmailEnabled = true)
 {
     public static NotificationPreferencesDto AllEnabled { get; } = new(
-        true, true, true, true, true, true);
+        true, true, true, true, true, true, true, true);
 }

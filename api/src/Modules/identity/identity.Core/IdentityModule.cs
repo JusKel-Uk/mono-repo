@@ -1,4 +1,5 @@
 using identity.Contracts;
+using identity.Core.Entities;
 using identity.Core.Persistence;
 using Microsoft.EntityFrameworkCore;
 
@@ -77,4 +78,62 @@ internal sealed class IdentityModule : IIdentityModule
             userId,
             requestedOrganisationId,
             ct);
+
+    public async Task<NotificationPreferencesDto> GetNotificationPreferencesAsync(
+        Guid userId,
+        CancellationToken ct = default)
+    {
+        var row = await _db.NotificationPreferences
+            .AsNoTracking()
+            .FirstOrDefaultAsync(p => p.UserId == userId, ct);
+
+        return MapPreferences(row);
+    }
+
+    public async Task<NotificationPreferencesDto?> PutNotificationPreferencesAsync(
+        Guid userId,
+        NotificationPreferencesDto preferences,
+        CancellationToken ct = default)
+    {
+        var userExists = await _db.Users
+            .AsNoTracking()
+            .AnyAsync(u => u.Id == userId && u.DeletedAt == null, ct);
+
+        if (!userExists)
+            return null;
+
+        var row = await _db.NotificationPreferences
+            .FirstOrDefaultAsync(p => p.UserId == userId, ct);
+
+        if (row is null)
+        {
+            row = new NotificationPreferences { UserId = userId };
+            _db.NotificationPreferences.Add(row);
+        }
+
+        row.AssessmentProgress = preferences.AssessmentProgress;
+        row.SubmissionsNeedAttention = preferences.SubmissionsNeedAttention;
+        row.ExpertReviewUpdates = preferences.ExpertReviewUpdates;
+        row.IntegrationSyncEvents = preferences.IntegrationSyncEvents;
+        row.ScoreUpdates = preferences.ScoreUpdates;
+        row.NewFundingMatches = preferences.NewFundingMatches;
+        row.InAppEnabled = preferences.InAppEnabled;
+        row.EmailEnabled = preferences.EmailEnabled;
+
+        await _db.SaveChangesAsync(ct);
+        return preferences;
+    }
+
+    private static NotificationPreferencesDto MapPreferences(NotificationPreferences? row) =>
+        row is null
+            ? NotificationPreferencesDto.AllEnabled
+            : new NotificationPreferencesDto(
+                row.AssessmentProgress,
+                row.SubmissionsNeedAttention,
+                row.ExpertReviewUpdates,
+                row.IntegrationSyncEvents,
+                row.ScoreUpdates,
+                row.NewFundingMatches,
+                row.InAppEnabled,
+                row.EmailEnabled);
 }

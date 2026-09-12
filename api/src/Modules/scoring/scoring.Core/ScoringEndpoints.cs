@@ -64,7 +64,7 @@ public static class ScoringEndpoints
 
             try
             {
-                var response = await service.UpsertAsync(access.OrganisationId, requestBody, ct);
+                var response = await service.UpsertAsync(userId, access.OrganisationId, requestBody, ct);
                 return response is null ? Results.NotFound() : Results.Ok(response);
             }
             catch (ArgumentException ex)

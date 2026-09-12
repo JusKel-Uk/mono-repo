@@ -20,4 +20,8 @@ public interface IOnboardingModule
         OnboardingStep step,
         StepStatus status,
         CancellationToken ct = default);
+
+    Task<Guid?> GetOrganisationIdForApplicationAsync(
+        Guid applicationId,
+        CancellationToken ct = default);
 }

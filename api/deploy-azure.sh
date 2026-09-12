@@ -280,6 +280,7 @@ deploy_app() {
     "ConnectionStrings__Onboarding=secretref:sql-connection-string"
     "ConnectionStrings__Funding=secretref:sql-connection-string"
     "ConnectionStrings__Scoring=secretref:sql-connection-string"
+    "ConnectionStrings__Notifications=secretref:sql-connection-string"
     "Jwt__Secret=secretref:jwt-secret"
     "Email__Resend__ApiKey=secretref:resend-api-key"
     "Integrations__CompaniesHouse__BaseUrl=${ch_base_url}"

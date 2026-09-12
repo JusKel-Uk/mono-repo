@@ -55,4 +55,15 @@ internal sealed class OnboardingModule : IOnboardingModule
 
         await _db.SaveChangesAsync(ct);
     }
+
+    public async Task<Guid?> GetOrganisationIdForApplicationAsync(
+        Guid applicationId,
+        CancellationToken ct = default)
+    {
+        return await _db.Applications
+            .AsNoTracking()
+            .Where(a => a.Id == applicationId)
+            .Select(a => (Guid?)a.OrganisationId)
+            .FirstOrDefaultAsync(ct);
+    }
 }

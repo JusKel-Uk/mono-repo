@@ -203,7 +203,9 @@ async function runSettingsCoverage(token, userId) {
   const prefsGet = await apiGet('/identity/me/notification-preferences', token);
   log('GET /identity/me/notification-preferences (defaults on)', prefsGet.status === 200
     && prefsGet.data?.assessmentProgress === true
-    && prefsGet.data?.newFundingMatches === true, { status: prefsGet.status });
+    && prefsGet.data?.newFundingMatches === true
+    && prefsGet.data?.inAppEnabled === true
+    && prefsGet.data?.emailEnabled === true, { status: prefsGet.status });
 
   const prefsPut = await api('PUT', '/identity/me/notification-preferences', token, {
     assessmentProgress: true,
@@ -215,7 +217,9 @@ async function runSettingsCoverage(token, userId) {
   });
   log('PUT /identity/me/notification-preferences', prefsPut.status === 200
     && prefsPut.data?.expertReviewUpdates === false
-    && prefsPut.data?.newFundingMatches === false, { status: prefsPut.status });
+    && prefsPut.data?.newFundingMatches === false
+    && prefsPut.data?.inAppEnabled === true
+    && prefsPut.data?.emailEnabled === true, { status: prefsPut.status });
 
   const prefsReload = await apiGet('/identity/me/notification-preferences', token);
   log('GET preferences after PUT', prefsReload.status === 200

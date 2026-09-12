@@ -4,6 +4,7 @@ using funding.Core.Entities;
 using funding.Core.Persistence;
 using juskel.Integrations.QuickBooks;
 using Microsoft.EntityFrameworkCore;
+using notifications.Contracts;
 using onboarding.Contracts;
 
 namespace funding.Core.Services;
@@ -13,15 +14,18 @@ internal sealed class FinancialProfileService
     private readonly FundingDbContext _db;
     private readonly IOnboardingModule _onboarding;
     private readonly IFundingModule _funding;
+    private readonly INotificationModule _notifications;
 
     public FinancialProfileService(
         FundingDbContext db,
         IOnboardingModule onboarding,
-        IFundingModule funding)
+        IFundingModule funding,
+        INotificationModule notifications)
     {
         _db = db;
         _onboarding = onboarding;
         _funding = funding;
+        _notifications = notifications;
     }
 
     public async Task<FinancialProfileResponse?> GetAsync(
@@ -76,6 +80,7 @@ internal sealed class FinancialProfileService
     }
 
     public async Task<FinancialProfileResponse?> UpsertAsync(
+        Guid userId,
         Guid organisationId,
         UpsertFinancialProfileRequest request,
         CancellationToken ct = default)
@@ -98,7 +103,7 @@ internal sealed class FinancialProfileService
         profile ??= new FinancialProfile { ApplicationId = applicationId };
 
         if (profile.BandsLockedByIntegration || integrationLocked)
-            return await AcknowledgeLockedProfileAsync(applicationId, profile, ct);
+            return await AcknowledgeLockedProfileAsync(userId, organisationId, applicationId, profile, ct);
 
         profile.AnnualRevenueBand = request.AnnualRevenueBand;
         profile.EbitdaBand = request.EbitdaBand;
@@ -116,6 +121,7 @@ internal sealed class FinancialProfileService
             ? StepStatus.Complete
             : StepStatus.InProgress;
         await _onboarding.MarkStepAsync(applicationId, OnboardingStep.Financial, status, ct);
+        await NotifyFinancialCompleteAsync(userId, organisationId, status, ct);
 
         var integrations = await _funding.GetIntegrationStatusAsync(applicationId, ct);
         var isOpenBankingConnected = integrations.Any(i =>
@@ -144,6 +150,8 @@ internal sealed class FinancialProfileService
     /// by re-marking onboarding progress and returning the current profile unchanged.
     /// </summary>
     private async Task<FinancialProfileResponse> AcknowledgeLockedProfileAsync(
+        Guid userId,
+        Guid organisationId,
         Guid applicationId,
         FinancialProfile profile,
         CancellationToken ct)
@@ -152,6 +160,7 @@ internal sealed class FinancialProfileService
             ? StepStatus.Complete
             : StepStatus.InProgress;
         await _onboarding.MarkStepAsync(applicationId, OnboardingStep.Financial, status, ct);
+        await NotifyFinancialCompleteAsync(userId, organisationId, status, ct);
 
         var integrations = await _funding.GetIntegrationStatusAsync(applicationId, ct);
         var isOpenBankingConnected = integrations.Any(i =>
@@ -173,6 +182,25 @@ internal sealed class FinancialProfileService
             connectedBanks,
             bankingMetrics,
             bankingCompleteness);
+    }
+
+    private Task NotifyFinancialCompleteAsync(
+        Guid userId,
+        Guid organisationId,
+        StepStatus status,
+        CancellationToken ct)
+    {
+        if (status != StepStatus.Complete)
+            return Task.CompletedTask;
+
+        return _notifications.NotifyAsync(
+            ProductNotifications.AssessmentProgress(
+                userId,
+                organisationId,
+                "Financial profile complete",
+                "Your financial profile is ready.",
+                "/sme/assessment"),
+            ct);
     }
 
     internal static void ApplyQuickBooksBands(FinancialProfile profile, QuickBooksFinancialSnapshot snapshot)

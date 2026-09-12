@@ -1,6 +1,7 @@
 using System.Text.RegularExpressions;
 using juskel.Integrations.CompaniesHouse;
 using Microsoft.EntityFrameworkCore;
+using notifications.Contracts;
 using onboarding.Contracts;
 using onboarding.Core.Entities;
 using onboarding.Core.Persistence;
@@ -16,15 +17,18 @@ internal sealed class CompanySetupService
     private readonly OnboardingDbContext _db;
     private readonly ICompaniesHouseClient _companiesHouse;
     private readonly IOnboardingModule _onboarding;
+    private readonly INotificationModule _notifications;
 
     public CompanySetupService(
         OnboardingDbContext db,
         ICompaniesHouseClient companiesHouse,
-        IOnboardingModule onboarding)
+        IOnboardingModule onboarding,
+        INotificationModule notifications)
     {
         _db = db;
         _companiesHouse = companiesHouse;
         _onboarding = onboarding;
+        _notifications = notifications;
     }
 
     public async Task<CompanySetupResponse?> GetAsync(Guid organisationId, CancellationToken ct = default)
@@ -37,6 +41,7 @@ internal sealed class CompanySetupService
     }
 
     public async Task<CompanySetupResponse?> UpsertAsync(
+        Guid userId,
         Guid organisationId,
         UpsertCompanySetupRequest request,
         CancellationToken ct = default)
@@ -70,6 +75,15 @@ internal sealed class CompanySetupService
         await _db.SaveChangesAsync(ct);
 
         await _onboarding.MarkStepAsync(application.Id, OnboardingStep.Company, StepStatus.Complete, ct);
+
+        await _notifications.NotifyAsync(
+            ProductNotifications.AssessmentProgress(
+                userId,
+                organisationId,
+                "Company setup complete",
+                "You've finished filling the company setup. Great work.",
+                "/sme/assessment"),
+            ct);
 
         return Map(application.Id, setup);
     }

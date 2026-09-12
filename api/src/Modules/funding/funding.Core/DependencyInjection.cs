@@ -25,6 +25,7 @@ public static class DependencyInjection
         services.AddScoped<FundingProfileService>();
         services.AddScoped<OpenBankingSyncService>();
         services.AddScoped<IntegrationService>();
+        services.AddScoped<IntegrationNotifications>();
         services.AddScoped<EvidenceService>();
         return services;
     }

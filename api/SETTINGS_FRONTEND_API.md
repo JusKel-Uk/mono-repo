@@ -4,7 +4,7 @@ Maps the SME Settings page (`/sme/settings`) to Identity endpoints.
 
 **OpenAPI (dev):** `http://localhost:5242/swagger`  
 **Auth:** Bearer `accessToken` from `POST /identity/sessions` unless noted.  
-**Out of scope:** Team tab (invites/roles), email change, MFA, billing, notification inbox.
+**Out of scope:** Team tab (invites/roles), email change, MFA, billing. Inbox: [`NOTIFICATIONS_FRONTEND_API.md`](NOTIFICATIONS_FRONTEND_API.md).
 
 After this API ships, **existing access tokens are rejected** until the user signs in again. Sign-in now records a server session (`jti`); revoked or missing sessions return 401.
 
@@ -69,9 +69,9 @@ Response is the same as `GET /identity/me`. Empty `jobTitle` / `phone` store `nu
 
 ---
 
-## Notifications (email preferences)
+## Notifications (preferences)
 
-Six booleans. Missing row → all `true` (matches the mock defaults). `PUT` the full object on each toggle.
+Six category booleans plus two optional channel flags. Missing row → all `true`. `PUT` the full object on each toggle. Omitting `inAppEnabled` / `emailEnabled` defaults them to `true`, so the current Settings PUT of six booleans stays valid.
 
 ```json
 {
@@ -80,7 +80,9 @@ Six booleans. Missing row → all `true` (matches the mock defaults). `PUT` the 
   "expertReviewUpdates": true,
   "integrationSyncEvents": true,
   "scoreUpdates": true,
-  "newFundingMatches": true
+  "newFundingMatches": true,
+  "inAppEnabled": true,
+  "emailEnabled": true
 }
 ```
 
@@ -92,10 +94,14 @@ Six booleans. Missing row → all `true` (matches the mock defaults). `PUT` the 
 | Integration sync events | `integrationSyncEvents` |
 | Sustainability Finance Score updates | `scoreUpdates` |
 | New funding matches | `newFundingMatches` |
+| In-app notifications (optional) | `inAppEnabled` |
+| Email notifications (optional) | `emailEnabled` |
 
-These flags are **stored only**. Assessment/funding emails do not read them yet.
+The notifications **gateway** applies these flags on send: category must be on **and** the channel must be on. Callers do not re-check prefs.
 
-The `/sme/notifications` inbox is a different surface and has no API here.
+Same DTO is also available at `GET`/`PUT` `/notifications/me/preferences`. The Settings page can keep using the Identity path.
+
+The `/sme/notifications` inbox is documented in [`NOTIFICATIONS_FRONTEND_API.md`](NOTIFICATIONS_FRONTEND_API.md).
 
 ---
 

@@ -16,6 +16,10 @@
     <Project Path="src/Modules/identity/identity.Contracts/identity.Contracts.csproj" />
     <Project Path="src/Modules/identity/identity.Core/identity.Core.csproj" />
   </Folder>
+  <Folder Name="/src/Modules/notifications/">
+    <Project Path="src/Modules/notifications/notifications.Contracts/notifications.Contracts.csproj" />
+    <Project Path="src/Modules/notifications/notifications.Core/notifications.Core.csproj" />
+  </Folder>
   <Folder Name="/src/Modules/onboarding/">
     <Project Path="src/Modules/onboarding/onboarding.Contracts/onboarding.Contracts.csproj" />
     <Project Path="src/Modules/onboarding/onboarding.Core/onboarding.Core.csproj" />
