@@ -20,5 +20,6 @@ public enum SubmissionStatus
 {
     Draft = 0,
     Submitted = 1,
-    Published = 2,
+    InReview = 2,
+    Published = 3,
 }
