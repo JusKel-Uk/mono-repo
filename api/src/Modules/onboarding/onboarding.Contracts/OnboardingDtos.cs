@@ -16,7 +16,8 @@ public sealed record ApplicationResponse(
     IReadOnlyList<StepProgressDto> Steps,
     DateTime CreatedAt,
     DateTime UpdatedAt,
-    DateTime? SubmittedAt);
+    DateTime? SubmittedAt,
+    DateTime? PublishedAt);
 
 // POST /onboarding/applications → 201
 public sealed record CreateApplicationResponse(Guid ApplicationId);
