@@ -105,6 +105,7 @@ Store `accessToken` and attach to all subsequent requests.
 | First visit after login | `POST` | `/onboarding/applications` | **No body.** Creates draft if missing. **201** `{ applicationId }` |
 | Every dashboard load | `GET` | `/onboarding/applications/current` | `completedCount`, `totalSteps` (5), `canSubmit`, `steps[]` with `step` + `status` |
 | After submit | `GET` | `/onboarding/applications/current` | `status: 1` (Submitted), `submittedAt` set |
+| After admin publish | `GET` | `/onboarding/applications/current` | `status: 2` (Published), `publishedAt` set (no public publish endpoint yet) |
 
 **`steps[].step` values:** `1` Company · `2` Business · `3` Financial · `4` Sustainability · `5` Funding  
 **`steps[].status` values:** `0` NotStarted · `1` InProgress · `2` Complete
@@ -554,6 +555,8 @@ Example snippet (`quickBooksExtended`):
 | Incomplete submit | same | same | **409** if steps missing |
 | After success | `GET` | `/onboarding/applications/current` | `status: 1` (Submitted) |
 
+**Publish (admin — later):** There is no SME-facing endpoint to set `Published` yet. Admins will transition `Submitted → Published` in a future slice. Until then, `status: 2` and `publishedAt` are returned on GET when set in the database.
+
 ---
 
 ## Dropdown options (sector, region, bands, etc.)
@@ -685,7 +688,7 @@ Source of truth for **valid integers**: `api/src/Modules/*/*.Contracts/*Enums.cs
 |------|--------|
 | **OnboardingStep** | 1 Company · 2 Business · 3 Financial · 4 Sustainability · 5 Funding |
 | **StepStatus** | 0 NotStarted · 1 InProgress · 2 Complete |
-| **SubmissionStatus** | 0 Draft · 1 Submitted |
+| **SubmissionStatus** | 0 Draft · 1 Submitted · 2 Published |
 
 ---
 

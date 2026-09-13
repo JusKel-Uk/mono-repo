@@ -136,6 +136,7 @@ internal sealed class OnboardingApplicationService
             steps,
             application.CreatedAt,
             application.UpdatedAt,
-            application.SubmittedAt);
+            application.SubmittedAt,
+            application.PublishedAt);
     }
 }

@@ -18,6 +18,8 @@ internal sealed class Application
 
     public DateTime? SubmittedAt { get; set; }
 
+    public DateTime? PublishedAt { get; set; }
+
     public ICollection<StepProgress> Steps { get; set; } = [];
 
     public CompanySetup? CompanySetup { get; set; }

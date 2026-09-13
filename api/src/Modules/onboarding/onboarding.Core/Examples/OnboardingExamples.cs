@@ -22,7 +22,29 @@ public sealed class ApplicationResponseExample : IExamplesProvider<ApplicationRe
             .ToList(),
         DateTime.UtcNow.AddDays(-1),
         DateTime.UtcNow,
+        null,
         null);
+}
+
+public sealed class ApplicationPublishedResponseExample : IExamplesProvider<ApplicationResponse>
+{
+    public ApplicationResponse GetExamples()
+    {
+        var submittedAt = DateTime.UtcNow.AddDays(-3);
+        return new(
+            Guid.Parse("22222222-2222-2222-2222-222222222222"),
+            SubmissionStatus.Published,
+            5,
+            5,
+            false,
+            Enum.GetValues<OnboardingStep>()
+                .Select(step => new StepProgressDto(step, StepStatus.Complete, submittedAt))
+                .ToList(),
+            submittedAt.AddDays(-7),
+            DateTime.UtcNow,
+            submittedAt,
+            DateTime.UtcNow.AddDays(-1));
+    }
 }
 
 public sealed class CompanySetupResponseExample : IExamplesProvider<CompanySetupResponse>
