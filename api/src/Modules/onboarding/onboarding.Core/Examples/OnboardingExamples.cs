@@ -26,6 +26,27 @@ public sealed class ApplicationResponseExample : IExamplesProvider<ApplicationRe
         null);
 }
 
+public sealed class ApplicationInReviewResponseExample : IExamplesProvider<ApplicationResponse>
+{
+    public ApplicationResponse GetExamples()
+    {
+        var submittedAt = DateTime.UtcNow.AddDays(-2);
+        return new(
+            Guid.Parse("33333333-3333-3333-3333-333333333333"),
+            SubmissionStatus.InReview,
+            5,
+            5,
+            false,
+            Enum.GetValues<OnboardingStep>()
+                .Select(step => new StepProgressDto(step, StepStatus.Complete, submittedAt))
+                .ToList(),
+            submittedAt.AddDays(-5),
+            DateTime.UtcNow,
+            submittedAt,
+            null);
+    }
+}
+
 public sealed class ApplicationPublishedResponseExample : IExamplesProvider<ApplicationResponse>
 {
     public ApplicationResponse GetExamples()
