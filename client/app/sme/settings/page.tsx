@@ -484,15 +484,51 @@ function TeamPanel() {
                         changeRole.mutate({ userId: m.userId, role })
                       }
                     />
-                    <button
-                      type='button'
-                      onClick={() => remove.mutate(m.userId)}
-                      disabled={busy}
-                      aria-label={`Remove ${m.email}`}
-                      className='disabled:opacity-60'
-                    >
-                      <Trash2 className='size-5 text-gray-500 hover:text-carbon-black' />
-                    </button>
+                    <Dialog>
+                      <DialogTrigger asChild>
+                        <button
+                          type='button'
+                          disabled={busy}
+                          aria-label={`Remove ${m.email}`}
+                          className='disabled:opacity-60'
+                        >
+                          <Trash2 className='size-5 text-gray-500 hover:text-carbon-black' />
+                        </button>
+                      </DialogTrigger>
+                      <DialogContent className='sm:max-w-100'>
+                        <DialogHeader>
+                          <DialogTitle className='text-h6 font-semibold text-carbon-black'>
+                            Remove team member?
+                          </DialogTitle>
+                          <DialogDescription className='text-body-sm text-gray-600'>
+                            You&apos;re about to remove{' '}
+                            {joinName(m.firstName, m.lastName) || m.email} from{' '}
+                            {org?.name ?? 'your organisation'}. They&apos;ll
+                            immediately lose access to this organisation. You can
+                            invite them again later.
+                          </DialogDescription>
+                        </DialogHeader>
+                        <DialogFooter className='gap-3 sm:justify-start'>
+                          <DialogClose asChild>
+                            <button
+                              type='button'
+                              className='inline-flex h-10 flex-1 items-center justify-center rounded-lg border border-gray-300 px-4.5 text-sm font-semibold text-gray-700 shadow-xs'
+                            >
+                              Cancel
+                            </button>
+                          </DialogClose>
+                          <DialogClose asChild>
+                            <button
+                              type='button'
+                              onClick={() => remove.mutate(m.userId)}
+                              className='inline-flex h-10 items-center justify-center rounded-lg bg-destructive px-4.5 text-sm font-semibold text-mineral-white shadow-xs transition-opacity hover:opacity-90'
+                            >
+                              Remove member
+                            </button>
+                          </DialogClose>
+                        </DialogFooter>
+                      </DialogContent>
+                    </Dialog>
                   </div>
                 ) : (
                   <RoleBadge role={m.role} />

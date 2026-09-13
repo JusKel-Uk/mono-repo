@@ -176,6 +176,7 @@ export function CompanySetupForm() {
       actions={
         <OnboardingActions
           formId={FORM_ID}
+          slug={SLUG}
           loading={save.isPending}
           disabled={!form.formState.isValid}
           onSaveExit={onSaveExit}

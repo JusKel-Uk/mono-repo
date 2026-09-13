@@ -53,7 +53,7 @@ export type StepStatus = 0 | 1 | 2;
 
 export type ApplicationProgress = {
   applicationId: string;
-  /** SubmissionStatus: 0 Draft · 1 Submitted */
+  /** SubmissionStatus: 0 Draft · 1 Submitted · 2 InReview · 3 Published */
   status: number;
   submittedAt?: string | null;
   completedCount: number;

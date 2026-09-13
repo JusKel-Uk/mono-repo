@@ -17,6 +17,7 @@ import {
   type EnumOption,
   type LookupSpec,
 } from '@/lib/onboarding/enums';
+import { useReviewStore } from '@/stores/reviewStore';
 
 /**
  * Server-authoritative onboarding state. TanStack Query owns the draft
@@ -85,6 +86,18 @@ export function useApplication() {
       }
     },
   });
+}
+
+/**
+ * True once the assessment has been submitted (SubmissionStatus ≥ 1 —
+ * Submitted / InReview / Published), so step answers are read-only. Mirrors the
+ * AssessmentView "submitted" derivation, and also honours the temporary review
+ * gate (reviewStore) so the dev ReviewPhaseSwitcher works.
+ */
+export function useAssessmentLocked(): boolean {
+  const { data: app } = useApplication();
+  const phase = useReviewStore((s) => s.phase);
+  return (app?.status ?? 0) >= 1 || phase !== 'none';
 }
 
 /**
