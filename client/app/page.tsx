@@ -32,7 +32,7 @@ export default function Home() {
           <Link href={ROUTES.sme.dashboard} className='underline'>
             SME portal
           </Link>
-          <Link href={ROUTES.lender.dashboard} className='underline'>
+          <Link href={ROUTES.lender.login} className='underline'>
             Lender portal
           </Link>
         </div>
