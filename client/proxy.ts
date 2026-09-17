@@ -37,8 +37,16 @@ export function proxy(request: NextRequest) {
   const hasToken = Boolean(request.cookies.get(TOKEN_COOKIE)?.value);
 
   // Signed-out → protected route: bounce to login, remembering the destination.
-  // Lender auth pages are public (UI-only), so they're exempt from the gate.
-  if (!hasToken && underAny(pathname, PROTECTED) && !underAny(pathname, LENDER_AUTH)) {
+  // Lender auth pages and the /lender access hub are public (UI-only), so
+  // they're exempt from the gate. The hub is matched exactly, not by prefix,
+  // to avoid exposing everything under /lender (e.g. the dashboard).
+  const isLenderHub = pathname === ROUTES.lender.root;
+  if (
+    !hasToken &&
+    underAny(pathname, PROTECTED) &&
+    !underAny(pathname, LENDER_AUTH) &&
+    !isLenderHub
+  ) {
     const loginUrl = new URL(ROUTES.auth.login, request.url);
     loginUrl.searchParams.set('next', pathname + search);
     return NextResponse.redirect(loginUrl);

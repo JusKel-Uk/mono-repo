@@ -1,5 +1,6 @@
 import { JusKelLogo } from '@/components/brand/juskel-logo';
 import { AuthRibbons } from '@/components/brand/auth-ribbons';
+import { LenderAuthSwitcher } from '@/components/dev/lender-auth-switcher';
 
 /** Shared shell for the lender auth pages — mirrors the SME (auth) layout. */
 export default function LenderAuthLayout({
@@ -23,6 +24,9 @@ export default function LenderAuthLayout({
           {children}
         </div>
       </div>
+
+      {/* TEMPORARY demo-only screen switcher — remove with lender backend. */}
+      <LenderAuthSwitcher />
     </main>
   );
 }

@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation } from '@tanstack/react-query';
@@ -27,9 +28,11 @@ import {
 const LABEL = 'text-sm font-semibold text-carbon-black xl:text-lg';
 
 export function LenderResetPasswordForm() {
+  const searchParams = useSearchParams();
   const [showPw, setShowPw] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
-  const [done, setDone] = useState(false);
+  // `?done=1` lets the demo switcher jump straight to the success state.
+  const [done, setDone] = useState(searchParams.get('done') === '1');
 
   const form = useForm<LenderResetPasswordInput>({
     resolver: zodResolver(lenderResetPasswordSchema),
