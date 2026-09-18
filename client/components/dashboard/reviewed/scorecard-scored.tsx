@@ -991,10 +991,10 @@ export function ScorecardScored() {
                   {i > 0 && <div className='h-px w-full bg-gray-200' />}
                   <div className='flex flex-col gap-2'>
                     <div className='flex items-center justify-between gap-4'>
-                      <p className='text-body-sm text-carbon-black lg:text-body-md'>
+                      <p className='min-w-0 flex-1 text-body-sm text-carbon-black lg:text-body-md'>
                         {a.title}
                       </p>
-                      <p className='shrink-0 text-label-md text-right text-success-600 lg:text-body-sm'>
+                      <p className='w-21.5 shrink-0 whitespace-nowrap text-label-md text-success-600 lg:text-body-sm'>
                         {a.points}
                       </p>
                     </div>

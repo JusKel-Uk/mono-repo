@@ -142,10 +142,10 @@ export function DashboardOverview({ greeting }: { greeting: string }) {
                   {i > 0 && <div className='h-px w-full bg-gray-200' />}
                   <div className='flex flex-col gap-2'>
                     <div className='flex items-center justify-between gap-4'>
-                      <p className='text-body-md text-carbon-black'>
+                      <p className='min-w-0 flex-1 text-body-md text-carbon-black'>
                         {a.title}
                       </p>
-                      <p className='shrink-0 text-body-sm text-right text-success-600'>
+                      <p className='w-21.5 shrink-0 whitespace-nowrap text-body-sm text-success-600'>
                         {a.points}
                       </p>
                     </div>
