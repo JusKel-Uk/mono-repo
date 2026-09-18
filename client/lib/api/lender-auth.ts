@@ -14,9 +14,13 @@
  * lender portal is just a different set of routes behind the same token.
  */
 
-import { toast } from 'sonner';
-
 import { request, setToken, clearToken } from './client';
+
+/**
+ * Password reset reuses the shared identity endpoints; this header tells the
+ * backend to treat the flow as a lender portal reset (emails, links, copy).
+ */
+const LENDER_PORTAL_HEADER = { 'X-Juskel-Portal': 'lender' };
 
 // Re-exported so callers can `instanceof`-check errors without a second import.
 export { ApiError, getToken } from './client';
@@ -136,33 +140,36 @@ export function lenderSignOut(): void {
 }
 
 /* ------------------------------------------------------------------ *
- * Password reset flow — UI-only. The lender module has no forgot/reset
- * endpoints (same parity as SME identity), so these stay dummies: they
- * log their payload and fire a clearly-labelled toast so the reset
- * screens stay demoable until the backend adds support.
- *
- * TODO(backend): replace with real request(...) calls once lender
- * password-reset endpoints exist.
+ * Password reset flow — reuses the shared identity endpoints with the
+ * `X-Juskel-Portal: lender` header so the emails and links are the
+ * lender-portal variants. Three steps: request a code, verify it (which
+ * returns a short-lived token), then confirm the new password with that
+ * token.
  * ------------------------------------------------------------------ */
 
-function dummy<T = void>(action: string, payload?: unknown, result?: T): Promise<T> {
-  console.log(`[lender-auth · DUMMY] ${action}`, payload ?? '');
-  toast.message('🧪 Dummy action — no backend', {
-    description: `"${action}" was logged to the console. Lender password reset isn't wired to a backend yet.`,
-  });
-  return new Promise((resolve) => {
-    setTimeout(() => resolve(result as T), 500);
-  });
-}
-
+/** Step 1 — email a reset code. POST /identity/password-reset → { message }. */
 export function lenderForgotPassword(input: { email: string }) {
-  return dummy('Forgot password — send reset code', input);
+  return request<{ message: string }>('/identity/password-reset', {
+    body: { email: input.email },
+    headers: LENDER_PORTAL_HEADER,
+  });
 }
 
+/**
+ * Step 2 — verify the emailed code. POST /identity/password-reset/verify →
+ * { token }. The token authorises the confirm step below.
+ */
 export function lenderVerifyResetCode(input: { email: string; code: string }) {
-  return dummy('Verify reset code', input);
+  return request<{ token: string }>('/identity/password-reset/verify', {
+    body: { email: input.email, code: input.code },
+    headers: LENDER_PORTAL_HEADER,
+  });
 }
 
-export function lenderResetPassword(input: { password: string }) {
-  return dummy('Set a new password', input);
+/** Step 3 — set the new password. POST /identity/password-reset/confirm → 204. */
+export function lenderResetPassword(input: { token: string; password: string }) {
+  return request<void>('/identity/password-reset/confirm', {
+    body: { token: input.token, password: input.password },
+    headers: LENDER_PORTAL_HEADER,
+  });
 }

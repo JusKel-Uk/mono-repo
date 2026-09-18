@@ -13,7 +13,7 @@ import {
   lenderResetPasswordSchema,
   type LenderResetPasswordInput,
 } from '@/lib/validations/lender';
-import { lenderResetPassword } from '@/lib/api/lender-auth';
+import { lenderResetPassword, ApiError } from '@/lib/api/lender-auth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -29,6 +29,8 @@ const LABEL = 'text-sm font-semibold text-carbon-black xl:text-lg';
 
 export function LenderResetPasswordForm() {
   const searchParams = useSearchParams();
+  // Token from the verify step; authorises the confirm call.
+  const token = searchParams.get('token') ?? '';
   const [showPw, setShowPw] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   // `?done=1` lets the demo switcher jump straight to the success state.
@@ -42,7 +44,7 @@ export function LenderResetPasswordForm() {
 
   const mutation = useMutation({
     mutationFn: (v: LenderResetPasswordInput) =>
-      lenderResetPassword({ password: v.password }),
+      lenderResetPassword({ token, password: v.password }),
     onSuccess: () => setDone(true),
   });
 
@@ -161,7 +163,14 @@ export function LenderResetPasswordForm() {
             />
           </div>
 
-          <div className='flex items-center justify-center'>
+          <div className='flex flex-col items-center justify-center gap-6'>
+            {mutation.isError && (
+              <p role='alert' className='w-full text-sm text-destructive'>
+                {mutation.error instanceof ApiError
+                  ? mutation.error.message
+                  : 'Unable to update your password. Please try again.'}
+              </p>
+            )}
             <Button
               type='submit'
               loading={mutation.isPending}
