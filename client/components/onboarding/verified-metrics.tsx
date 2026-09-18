@@ -2,6 +2,7 @@
 
 import { CheckCircle2 } from 'lucide-react';
 
+import { formatDate } from '@/lib/datetime';
 import type {
   BankingIntegrationMetrics,
   FinancialIntegrationMetrics,
@@ -38,17 +39,7 @@ function count(v: number | null | undefined): string | null {
 }
 
 function formatPeriod(startIso: string, endIso: string): string {
-  const fmt = (iso: string) => {
-    const d = new Date(iso);
-    return Number.isNaN(d.getTime())
-      ? iso
-      : d.toLocaleDateString('en-GB', {
-          day: 'numeric',
-          month: 'short',
-          year: 'numeric',
-        });
-  };
-  return `${fmt(startIso)} – ${fmt(endIso)}`;
+  return `${formatDate(startIso)} – ${formatDate(endIso)}`;
 }
 
 /** Keep only the rows whose value is present, and drop empty groups. */

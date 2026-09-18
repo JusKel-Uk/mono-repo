@@ -1,22 +1,49 @@
 'use client';
 
+import { createElement } from 'react';
+import { useRouter } from 'next/navigation';
 import { Bell, CheckCheck } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 import { ROUTES } from '@/lib/routes';
+import { fromNow } from '@/lib/datetime';
 import {
-  useNotificationStore,
+  categoryIcon,
+  useMarkAllRead,
+  useMarkRead,
+  useNotifications,
   type AppNotification,
 } from '@/lib/dashboard/notifications';
 import { DashboardShell } from '@/components/dashboard/dashboard-shell';
 import { DashboardEmptyState } from '@/components/dashboard/empty-state';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function NotificationsPage() {
-  const items = useNotificationStore((s) => s.items);
-  const markAllRead = useNotificationStore((s) => s.markAllRead);
-  const unread = items.reduce((n, i) => n + (i.read ? 0 : 1), 0);
+  const router = useRouter();
+  const { data: items, isLoading } = useNotifications();
+  const markAll = useMarkAllRead();
+  const markRead = useMarkRead();
 
-  if (items.length === 0) {
+  const list = items ?? [];
+  const unread = list.reduce((n, i) => n + (i.read ? 0 : 1), 0);
+
+  // Loading — keep the shell and show placeholder cards.
+  if (isLoading) {
+    return (
+      <DashboardShell
+        title='Notifications'
+        subtitle='See all the updates about your business.'
+      >
+        <div className='flex flex-col gap-3'>
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Skeleton key={i} className='h-28 w-full rounded-2xl' />
+          ))}
+        </div>
+      </DashboardShell>
+    );
+  }
+
+  if (list.length === 0) {
     return (
       <DashboardShell
         title='Notifications'
@@ -38,7 +65,10 @@ export default function NotificationsPage() {
       : "You're all caught up — see all the updates about your business.";
 
   const markAllButton = (
-    <MarkAllRead onClick={markAllRead} disabled={unread === 0} />
+    <MarkAllRead
+      onClick={() => markAll.mutate()}
+      disabled={unread === 0 || markAll.isPending}
+    />
   );
 
   return (
@@ -51,8 +81,15 @@ export default function NotificationsPage() {
       <div className='lg:hidden'>{markAllButton}</div>
 
       <div className='flex flex-col gap-3'>
-        {items.map((n) => (
-          <NotificationCard key={n.id} notification={n} />
+        {list.map((n) => (
+          <NotificationCard
+            key={n.id}
+            notification={n}
+            onOpen={() => {
+              if (!n.read) markRead.mutate(n.id);
+              if (n.actionUrl) router.push(n.actionUrl);
+            }}
+          />
         ))}
       </div>
     </DashboardShell>
@@ -79,17 +116,32 @@ function MarkAllRead({
   );
 }
 
-function NotificationCard({ notification }: { notification: AppNotification }) {
-  const { icon: Icon, title, category, body, time, read } = notification;
+function NotificationCard({
+  notification,
+  onOpen,
+}: {
+  notification: AppNotification;
+  onOpen: () => void;
+}) {
+  const { title, category, body, createdAt, read, actionUrl } = notification;
+  // Interactive when it can act (unread → mark read, or it links somewhere).
+  const interactive = !read || !!actionUrl;
+
   return (
     <div
+      {...(interactive
+        ? { role: 'button', tabIndex: 0, onClick: onOpen }
+        : {})}
       className={cn(
-        'flex gap-4 rounded-2xl border border-gray-200 bg-white p-7',
+        'flex gap-4 rounded-2xl border border-gray-200 bg-white p-7 text-left',
         !read && 'border-gray-300',
+        interactive && 'cursor-pointer transition-colors hover:border-primary/40',
       )}
     >
       <span className='flex size-10 shrink-0 items-center justify-center rounded-full bg-gray-200'>
-        <Icon className='size-4 text-gray-700' />
+        {createElement(categoryIcon(category), {
+          className: 'size-4 text-gray-700',
+        })}
       </span>
       <div className='flex flex-col gap-0.5'>
         <div className='flex items-center gap-3'>
@@ -105,7 +157,7 @@ function NotificationCard({ notification }: { notification: AppNotification }) {
           )}
         </div>
         <p className='text-body-lg text-gray-700'>{body}</p>
-        <p className='text-body-md text-gray-700'>{time}</p>
+        <p className='text-body-md text-gray-700'>{fromNow(createdAt)}</p>
       </div>
     </div>
   );

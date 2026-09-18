@@ -27,8 +27,17 @@ import {
 const slotClass =
   'size-11 rounded-md border text-lg font-semibold xl:size-14 xl:text-2xl';
 
-export function VerifyEmailForm({ email }: { email: string }) {
+export function VerifyEmailForm({
+  email,
+  next,
+}: {
+  email: string;
+  next?: string;
+}) {
   const router = useRouter();
+  const loginHref = `${ROUTES.auth.login}?verified=1${
+    next ? `&next=${encodeURIComponent(next)}` : ''
+  }`;
 
   const form = useForm<VerifyCodeInput>({
     resolver: zodResolver(verifyCodeSchema),
@@ -41,8 +50,8 @@ export function VerifyEmailForm({ email }: { email: string }) {
     mutationFn: (values: VerifyCodeInput) =>
       verifyEmail({ email, otpCode: values.code }),
     onSuccess: () => {
-      // Verified — send them to sign in.
-      router.push(`${ROUTES.auth.login}?verified=1`);
+      // Verified — send them to sign in (carrying any post-auth destination).
+      router.push(loginHref);
     },
   });
 
@@ -124,7 +133,7 @@ export function VerifyEmailForm({ email }: { email: string }) {
             </button>
           </p>
           <Link
-            href={ROUTES.auth.login}
+            href={loginHref}
             className='text-sm text-teal-charcoal underline xl:text-base'
           >
             Back to Login

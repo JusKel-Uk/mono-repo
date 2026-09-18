@@ -99,8 +99,9 @@ function PasswordRequirements({ value }: { value: string }) {
   );
 }
 
-export function SignupForm() {
+export function SignupForm({ next }: { next?: string }) {
   const router = useRouter();
+  const nextQuery = next ? `&next=${encodeURIComponent(next)}` : '';
 
   const form = useForm<SignupInput>({
     resolver: zodResolver(signupSchema),
@@ -134,9 +135,10 @@ export function SignupForm() {
         lastName: variables.lastName,
         email: data.email,
       });
-      // Account created but unverified — go verify the email OTP.
+      // Account created but unverified — go verify the email OTP (carrying any
+      // post-auth destination, e.g. a pending team invite).
       router.push(
-        `${ROUTES.auth.verifyEmail}?email=${encodeURIComponent(data.email)}`,
+        `${ROUTES.auth.verifyEmail}?email=${encodeURIComponent(data.email)}${nextQuery}`,
       );
     },
   });
@@ -302,7 +304,11 @@ export function SignupForm() {
             <p className='text-sm text-muted-foreground xl:text-foreground-secondary'>
               Already have an account?{' '}
               <Link
-                href={ROUTES.auth.login}
+                href={
+                  next
+                    ? `${ROUTES.auth.login}?next=${encodeURIComponent(next)}`
+                    : ROUTES.auth.login
+                }
                 className='font-semibold text-teal-charcoal underline xl:font-bold'
               >
                 Sign in

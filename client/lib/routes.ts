@@ -31,6 +31,13 @@ export const ROUTES = {
   lender: {
     root: '/lender',
     dashboard: '/lender/dashboard',
+    // Auth (UI only — no lender backend yet).
+    login: '/lender/login',
+    requestAccess: '/lender/request-access',
+    createAccount: '/lender/create-account',
+    forgotPassword: '/lender/forgot-password',
+    verifyResetCode: '/lender/forgot-password/verify',
+    resetPassword: '/lender/reset-password',
   },
 } as const;
 

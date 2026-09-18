@@ -414,6 +414,7 @@ export function FinancialProfileForm() {
         actions={
           <OnboardingActions
             formId={FORM_ID}
+            slug={SLUG}
             loading={save.isPending}
             onSaveExit={onSaveExit}
           />

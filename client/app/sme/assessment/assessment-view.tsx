@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect } from 'react';
 import Link from 'next/link';
 import type { LucideIcon } from 'lucide-react';
 import {
@@ -24,6 +25,7 @@ import {
   useSubmitApplication,
 } from '@/lib/hooks/use-onboarding';
 import type { StepNumber, StepStatus } from '@/lib/api/onboarding';
+import { ApiError } from '@/lib/api/client';
 import { useReviewStore } from '@/stores/reviewStore';
 import { DashboardShell } from '@/components/dashboard/dashboard-shell';
 
@@ -104,18 +106,48 @@ export function AssessmentView() {
   const { data: app, isLoading } = useApplication();
   const submit = useSubmitApplication();
 
-  // Temporary submit-for-review gate (see reviewStore). Purely frontend for
-  // now: set only when the user submits here, and reset on logout so the submit
-  // can be triggered again. It is NOT synced from the backend's submittedAt yet.
-  // TODO(backend): drive this from the server's submission status.
-  const submitted = useReviewStore((s) => s.phase !== 'none');
-  const markSubmitted = useReviewStore((s) => s.markSubmitted);
+  // Assessment status is backend-driven (SubmissionStatus + canSubmit):
+  //   status 0 (Draft)  → "In progress"      when completedCount < totalSteps
+  //                        "Ready to submit"  when canSubmit === true
+  //   status 1 Submitted → "Submitted (awaiting review)"
+  //   status 2 InReview  → "In review"
+  //   status 3 Published → "Published"
+  // These map 1:1 to the reviewStore phases (none/submitted/review/published),
+  // which drive the dashboard unlock gate (and the dev ReviewPhaseSwitcher), so
+  // we keep the gate in step with the server's status below.
+  const reviewPhase = useReviewStore((s) => s.phase);
+  const setPhase = useReviewStore((s) => s.setPhase);
 
   const totalSteps = app?.totalSteps ?? STEPS.length;
   const completedCount = app?.completedCount ?? 0;
-  const allComplete = totalSteps > 0 && completedCount >= totalSteps;
+  const status = app?.status ?? 0;
+  const canSubmit = app?.canSubmit ?? false;
   const statusOf = (step: StepNumber): StepStatus =>
     app?.steps?.find((s) => s.step === step)?.status ?? 0;
+
+  const isPublished = status === 3 || reviewPhase === 'published';
+  const isInReview = !isPublished && (status === 2 || reviewPhase === 'review');
+  const isSubmitted =
+    !isPublished &&
+    !isInReview &&
+    (status === 1 || reviewPhase === 'submitted');
+  const submitted = isSubmitted || isInReview || isPublished; // answers locked
+  const readyToSubmit = !submitted && status === 0 && canSubmit;
+
+  // Keep the (temporary) unlock gate in step with the server's status — covers
+  // a returning user whose local gate was reset on logout. Draft (0) leaves the
+  // gate to the dev ReviewPhaseSwitcher.
+  useEffect(() => {
+    const target =
+      status === 3
+        ? 'published'
+        : status === 2
+          ? 'review'
+          : status === 1
+            ? 'submitted'
+            : null;
+    if (target && reviewPhase !== target) setPhase(target);
+  }, [status, reviewPhase, setPhase]);
 
   const title = submitted
     ? 'Your onboarding submission'
@@ -125,17 +157,21 @@ export function AssessmentView() {
     : 'Complete each step below. You can leave and pick up where you left off at any time.';
 
   async function onSubmit() {
-    // Temporary: the local gate is the source of truth for now, so unlock
-    // regardless of the backend result (which may 409 once already submitted).
-    // The backend submit is fired best-effort until the server is the source.
-    markSubmitted();
-    toast.success('Submitted for review', {
-      description: 'A Sustainability Expert will review your application.',
-    });
     try {
       await submit.mutateAsync();
-    } catch {
-      /* best-effort — the local gate has already unlocked the dashboard */
+      // Server accepted the submission → unlock the dashboard + review lifecycle.
+      setPhase('submitted');
+      toast.success('Submitted for review', {
+        description: 'A Sustainability Expert will review your application.',
+      });
+    } catch (e) {
+      const msg =
+        e instanceof ApiError
+          ? e.status === 409
+            ? 'Please complete every step before submitting.'
+            : e.message
+          : 'Could not submit your application. Please try again.';
+      toast.error(msg);
     }
   }
 
@@ -168,16 +204,20 @@ export function AssessmentView() {
                   <p
                     className={cn(
                       'text-body-lg font-medium',
-                      submitted || allComplete
+                      submitted || readyToSubmit
                         ? 'text-success-600'
                         : 'text-carbon-black',
                     )}
                   >
-                    {submitted
-                      ? 'Submitted (awaiting review)'
-                      : allComplete
-                        ? 'Ready to submit'
-                        : 'In progress'}
+                    {isPublished
+                      ? 'Published'
+                      : isInReview
+                        ? 'In review'
+                        : isSubmitted
+                          ? 'Submitted (awaiting review)'
+                          : readyToSubmit
+                            ? 'Ready to submit'
+                            : 'In progress'}
                   </p>
                 </div>
               </div>
@@ -201,7 +241,7 @@ export function AssessmentView() {
                     </p>
                   </div>
                 </div>
-              ) : allComplete ? (
+              ) : readyToSubmit ? (
                 <div className='flex flex-col gap-4 rounded-2xl border border-gray-200 bg-muted/40 p-6 sm:flex-row sm:items-center sm:justify-between'>
                   <div className='flex flex-col gap-1'>
                     <p className='text-h6 font-semibold text-carbon-black'>

@@ -5,19 +5,12 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation } from '@tanstack/react-query';
 import { Eye, EyeOff } from 'lucide-react';
 
-import { ROUTES, safeInternalPath } from '@/lib/routes';
+import { ROUTES } from '@/lib/routes';
 import { loginSchema, type LoginInput } from '@/lib/validations/auth';
-import { login, ApiError } from '@/lib/api/auth';
-import {
-  getOrganisations,
-  setCurrentOrganisation,
-  OrganisationRole,
-} from '@/lib/api/settings';
-import { useAuthStore } from '@/stores/authStore';
-import { useReviewStore } from '@/stores/reviewStore';
+import { lenderSignIn } from '@/lib/api/lender-auth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -30,69 +23,27 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 
-export function LoginForm({ next }: { next?: string }) {
+export function LenderSignInForm() {
   const [showPassword, setShowPassword] = useState(false);
   const router = useRouter();
-  const qc = useQueryClient();
 
   const form = useForm<LoginInput>({
     resolver: zodResolver(loginSchema),
-    // onChange so formState.isValid updates as the user types (the submit
-    // button is gated on it).
     mode: 'onChange',
     defaultValues: { email: '', password: '', rememberMe: false },
   });
 
   const mutation = useMutation({
-    mutationFn: (values: LoginInput) =>
-      login({ email: values.email, password: values.password }),
-    onSuccess: async (data, variables) => {
-      // Start from a clean cache + a fresh submit-for-review gate so no
-      // previous account's state survives into this session (e.g. a login
-      // without a prior explicit logout).
-      qc.clear();
-      useReviewStore.getState().reset();
-      // Merge keeps any name captured at signup on this device.
-      useAuthStore.getState().setUser({
-        id: data.userId,
-        email: variables.email,
-        firstName: data.firstName,
-        lastName: data.lastName,
-      });
-      // When the user belongs to several orgs, default the active workspace to
-      // one they own (the server may default to a different one). Best-effort.
-      try {
-        const orgs = await getOrganisations();
-        if (orgs.length > 1) {
-          const current = orgs.find((o) => o.isCurrent);
-          const owned = orgs.find(
-            (o) => o.role === OrganisationRole.Owner && !o.isClosed,
-          );
-          if (owned && current?.role !== OrganisationRole.Owner) {
-            await setCurrentOrganisation(owned.id);
-          }
-        }
-      } catch {
-        /* non-fatal — keep the server's default active org */
-      }
-      // Return to the page they were bounced from (validated), else the app.
-      // TODO(auth): route by role once user roles exist in the backend.
-      router.push(safeInternalPath(next));
-    },
-    onError: (error) => {
-      // Unverified account → send them to finish email verification.
-      if (error instanceof ApiError && error.code === 'EMAIL_NOT_VERIFIED') {
-        const email = error.email ?? form.getValues('email');
-        router.push(
-          `${ROUTES.auth.verifyEmail}?email=${encodeURIComponent(email)}${
-            next ? `&next=${encodeURIComponent(next)}` : ''
-          }`,
-        );
-      }
-    },
+    mutationFn: (v: LoginInput) =>
+      lenderSignIn({
+        email: v.email,
+        password: v.password,
+        rememberMe: Boolean(v.rememberMe),
+      }),
+    onSuccess: () => router.push(ROUTES.lender.dashboard),
   });
 
-  const onSubmit = form.handleSubmit((values) => mutation.mutate(values));
+  const onSubmit = form.handleSubmit((v) => mutation.mutate(v));
 
   return (
     <Form {...form}>
@@ -104,14 +55,14 @@ export function LoginForm({ next }: { next?: string }) {
               name='email'
               render={({ field }) => (
                 <FormItem className='flex flex-col gap-2 xl:gap-4'>
-                  <FormLabel className='text-sm font-semibold xl:text-lg text-carbon-black'>
-                    Email
+                  <FormLabel className='text-sm font-semibold text-carbon-black xl:text-lg'>
+                    Business Email
                   </FormLabel>
                   <FormControl>
                     <Input
                       type='email'
                       autoComplete='email'
-                      placeholder='Flo@juskel.co.uk'
+                      placeholder='you@company.co.uk'
                       {...field}
                     />
                   </FormControl>
@@ -125,7 +76,7 @@ export function LoginForm({ next }: { next?: string }) {
               name='password'
               render={({ field }) => (
                 <FormItem className='flex flex-col gap-2 xl:gap-4'>
-                  <FormLabel className='text-sm font-semibold xl:text-lg text-carbon-black'>
+                  <FormLabel className='text-sm font-semibold text-carbon-black xl:text-lg'>
                     Password
                   </FormLabel>
                   <FormControl>
@@ -172,15 +123,15 @@ export function LoginForm({ next }: { next?: string }) {
                       onCheckedChange={field.onChange}
                     />
                   </FormControl>
-                  <FormLabel className='text-sm xl:text-base text-foreground-secondary'>
-                    Remember me
+                  <FormLabel className='text-sm text-foreground-secondary xl:text-base'>
+                    Keep me signed in
                   </FormLabel>
                 </FormItem>
               )}
             />
             <Link
-              href={ROUTES.auth.forgotPassword}
-              className='underline text-teal-charcoal text-sm xl:text-base'
+              href={ROUTES.lender.forgotPassword}
+              className='text-sm text-teal-charcoal underline xl:text-base'
             >
               Forgot Password?
             </Link>
@@ -188,15 +139,6 @@ export function LoginForm({ next }: { next?: string }) {
         </div>
 
         <div className='flex flex-col items-center justify-center gap-6'>
-          <div className='flex items-center justify-start w-full'>
-            {mutation.isError && (
-              <p role='alert' className='text-sm text-destructive'>
-                {mutation.error instanceof ApiError
-                  ? mutation.error.message
-                  : 'Unable to sign in. Please try again.'}
-              </p>
-            )}
-          </div>
           <Button
             type='submit'
             loading={mutation.isPending}
@@ -205,28 +147,15 @@ export function LoginForm({ next }: { next?: string }) {
           >
             {mutation.isPending ? 'Signing in…' : 'Sign in'}
           </Button>
-          <div className='flex items-center gap-4 xl:gap-8'>
-            <p className='text-foreground-secondary text-xs xl:text-base'>
-              New to JusKel?{' '}
-              <Link
-                href={
-                  next
-                    ? `${ROUTES.auth.signup}?next=${encodeURIComponent(next)}`
-                    : ROUTES.auth.signup
-                }
-                className='text-teal-charcoal font-bold text-xs xl:text-base'
-              >
-                Create an Account
-              </Link>
-            </p>
-            {/* Placeholder target until a lender/admin auth flow exists (M1). */}
+          <p className='text-xs text-foreground-secondary xl:text-base'>
+            Don&apos;t have Lender access yet?{' '}
             <Link
-              href={ROUTES.lender.dashboard}
-              className='text-teal-charcoal text-xs xl:text-base hover:underline'
+              href={ROUTES.lender.requestAccess}
+              className='font-bold text-teal-charcoal underline'
             >
-              I&apos;m a Lender or Admin
+              Request access
             </Link>
-          </div>
+          </p>
         </div>
       </form>
     </Form>

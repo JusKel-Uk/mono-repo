@@ -10,7 +10,10 @@ import { request } from './client';
 
 /* ---- Notifications (email preferences) ---- */
 
-/** Six booleans; a missing row defaults every flag to true. */
+/**
+ * Six category booleans + two delivery-channel booleans; a missing row defaults
+ * every flag to true.
+ */
 export type NotificationPreferences = {
   assessmentProgress: boolean;
   submissionsNeedAttention: boolean;
@@ -18,21 +21,24 @@ export type NotificationPreferences = {
   integrationSyncEvents: boolean;
   scoreUpdates: boolean;
   newFundingMatches: boolean;
+  inAppEnabled: boolean;
+  emailEnabled: boolean;
 };
 
 export function getNotificationPreferences() {
-  return request<NotificationPreferences>(
-    '/identity/me/notification-preferences',
-    { method: 'GET', auth: true },
-  );
+  return request<NotificationPreferences>('/notifications/me/preferences', {
+    method: 'GET',
+    auth: true,
+  });
 }
 
 /** No Save button — PUT the full object on each toggle. */
 export function updateNotificationPreferences(body: NotificationPreferences) {
-  return request<NotificationPreferences>(
-    '/identity/me/notification-preferences',
-    { method: 'PUT', body, auth: true },
-  );
+  return request<NotificationPreferences>('/notifications/me/preferences', {
+    method: 'PUT',
+    body,
+    auth: true,
+  });
 }
 
 /* ---- Security — password reset (logged in) ---- */

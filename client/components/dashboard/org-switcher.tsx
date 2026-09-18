@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { Building2, Check, ChevronsUpDown } from 'lucide-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
@@ -34,7 +33,6 @@ const ROLE_LABEL: Record<OrganisationRole, string> = {
  */
 export function OrgSwitcher() {
   const qc = useQueryClient();
-  const router = useRouter();
   const { data: orgs } = useQuery({ queryKey: ORG_KEY, queryFn: getOrganisations });
   const { data: me } = useQuery({ queryKey: ME_KEY, queryFn: getMe });
 
@@ -66,12 +64,13 @@ export function OrgSwitcher() {
     },
   });
 
-  const pick = (o: OrganisationSummary) => {
+  const pick = async (o: OrganisationSummary) => {
     setOpen(false);
     if (o.isCurrent) return;
-    switchOrg.mutate(o.id);
-    // Land on the dashboard so the app reflects the newly active org's context.
-    router.push(ROUTES.sme.dashboard);
+    // Persist the switch server-side first, then hard-reload onto the dashboard
+    // so every org-scoped query and server render reflects the new active org.
+    await switchOrg.mutateAsync(o.id);
+    window.location.assign(ROUTES.sme.dashboard);
   };
 
   if (loading) {
