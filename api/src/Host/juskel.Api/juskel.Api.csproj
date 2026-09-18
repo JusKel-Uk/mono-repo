@@ -35,6 +35,8 @@
     <ProjectReference Include="..\..\Modules\scoring\scoring.Core\scoring.Core.csproj" />
     <ProjectReference Include="..\..\Modules\notifications\notifications.Contracts\notifications.Contracts.csproj" />
     <ProjectReference Include="..\..\Modules\notifications\notifications.Core\notifications.Core.csproj" />
+    <ProjectReference Include="..\..\Modules\lender\lender.Contracts\lender.Contracts.csproj" />
+    <ProjectReference Include="..\..\Modules\lender\lender.Core\lender.Core.csproj" />
   </ItemGroup>
 
 </Project>

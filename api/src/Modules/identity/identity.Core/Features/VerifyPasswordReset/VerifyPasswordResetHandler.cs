@@ -13,19 +13,23 @@ internal sealed class VerifyPasswordResetHandler
     private readonly IdentityDbContext _db;
     private readonly IPasswordResetOtpService _otpService;
     private readonly IEmailLookupHasher _emailLookupHasher;
+    private readonly PortalMembershipGuard _portalGuard;
 
     public VerifyPasswordResetHandler(
         IdentityDbContext db,
         IPasswordResetOtpService otpService,
-        IEmailLookupHasher emailLookupHasher)
+        IEmailLookupHasher emailLookupHasher,
+        PortalMembershipGuard portalGuard)
     {
         _db = db;
         _otpService = otpService;
         _emailLookupHasher = emailLookupHasher;
+        _portalGuard = portalGuard;
     }
 
     public async Task<PasswordResetVerifyResponse> HandleAsync(
         PasswordResetVerifyRequest request,
+        string? portal,
         CancellationToken ct = default)
     {
         if (string.IsNullOrWhiteSpace(request.Email))
@@ -33,6 +37,8 @@ internal sealed class VerifyPasswordResetHandler
 
         if (string.IsNullOrWhiteSpace(request.Code))
             throw new ArgumentException("Reset code is required.");
+
+        await _portalGuard.EnsurePortalMembershipAsync(portal, request.Email, ct);
 
         var emailLookupHash = _emailLookupHasher.ComputeHash(request.Email);
         var user = await _db.Users

@@ -17,11 +17,15 @@ internal static class RequestPasswordResetEndpoint
     {
         app.MapPost("/identity/password-reset", async (
             PasswordResetEmailRequest request,
+            HttpRequest httpRequest,
             RequestPasswordResetHandler handler,
             CancellationToken ct) =>
         {
             var response = await handler.HandleAsync(
-                new RequestPasswordResetCommand(request.Email, null),
+                new RequestPasswordResetCommand(
+                    request.Email,
+                    null,
+                    PortalHttpHeaders.TryGetPortal(httpRequest)),
                 ct);
             return Results.Ok(response);
         })

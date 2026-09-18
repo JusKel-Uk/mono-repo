@@ -1,6 +1,7 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using identity.Contracts;
 using juskel.Shared;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
@@ -11,7 +12,7 @@ internal sealed record AccessTokenResult(string AccessToken, string Jti, DateTim
 
 internal interface IJwtTokenService
 {
-    AccessTokenResult GenerateAccessToken(Guid userId, string email);
+    AccessTokenResult GenerateAccessToken(Guid userId, string email, string portal);
 }
 
 internal sealed class JwtTokenService : IJwtTokenService
@@ -23,7 +24,7 @@ internal sealed class JwtTokenService : IJwtTokenService
         _options = options.Value;
     }
 
-    public AccessTokenResult GenerateAccessToken(Guid userId, string email)
+    public AccessTokenResult GenerateAccessToken(Guid userId, string email, string portal)
     {
         if (string.IsNullOrWhiteSpace(_options.Secret))
             throw new InvalidOperationException("JWT secret is not configured.");
@@ -32,12 +33,14 @@ internal sealed class JwtTokenService : IJwtTokenService
         var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
         var jti = Guid.NewGuid().ToString("N");
         var expiresAt = DateTime.UtcNow.AddMinutes(_options.ExpiresInMinutes);
+        var normalizedPortal = string.IsNullOrWhiteSpace(portal) ? PortalNames.Sme : portal;
 
         var claims = new[]
         {
             new Claim(JwtRegisteredClaimNames.Sub, userId.ToString()),
             new Claim(JwtRegisteredClaimNames.Email, email),
-            new Claim(JwtRegisteredClaimNames.Jti, jti)
+            new Claim(JwtRegisteredClaimNames.Jti, jti),
+            new Claim(JwtClaimNames.Portal, normalizedPortal),
         };
 
         var token = new JwtSecurityToken(

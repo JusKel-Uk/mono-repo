@@ -1,4 +1,5 @@
 using identity.Contracts;
+using lender.Contracts;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 
@@ -21,6 +22,14 @@ public sealed class GlobalExceptionHandler : IExceptionHandler
                 {
                     ["errorCode"] = IdentityErrorCodes.EmailNotVerified,
                     ["email"] = emailNotVerified.Email
+                }),
+            NotLenderAccountException => (
+                StatusCodes.Status403Forbidden,
+                "Not a lender account.",
+                "https://juskel.com/problems/not-lender-account",
+                new Dictionary<string, object?>
+                {
+                    ["errorCode"] = LenderErrorCodes.NotLenderAccount,
                 }),
             ArgumentException => (
                 StatusCodes.Status400BadRequest,

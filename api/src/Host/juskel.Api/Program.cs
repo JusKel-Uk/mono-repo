@@ -3,6 +3,8 @@ using funding.Core.Examples;
 using identity.Contracts;
 using identity.Core;
 using identity.Core.Examples;
+using lender.Core;
+using lender.Core.Examples;
 using juskel.Api;
 using juskel.Api.Contracts.Examples;
 using juskel.Api.Contracts.Responses;
@@ -71,6 +73,7 @@ builder.Services.AddSwaggerExamplesFromAssemblyOf<CreateApplicationResponseExamp
 builder.Services.AddSwaggerExamplesFromAssemblyOf<FinancialProfileResponseExample>();
 builder.Services.AddSwaggerExamplesFromAssemblyOf<SustainabilityProfileResponseExample>();
 builder.Services.AddSwaggerExamplesFromAssemblyOf<InboxListResponseExample>();
+builder.Services.AddSwaggerExamplesFromAssemblyOf<LenderRequestAccessRequestExample>();
 builder.Services.AddHealthChecks();
 
 builder.Services.AddRateLimiter(options =>
@@ -96,6 +99,27 @@ builder.Services.AddRateLimiter(options =>
         limiter.QueueLimit = 0;
     });
 
+    options.AddFixedWindowLimiter("lender-access-request", limiter =>
+    {
+        limiter.Window = TimeSpan.FromMinutes(1);
+        limiter.PermitLimit = 5;
+        limiter.QueueLimit = 0;
+    });
+
+    options.AddFixedWindowLimiter("lender-invite-preview", limiter =>
+    {
+        limiter.Window = TimeSpan.FromMinutes(1);
+        limiter.PermitLimit = 10;
+        limiter.QueueLimit = 0;
+    });
+
+    options.AddFixedWindowLimiter("lender-account-create", limiter =>
+    {
+        limiter.Window = TimeSpan.FromMinutes(1);
+        limiter.PermitLimit = 10;
+        limiter.QueueLimit = 0;
+    });
+
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
 });
 
@@ -107,6 +131,7 @@ builder.Services.AddOnboardingModule(builder.Configuration);
 builder.Services.AddFundingModule(builder.Configuration);
 builder.Services.AddScoringModule(builder.Configuration);
 builder.Services.AddNotificationsModule(builder.Configuration);
+builder.Services.AddLenderModule(builder.Configuration);
 builder.Services.AddEmail(builder.Configuration);
 
 var jwtOptions = builder.Configuration
@@ -174,6 +199,7 @@ await app.MigrateOnboardingAsync();
 await app.MigrateFundingAsync();
 await app.MigrateScoringAsync();
 await app.MigrateNotificationsAsync();
+await app.MigrateLenderAsync();
 
 app.UseExceptionHandler();
 app.UseStaticFiles();
@@ -211,6 +237,7 @@ app.MapOnboardingEndpoints();
 app.MapFundingEndpoints();
 app.MapScoringEndpoints();
 app.MapNotificationEndpoints();
+app.MapLenderEndpoints();
 
 app.MapGet("/", () => Results.Ok(new RootResponse("online", ApiConstants.ApiVersion)))
     .WithName("GetRoot")

@@ -70,6 +70,8 @@ public static class DependencyInjection
         services.AddScoped<UpdateOrganisationMemberHandler>();
         services.AddScoped<RemoveOrganisationMemberHandler>();
         services.AddScoped<RequestOrganisationClosureHandler>();
+        services.AddScoped<IIdentityAuthService, IdentityAuthService>();
+        services.AddScoped<PortalMembershipGuard>();
         services.AddScoped<SignInHandler>();
         services.AddScoped<ResendOtpHandler>();
         return services;

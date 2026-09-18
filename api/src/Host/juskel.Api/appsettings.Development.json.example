@@ -5,7 +5,12 @@
     "Identity": "Server=tcp:devtestjuskel01.database.windows.net,1433;Database=free-sql-db-0501288;User ID=devprovision;Password=YOUR_PASSWORD;Encrypt=True;TrustServerCertificate=False;Connection Timeout=60;",
     "Onboarding": "Server=tcp:devtestjuskel01.database.windows.net,1433;Database=free-sql-db-0501288;User ID=devprovision;Password=YOUR_PASSWORD;Encrypt=True;TrustServerCertificate=False;Connection Timeout=60;",
     "Funding": "Server=tcp:devtestjuskel01.database.windows.net,1433;Database=free-sql-db-0501288;User ID=devprovision;Password=YOUR_PASSWORD;Encrypt=True;TrustServerCertificate=False;Connection Timeout=60;",
-    "Scoring": "Server=tcp:devtestjuskel01.database.windows.net,1433;Database=free-sql-db-0501288;User ID=devprovision;Password=YOUR_PASSWORD;Encrypt=True;TrustServerCertificate=False;Connection Timeout=60;"
+    "Scoring": "Server=tcp:devtestjuskel01.database.windows.net,1433;Database=free-sql-db-0501288;User ID=devprovision;Password=YOUR_PASSWORD;Encrypt=True;TrustServerCertificate=False;Connection Timeout=60;",
+    "Lender": "Server=tcp:devtestjuskel01.database.windows.net,1433;Database=free-sql-db-0501288;User ID=devprovision;Password=YOUR_PASSWORD;Encrypt=True;TrustServerCertificate=False;Connection Timeout=60;"
+  },
+  "Lender": {
+    "AdminUserIds": [],
+    "AdminNotificationEmail": "ops@juskel.co.uk"
   },
   "Jwt": {
     "Secret": "YOUR_DEV_JWT_SECRET_MIN_32_CHARS"

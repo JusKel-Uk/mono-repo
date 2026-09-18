@@ -16,23 +16,34 @@ internal sealed class RequestPasswordResetHandler
     private readonly IPasswordResetOtpService _otpService;
     private readonly IPasswordResetNotifier _notifier;
     private readonly IEmailLookupHasher _emailLookupHasher;
+    private readonly PortalMembershipGuard _portalGuard;
 
     public RequestPasswordResetHandler(
         IdentityDbContext db,
         IPasswordResetOtpService otpService,
         IPasswordResetNotifier notifier,
-        IEmailLookupHasher emailLookupHasher)
+        IEmailLookupHasher emailLookupHasher,
+        PortalMembershipGuard portalGuard)
     {
         _db = db;
         _otpService = otpService;
         _notifier = notifier;
         _emailLookupHasher = emailLookupHasher;
+        _portalGuard = portalGuard;
     }
 
     public async Task<PasswordResetAcceptedResponse> HandleAsync(
         RequestPasswordResetCommand command,
         CancellationToken ct = default)
     {
+        if (!string.IsNullOrWhiteSpace(command.Email))
+        {
+            await _portalGuard.EnsurePortalMembershipAsync(
+                command.Portal,
+                command.Email,
+                ct);
+        }
+
         var user = await FindUserAsync(command, ct);
 
         if (user is not null && user.EmailVerified)

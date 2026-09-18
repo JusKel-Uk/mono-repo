@@ -23,13 +23,15 @@ internal sealed class ConfirmPasswordResetHandler
         _otpService = otpService;
     }
 
-    public async Task HandleAsync(PasswordResetConfirmRequest request, CancellationToken ct = default)
+    public async Task HandleAsync(
+        PasswordResetConfirmRequest request,
+        string? portal,
+        CancellationToken ct = default)
     {
         if (string.IsNullOrWhiteSpace(request.Token))
             throw new ArgumentException("Reset token is required.");
 
-        if (string.IsNullOrWhiteSpace(request.Password) || request.Password.Length < 8)
-            throw new ArgumentException("Password must be at least 8 characters.");
+        ValidatePassword(request.Password, portal);
 
         if (!PasswordResetTokens.TrySplit(request.Token, out var requestId, out var secret))
             throw new ArgumentException(InvalidTokenMessage);
@@ -55,5 +57,34 @@ internal sealed class ConfirmPasswordResetHandler
         await AuthSessionRevocation.RevokeAllForUserAsync(_db, user.Id, now, ct);
         await _db.SaveChangesAsync(ct);
         await tx.CommitAsync(ct);
+    }
+
+    private static void ValidatePassword(string password, string? portal)
+    {
+        if (string.IsNullOrWhiteSpace(password))
+            throw new ArgumentException("Password is required.");
+
+        if (string.Equals(portal, PortalNames.Lender, StringComparison.OrdinalIgnoreCase))
+        {
+            if (password.Length < 12)
+                throw new ArgumentException("Password must be at least 12 characters.");
+
+            if (!password.Any(char.IsLower))
+                throw new ArgumentException("Password must include a lowercase letter.");
+
+            if (!password.Any(char.IsUpper))
+                throw new ArgumentException("Password must include an uppercase letter.");
+
+            if (!password.Any(char.IsDigit))
+                throw new ArgumentException("Password must include a number.");
+
+            if (!password.Any(ch => !char.IsLetterOrDigit(ch)))
+                throw new ArgumentException("Password must include a special symbol.");
+
+            return;
+        }
+
+        if (password.Length < 8)
+            throw new ArgumentException("Password must be at least 8 characters.");
     }
 }

@@ -1,5 +1,6 @@
 using identity.Contracts;
 using identity.Core.Examples;
+using identity.Core.Http;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -15,10 +16,14 @@ internal static class VerifyPasswordResetEndpoint
     {
         app.MapPost("/identity/password-reset/verify", async (
             PasswordResetVerifyRequest request,
+            HttpRequest httpRequest,
             VerifyPasswordResetHandler handler,
             CancellationToken ct) =>
         {
-            var response = await handler.HandleAsync(request, ct);
+            var response = await handler.HandleAsync(
+                request,
+                PortalHttpHeaders.TryGetPortal(httpRequest),
+                ct);
             return Results.Ok(response);
         })
         .WithName("VerifyPasswordReset")

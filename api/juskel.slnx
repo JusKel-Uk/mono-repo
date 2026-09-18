@@ -28,6 +28,10 @@
     <Project Path="src/Modules/scoring/scoring.Contracts/scoring.Contracts.csproj" />
     <Project Path="src/Modules/scoring/scoring.Core/scoring.Core.csproj" />
   </Folder>
+  <Folder Name="/src/Modules/lender/">
+    <Project Path="src/Modules/lender/lender.Contracts/lender.Contracts.csproj" />
+    <Project Path="src/Modules/lender/lender.Core/lender.Core.csproj" />
+  </Folder>
   <Folder Name="/src/Shared/">
     <Project Path="src/Shared/juskel.Shared/juskel.Shared.csproj" />
   </Folder>
