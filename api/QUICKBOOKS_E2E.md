@@ -162,6 +162,7 @@ WHERE TABLE_SCHEMA = 'funding' AND TABLE_NAME = 'FinancialIntegrationMetrics';
 | Bands empty / only cash mapped | Set `ReportStartDate`/`ReportEndDate` to include company start year |
 | `401` from Intuit API | Token expired — reconnect; refresh handled on sync |
 | Callback 400 | Missing `code` or `state` |
+| Authorize 404 | No application for the organisation (call `POST /onboarding/applications` first). **Not** caused by submit — integrations work on submitted applications. |
 | PUT financial-profile 409 after QB connect | Fixed — PUT returns **200** (bands unchanged) and marks step complete; frontend can Save and continue |
 
 ## Related docs

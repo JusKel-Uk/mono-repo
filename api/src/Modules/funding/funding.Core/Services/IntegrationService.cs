@@ -52,7 +52,7 @@ internal sealed class IntegrationService
         Guid organisationId,
         CancellationToken ct = default)
     {
-        var applicationId = await _onboarding.GetDraftApplicationIdAsync(organisationId, ct);
+        var applicationId = await _onboarding.GetCurrentApplicationIdAsync(organisationId, ct);
         if (applicationId is null)
             return null;
 
@@ -109,7 +109,7 @@ internal sealed class IntegrationService
         Guid connectionId,
         CancellationToken ct = default)
     {
-        var applicationId = await _onboarding.GetDraftApplicationIdAsync(organisationId, ct);
+        var applicationId = await _onboarding.GetCurrentApplicationIdAsync(organisationId, ct);
         if (applicationId is null)
             return false;
 
@@ -145,7 +145,7 @@ internal sealed class IntegrationService
         UpsertBankingCompletenessRequest request,
         CancellationToken ct = default)
     {
-        var applicationId = await _onboarding.GetDraftApplicationIdAsync(organisationId, ct);
+        var applicationId = await _onboarding.GetCurrentApplicationIdAsync(organisationId, ct);
         if (applicationId is null)
             return false;
 
@@ -184,7 +184,7 @@ internal sealed class IntegrationService
         Guid organisationId,
         CancellationToken ct = default)
     {
-        var applicationId = await _onboarding.GetDraftApplicationIdAsync(organisationId, ct);
+        var applicationId = await _onboarding.GetCurrentApplicationIdAsync(organisationId, ct);
         if (applicationId is null)
             return null;
 
@@ -215,7 +215,7 @@ internal sealed class IntegrationService
         Guid organisationId,
         CancellationToken ct = default)
     {
-        var applicationId = await _onboarding.GetDraftApplicationIdAsync(organisationId, ct);
+        var applicationId = await _onboarding.GetCurrentApplicationIdAsync(organisationId, ct);
         if (applicationId is null)
             return null;
 
@@ -297,7 +297,7 @@ internal sealed class IntegrationService
         if (provider == IntegrationProvider.OpenBanking)
             return await DisconnectAllOpenBankingAsync(userId, organisationId, ct);
 
-        var applicationId = await _onboarding.GetDraftApplicationIdAsync(organisationId, ct);
+        var applicationId = await _onboarding.GetCurrentApplicationIdAsync(organisationId, ct);
         if (applicationId is null)
             return false;
 
@@ -355,7 +355,7 @@ internal sealed class IntegrationService
         Guid organisationId,
         CancellationToken ct)
     {
-        var applicationId = await _onboarding.GetDraftApplicationIdAsync(organisationId, ct);
+        var applicationId = await _onboarding.GetCurrentApplicationIdAsync(organisationId, ct);
         if (applicationId is null)
             return false;
 

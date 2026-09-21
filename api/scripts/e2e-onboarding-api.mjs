@@ -647,6 +647,13 @@ async function runFullCoverage(token) {
     requestedAmount: fundingAfterSubmit.data?.requestedAmount,
   });
 
+  const qbAuthAfterSubmit = await api('POST', '/funding/integrations/quickbooks/authorize', token);
+  log('POST /funding/integrations/quickbooks/authorize (after submit)', qbAuthAfterSubmit.status === 200
+    && !!qbAuthAfterSubmit.data?.state, {
+    status: qbAuthAfterSubmit.status,
+    hasUrl: !!qbAuthAfterSubmit.data?.authorizationUrl,
+  });
+
   if (fundingEvidenceId) {
     const fundingDownloadAfterSubmit = await apiDownload(
       `/funding/evidence/${fundingEvidenceId}/download?download=true`,
