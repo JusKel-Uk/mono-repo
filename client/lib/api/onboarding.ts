@@ -202,31 +202,59 @@ export type FinancialIntegrationMetrics = {
   priorPeriodEnd?: string | null;
   balanceSheetAsOf: string;
   syncedAt: string;
+
+  // 1. Income & profitability
   annualRevenue?: number | null;
   priorAnnualRevenue?: number | null;
+  costOfSales?: number | null;
   grossProfit?: number | null;
   operatingExpenses?: number | null;
   operatingProfit?: number | null;
   netIncome?: number | null;
   priorNetIncome?: number | null;
   interestExpense?: number | null;
+  depreciationAmortisation?: number | null;
   ebitda?: number | null;
+
+  // 2. Liquidity & working capital
   cashBalance?: number | null;
   accountsReceivable?: number | null;
   accountsPayable?: number | null;
+  inventory?: number | null;
   currentAssets?: number | null;
   currentLiabilities?: number | null;
   workingCapital?: number | null;
+
+  // 3. Balance-sheet resilience & leverage
   totalAssets?: number | null;
   totalLiabilities?: number | null;
   totalEquity?: number | null;
   outstandingDebt?: number | null;
+  shortTermDebt?: number | null;
+  longTermDebt?: number | null;
+
+  // 4. Cash generation
   operatingCashFlow?: number | null;
+  capitalExpenditure?: number | null;
+  investingCashFlow?: number | null;
+  financingCashFlow?: number | null;
+  netChangeInCash?: number | null;
+
+  // Derived ratios / growth (from the source or computed by JusKel)
   currentRatio?: number | null;
   debtToAssets?: number | null;
+  debtToEquity?: number | null;
   profitMargin?: number | null;
   revenueGrowthYoY?: number | null;
   netIncomeGrowthYoY?: number | null;
+
+  // 5. Period, source & data-governance metadata
+  accountingBasis?: string | null;
+  sourceEntityName?: string | null;
+  lastSuccessfulSync?: string | null;
+  dataFreshnessStatus?: string | null;
+  mappingVersion?: string | null;
+  completeness?: number | null;
   accountCount?: number;
   hasReportData?: boolean;
   priorPeriodHasReportData?: boolean;
@@ -271,12 +299,7 @@ export type BankingCompleteness = {
 };
 
 export type FinancialProfile = {
-  annualRevenueBand?: number | null;
-  ebitdaBand?: number | null;
-  existingDebtBand?: number | null;
-  cashReserves?: number | null;
-  avgMonthlyRevenue?: number | null;
-  /** When true, connected-source fields are read-only; skip them on PUT. */
+  /** When true, connected-source figures are read-only. */
   bandsLockedByIntegration?: boolean;
   isOpenBankingConnected?: boolean;
   integrations?: FinancialIntegration[];
@@ -285,16 +308,18 @@ export type FinancialProfile = {
   connectedBanks?: OpenBankingConnection[];
   bankingIntegrationMetrics?: BankingIntegrationMetrics | null;
   bankingCompleteness?: BankingCompleteness | null;
+  /** Supporting evidence uploaded for the profile (funding evidence). */
+  evidence?: Evidence[];
 };
 
-/** All bands are optional — the financial profile is self-declared. */
-export type UpsertFinancialProfileRequest = {
-  annualRevenueBand?: number | null;
-  ebitdaBand?: number | null;
-  existingDebtBand?: number | null;
-  cashReserves?: number | null;
-  avgMonthlyRevenue?: number | null;
-};
+/**
+ * Financial-profile PUT body. The self-declared bands were removed; the step
+ * now relies on connected sources for verified figures, and the self-reported
+ * figures are gathered + logged client-side until the backend accepts them.
+ * The empty PUT still creates the profile row so the step can be marked
+ * complete. TODO(backend): accept the canonical self-reported figures here.
+ */
+export type UpsertFinancialProfileRequest = Record<string, never>;
 
 export function getFinancialProfile() {
   return getOrNull<FinancialProfile>(
@@ -302,7 +327,7 @@ export function getFinancialProfile() {
   );
 }
 
-export function saveFinancialProfile(body: UpsertFinancialProfileRequest) {
+export function saveFinancialProfile(body: UpsertFinancialProfileRequest = {}) {
   return request<FinancialProfile>(
     '/funding/applications/current/financial-profile',
     { method: 'PUT', body, auth: true },

@@ -1,8 +1,6 @@
 import type { LucideIcon } from 'lucide-react';
 import { Landmark, Banknote } from 'lucide-react';
 
-import type { FinancialProfileInput } from '@/lib/validations/onboarding';
-
 /**
  * Financial data-source connectors (Open Banking / Xero / QuickBooks).
  * The integrations are stubbed — the connect flow is simulated client-side —
@@ -104,18 +102,6 @@ export const CONNECTORS: Record<ConnectorId, ConnectorConfig> = {
       ],
     },
   },
-};
-
-/**
- * Band values a connected source reports (stub), as enum-value strings matching
- * the select options. Applied to the form on a successful (simulated) connect.
- */
-export const VERIFIED_BANDS: Record<keyof FinancialProfileInput, string> = {
-  annualRevenueBand: '2', // £250k-£1m
-  ebitdaBand: '3', // 5-15% margin
-  existingDebtBand: '2', // Under £50k
-  cashReserves: '3', // 3-6 months
-  avgMonthlyRevenue: '3', // £80k-£400k
 };
 
 export type ConnectionStatus =

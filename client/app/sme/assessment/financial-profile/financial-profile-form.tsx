@@ -2,13 +2,11 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 
 import { getStep, nextStepRoute, ONBOARDING_BASE } from '@/lib/onboarding/steps';
-import { onboardingKeys, useLookupOptions } from '@/lib/hooks/use-onboarding';
+import { onboardingKeys } from '@/lib/hooks/use-onboarding';
 import {
   getFinancialProfile,
   saveFinancialProfile,
@@ -16,22 +14,15 @@ import {
   disconnectIntegration,
   disconnectOpenBankingConnection,
   setBankingCompleteness,
+  uploadFundingEvidence,
+  removeFundingEvidence,
+  downloadFundingEvidence,
   type IntegrationProvider,
   type IntegrationSlug,
 } from '@/lib/api/onboarding';
 import { ApiError } from '@/lib/api/client';
 import {
-  toFinancialProfileRequest,
-  fromFinancialProfile,
-} from '@/lib/onboarding/mappers';
-import { LOOKUP, type LookupSpec } from '@/lib/onboarding/enums';
-import {
-  financialProfileSchema,
-  type FinancialProfileInput,
-} from '@/lib/validations/onboarding';
-import {
   CONNECTORS,
-  VERIFIED_BANDS,
   type ConnectionStatus,
   type ConnectorId,
 } from '@/lib/onboarding/connectors';
@@ -52,15 +43,11 @@ import {
   type ReportedFinancials,
 } from '@/components/onboarding/self-reported-financials';
 import { AuthoriseDialog } from '@/components/onboarding/authorise-dialog';
-import {
-  EvidenceRow,
-  EnumSelectField,
-} from '@/components/onboarding/onboarding-fields';
-import { Form } from '@/components/ui/form';
+import { EvidenceAttach } from '@/components/onboarding/evidence-attach';
+import { Textarea } from '@/components/ui/textarea';
 
 const step = getStep('financial-profile')!;
 const FORM_ID = 'financial-profile-form';
-const EVIDENCE_HINT = 'PDF, DOC, PNG or JPG · max 10 MB';
 // Simulated OAuth round-trip for the providers not yet wired to the backend.
 const CONNECT_DELAY_MS = 2200;
 
@@ -89,38 +76,6 @@ const LIVE_PROVIDERS: ReadonlySet<ConnectorId> = new Set([
   'openBanking',
 ]);
 
-const BANDS: {
-  name: keyof FinancialProfileInput;
-  label: string;
-  lookup: LookupSpec;
-}[] = [
-  {
-    name: 'annualRevenueBand',
-    label: 'Annual revenue band',
-    lookup: LOOKUP.annualRevenueBand,
-  },
-  {
-    name: 'avgMonthlyRevenue',
-    label: 'Average monthly revenue',
-    lookup: LOOKUP.avgMonthlyRevenue,
-  },
-  {
-    name: 'ebitdaBand',
-    label: 'EBITDA / Profitability band',
-    lookup: LOOKUP.ebitdaBand,
-  },
-  {
-    name: 'existingDebtBand',
-    label: 'Existing debt band',
-    lookup: LOOKUP.existingDebtBand,
-  },
-  {
-    name: 'cashReserves',
-    label: 'Cash reserves',
-    lookup: LOOKUP.cashReserves,
-  },
-];
-
 const CONFIDENCE_ROWS = [
   ['Open Banking', 'Verified'],
   ['Xero', 'Verified'],
@@ -128,38 +83,24 @@ const CONFIDENCE_ROWS = [
   ['Self-declared', 'Lower confidence'],
 ];
 
-const BAND_KEYS = Object.keys(
-  VERIFIED_BANDS,
-) as (keyof FinancialProfileInput)[];
-
 export function FinancialProfileForm() {
   const router = useRouter();
   const qc = useQueryClient();
-  const opt = useLookupOptions();
-
-  const form = useForm<FinancialProfileInput>({
-    resolver: zodResolver(financialProfileSchema),
-    mode: 'onChange',
-    defaultValues: {
-      annualRevenueBand: '',
-      ebitdaBand: '',
-      existingDebtBand: '',
-      cashReserves: '',
-      avgMonthlyRevenue: '',
-    },
-  });
 
   const { data: saved, isLoading: profileLoading } = useQuery({
     queryKey: onboardingKeys.step(SLUG),
     queryFn: getFinancialProfile,
   });
-  useEffect(() => {
-    if (saved) form.reset(fromFinancialProfile(saved));
-  }, [saved, form]);
 
-  // QBO-shaped self-report (no connection). Held in form state only — the raw
-  // figures aren't persisted yet; see SelfReportedFinancials / TODO(backend).
+  // QBO-shaped self-report (no connection). Held in local state and logged on
+  // submit — the raw figures aren't persisted yet; see TODO(backend).
   const [reported, setReported] = useState<ReportedFinancials>(EMPTY_REPORTED);
+
+  // One evidence file + justification for the whole profile. The file upload is
+  // persisted (funding evidence); the justification is gathered + logged for now.
+  const [justification, setJustification] = useState('');
+  const [justifyOpen, setJustifyOpen] = useState(false);
+  const initialEvidence = saved?.evidence?.[0];
 
   // --- Connector flow ---
   // Live providers (QuickBooks) run the real OAuth round-trip; the rest are
@@ -214,21 +155,11 @@ export function FinancialProfileForm() {
       'Accounting')
     : 'Accounting';
 
-  const applyVerified = (apply: boolean) => {
-    BAND_KEYS.forEach((k) =>
-      form.setValue(k, apply ? VERIFIED_BANDS[k] : '', {
-        shouldValidate: true,
-        shouldDirty: true,
-      }),
-    );
-  };
-
   const startConnect = (id: ConnectorId) => {
     setConnection({ id, status: 'connecting' });
     if (connectTimer.current) clearTimeout(connectTimer.current);
     connectTimer.current = setTimeout(() => {
       setConnection({ id, status: 'connected' });
-      applyVerified(true);
       toast.success(`${CONNECTORS[id].name} connected`, {
         description:
           'Verified financial information has been imported from your connected source. You may review but cannot edit verified values.',
@@ -256,7 +187,6 @@ export function FinancialProfileForm() {
     // Simulated providers.
     if (connectTimer.current) clearTimeout(connectTimer.current);
     setConnection(null);
-    applyVerified(false);
   };
 
   // Real OAuth: navigate this tab to the provider's consent screen. The backend
@@ -377,28 +307,46 @@ export function FinancialProfileForm() {
     router.replace(self);
   }, [params, qc, router]);
 
+  // The self-declared bands were removed. The PUT body is empty — it creates
+  // the profile row so the step can be marked complete; verified figures come
+  // from the connected source. The self-reported figures are gathered + logged
+  // for now. TODO(backend): persist the self-reported figures here.
   const save = useMutation({
-    mutationFn: (values: FinancialProfileInput) =>
-      saveFinancialProfile(toFinancialProfileRequest(values)),
+    mutationFn: () => saveFinancialProfile(),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: onboardingKeys.application });
       qc.invalidateQueries({ queryKey: onboardingKeys.step(SLUG) });
     },
   });
 
-  const onSubmit = form.handleSubmit(async (values) => {
+  const logSelfReported = () => {
+    const payload: Record<string, unknown> = {};
+    if (!showVerified) payload.figures = reported;
+    if (justification.trim()) payload.justification = justification.trim();
+    if (Object.keys(payload).length) {
+      console.log(
+        '[financial-profile] gathered self-report (not yet persisted):',
+        payload,
+      );
+    }
+  };
+
+  const onSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    logSelfReported();
     try {
-      await save.mutateAsync(values);
+      await save.mutateAsync();
       const next = nextStepRoute(SLUG);
       router.push(next ?? ONBOARDING_BASE);
     } catch {
       toast.error('Could not save your financial profile. Please try again.');
     }
-  });
+  };
 
   const onSaveExit = async () => {
+    logSelfReported();
     try {
-      await save.mutateAsync(form.getValues());
+      await save.mutateAsync();
     } catch {
       toast.error('Could not save your financial profile. Please try again.');
     }
@@ -420,9 +368,8 @@ export function FinancialProfileForm() {
           />
         }
       >
-        <Form {...form}>
-          <form id={FORM_ID} onSubmit={onSubmit} noValidate>
-            <div className='mx-auto flex w-full max-w-170 flex-col gap-8 rounded-2xl border border-border bg-white p-6 lg:p-8'>
+        <form id={FORM_ID} onSubmit={onSubmit} noValidate>
+          <div className='mx-auto flex w-full max-w-170 flex-col gap-8 rounded-2xl border border-border bg-white p-6 lg:p-8'>
               {/* Connect a banking source */}
               <section className='flex flex-col gap-4'>
                 <SectionHeading
@@ -552,39 +499,46 @@ export function FinancialProfileForm() {
                       value={reported}
                       onChange={setReported}
                     />
-
-                    <div className='flex flex-col gap-1'>
-                      <h4 className='text-sm font-semibold text-carbon-black'>
-                        Funding score bands
-                      </h4>
-                      <p className='text-sm text-muted-foreground'>
-                        Attach a document (accounts, statement, invoice) or a
-                        short justification for each claim. Anything not backed
-                        stays self-declared until your ESG Specialist reviews
-                        it.
-                      </p>
-                    </div>
-                    {BANDS.map((band) => (
-                      <div key={band.name} className='flex flex-col gap-3'>
-                        <EnumSelectField
-                          control={form.control}
-                          name={band.name}
-                          label={band.label}
-                          placeholder='Select band'
-                          options={opt(band.lookup)}
-                        />
-                        <EvidenceRow
-                          attachLabel='Attach evidence'
-                          hint={EVIDENCE_HINT}
-                        />
-                      </div>
-                    ))}
                   </>
                 )}
               </section>
+
+              {/* One evidence + justification for the entire financial profile */}
+              <section className='flex flex-col gap-4'>
+                <div className='flex flex-col gap-1'>
+                  <h3 className='text-base font-semibold text-carbon-black'>
+                    Supporting evidence
+                  </h3>
+                  <p className='text-sm text-muted-foreground'>
+                    Attach one document (management accounts, financial
+                    statement or bank letter) or add a short justification to
+                    support your financial profile. This backs any self-declared
+                    figures until your ESG Specialist reviews them.
+                  </p>
+                </div>
+                <EvidenceAttach
+                  attachLabel='Attach evidence'
+                  hint='PDF, DOC, PNG or JPG · max 10 MB'
+                  onUpload={uploadFundingEvidence}
+                  onRemove={removeFundingEvidence}
+                  onView={downloadFundingEvidence}
+                  initial={initialEvidence}
+                  onAddJustification={() => setJustifyOpen((o) => !o)}
+                  justificationLabel={
+                    justifyOpen ? 'Hide justification' : 'Or add a justification'
+                  }
+                />
+                {justifyOpen ? (
+                  <Textarea
+                    value={justification}
+                    onChange={(e) => setJustification(e.target.value)}
+                    placeholder='Add a short justification for your financial profile…'
+                    rows={3}
+                  />
+                ) : null}
+              </section>
             </div>
           </form>
-        </Form>
       </OnboardingShell>
 
       <AuthoriseDialog

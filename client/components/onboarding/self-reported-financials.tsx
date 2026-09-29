@@ -5,49 +5,61 @@
  * fields a connected accounting source (QuickBooks / Xero) would provide, so a
  * user without an integration can self-declare the same picture.
  *
- * Fields are the canonical CORE accounting inputs grouped by financial
- * dimension (Profitability, Liquidity, Financial resilience). We only collect
- * inputs here — working capital, EBITDA, ratios and trends are DERIVED from
- * these, not self-declared. (Operational Efficiency, Growth & Stability and
- * Financial Governance carry no self-entered monetary inputs.)
+ * Fields are the canonical CORE accounting inputs grouped by the methodology's
+ * dimensions (Income & profitability, Liquidity & working capital, Balance-sheet
+ * resilience & leverage, Cash generation). We only collect inputs here — working
+ * capital, EBITDA, ratios and trends are DERIVED from these, not self-declared.
  *
- * NOTE: the raw figures below are NOT yet persisted — the backend financial
- * profile only stores the 5 enum bands. These are captured in form state until
- * the funding module is extended with self-declared financial columns.
- * TODO(backend): add raw self-declared financial fields + migration, then wire
- * these to the PUT payload (see AddSelfDeclaredFinancials).
+ * NOTE: the raw figures below are NOT yet persisted — the self-declared bands
+ * were removed and the funding module doesn't yet store self-reported figures.
+ * They're captured in form state and logged on submit for now.
+ * TODO(backend): add raw self-declared financial columns + migration, then wire
+ * these to the PUT payload.
  */
 
 const DIMENSION_GROUPS = [
   {
-    heading: 'Profitability',
+    heading: 'Income & profitability',
     fields: [
-      ['annualRevenue', 'Annual revenue'],
+      ['annualRevenue', 'Revenue / turnover'],
+      ['costOfSales', 'Cost of sales / COGS'],
       ['grossProfit', 'Gross profit'],
       ['operatingExpenses', 'Operating expenses'],
       ['operatingProfit', 'Operating profit / loss'],
       ['netIncome', 'Net profit / loss'],
       ['interestExpense', 'Interest / finance expense'],
+      ['depreciationAmortisation', 'Depreciation & amortisation'],
     ],
   },
   {
-    heading: 'Liquidity',
+    heading: 'Liquidity & working capital',
     fields: [
       ['cashBalance', 'Cash & cash equivalents'],
       ['accountsReceivable', 'Accounts receivable'],
       ['accountsPayable', 'Accounts payable'],
+      ['inventory', 'Inventory / stock'],
       ['currentAssets', 'Current assets'],
       ['currentLiabilities', 'Current liabilities'],
-      ['operatingCashFlow', 'Operating cash flow'],
     ],
   },
   {
-    heading: 'Financial resilience',
+    heading: 'Balance-sheet resilience & leverage',
     fields: [
       ['totalAssets', 'Total assets'],
       ['totalLiabilities', 'Total liabilities'],
       ['totalEquity', 'Net assets / equity'],
       ['outstandingDebt', 'Outstanding borrowings'],
+      ['shortTermDebt', 'Short-term borrowings'],
+      ['longTermDebt', 'Long-term borrowings'],
+    ],
+  },
+  {
+    heading: 'Cash generation',
+    fields: [
+      ['operatingCashFlow', 'Operating cash flow'],
+      ['capitalExpenditure', 'Capital expenditure'],
+      ['investingCashFlow', 'Investing cash flow'],
+      ['financingCashFlow', 'Financing cash flow'],
     ],
   },
 ] as const;

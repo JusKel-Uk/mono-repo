@@ -65,47 +65,11 @@ export const BUSINESS_SECTOR: EnumOption[] = [
   { value: 99, label: 'Other' },
 ];
 
-/* ---- Financial & funding (FundingEnums.cs) ---- */
-
-export const ANNUAL_REVENUE_BAND: EnumOption[] = [
-  { value: 1, label: 'Under £250k' },
-  { value: 2, label: '£250k-£1m' },
-  { value: 3, label: '£1m-£5m' },
-  { value: 4, label: '£5m-£25m' },
-  { value: 5, label: 'Over £25m' },
-];
-
-export const EBITDA_BAND: EnumOption[] = [
-  { value: 1, label: 'Loss-making' },
-  { value: 2, label: '0-5% margin' },
-  { value: 3, label: '5-15% margin' },
-  { value: 4, label: '15-30% margin' },
-  { value: 5, label: 'Over 30% margin' },
-];
-
-export const EXISTING_DEBT_BAND: EnumOption[] = [
-  { value: 1, label: 'No debt' },
-  { value: 2, label: 'Under £50k' },
-  { value: 3, label: '£50k-£250k' },
-  { value: 4, label: '£250k-£1m' },
-  { value: 5, label: 'Over £1m' },
-];
-
-export const CASH_RESERVES_BAND: EnumOption[] = [
-  { value: 1, label: 'Under 1 month' },
-  { value: 2, label: '1-3 months' },
-  { value: 3, label: '3-6 months' },
-  { value: 4, label: '6-12 months' },
-  { value: 5, label: 'Over 12 months' },
-];
-
-export const AVG_MONTHLY_REVENUE_BAND: EnumOption[] = [
-  { value: 1, label: 'Under £20k' },
-  { value: 2, label: '£20k-£80k' },
-  { value: 3, label: '£80k-£400k' },
-  { value: 4, label: '£400k-£1m' },
-  { value: 5, label: 'Over £1m' },
-];
+/* ---- Financial & funding (FundingEnums.cs) ---- *
+ * The self-declared financial bands (annual revenue, EBITDA, existing debt,
+ * cash reserves, avg monthly revenue) were removed — the financial-profile step
+ * now collects verified/self-reported figures, not coarse bands.
+ */
 
 export const FUNDING_PURPOSE: EnumOption[] = [
   { value: 1, label: 'Working capital' },
@@ -178,11 +142,6 @@ export const LOOKUP = {
   annualTurnoverBand: { key: 'annualTurnoverBand', fallback: ANNUAL_TURNOVER_BAND },
   yearsInOperationBand: { key: 'yearsInOperationBand', fallback: YEARS_IN_OPERATION_BAND },
   businessSector: { key: 'businessSector', fallback: BUSINESS_SECTOR },
-  annualRevenueBand: { key: 'annualRevenueBand', fallback: ANNUAL_REVENUE_BAND },
-  ebitdaBand: { key: 'ebitdaBand', fallback: EBITDA_BAND },
-  existingDebtBand: { key: 'existingDebtBand', fallback: EXISTING_DEBT_BAND },
-  cashReserves: { key: 'cashReserves', fallback: CASH_RESERVES_BAND },
-  avgMonthlyRevenue: { key: 'avgMonthlyRevenue', fallback: AVG_MONTHLY_REVENUE_BAND },
   fundingPurpose: { key: 'fundingPurpose', fallback: FUNDING_PURPOSE },
   fundingUrgency: { key: 'fundingUrgency', fallback: FUNDING_URGENCY },
   sustainabilityAnswer: { key: 'sustainabilityAnswer', fallback: SUSTAINABILITY_ANSWER },
