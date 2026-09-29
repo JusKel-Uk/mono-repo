@@ -31,6 +31,12 @@ export const ROUTES = {
   lender: {
     root: '/lender',
     dashboard: '/lender/dashboard',
+    terms: '/lender/terms',
+    setUpOrganisation: '/lender/set-up-organisation',
+    fundingProducts: '/lender/funding-products',
+    matchedSmes: '/lender/matched-smes',
+    pipeline: '/lender/pipeline',
+    settings: '/lender/settings',
     // Auth (UI only — no lender backend yet).
     login: '/lender/login',
     requestAccess: '/lender/request-access',
