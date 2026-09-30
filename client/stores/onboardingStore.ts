@@ -4,7 +4,6 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 import type {
   CompanySetupInput,
   BusinessProfileInput,
-  FinancialProfileInput,
   SustainabilityProfileInput,
   FundingProfileInput,
 } from '@/lib/validations/onboarding';
@@ -17,7 +16,6 @@ import type {
 type OnboardingData = {
   companySetup?: CompanySetupInput;
   businessProfile?: BusinessProfileInput;
-  financialProfile?: FinancialProfileInput;
   sustainabilityProfile?: SustainabilityProfileInput;
   fundingProfile?: FundingProfileInput;
 };

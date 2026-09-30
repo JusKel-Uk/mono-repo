@@ -10,7 +10,6 @@ import type {
   CompanySetupInput,
   BusinessProfileInput,
   SustainabilityProfileInput,
-  FinancialProfileInput,
   FundingProfileInput,
 } from '@/lib/validations/onboarding';
 import type {
@@ -20,8 +19,6 @@ import type {
   UpsertBusinessProfileRequest,
   SustainabilityProfile,
   UpsertSustainabilityProfileRequest,
-  FinancialProfile,
-  UpsertFinancialProfileRequest,
   FundingProfile,
   UpsertFundingProfileRequest,
 } from '@/lib/api/onboarding';
@@ -169,31 +166,11 @@ export function fromSustainabilityProfile(
   return out as SustainabilityProfileInput;
 }
 
-/* ---- Step 3: Financial profile ---- */
-
-export function toFinancialProfileRequest(
-  v: FinancialProfileInput,
-): UpsertFinancialProfileRequest {
-  return {
-    annualRevenueBand: toInt(v.annualRevenueBand) ?? null,
-    ebitdaBand: toInt(v.ebitdaBand) ?? null,
-    existingDebtBand: toInt(v.existingDebtBand) ?? null,
-    cashReserves: toInt(v.cashReserves) ?? null,
-    avgMonthlyRevenue: toInt(v.avgMonthlyRevenue) ?? null,
-  };
-}
-
-export function fromFinancialProfile(
-  d: FinancialProfile,
-): FinancialProfileInput {
-  return {
-    annualRevenueBand: toStr(d.annualRevenueBand),
-    avgMonthlyRevenue: toStr(d.avgMonthlyRevenue),
-    ebitdaBand: toStr(d.ebitdaBand),
-    existingDebtBand: toStr(d.existingDebtBand),
-    cashReserves: toStr(d.cashReserves),
-  };
-}
+/* ---- Step 3: Financial profile ---- *
+ * No form ⇆ API mapping: the self-declared bands were removed. The step reads
+ * verified figures from connected sources and gathers self-reported figures
+ * (logged client-side for now); the PUT body is empty.
+ */
 
 /* ---- Step 5: Funding profile ---- */
 

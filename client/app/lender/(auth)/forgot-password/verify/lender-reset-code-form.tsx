@@ -15,6 +15,7 @@ import {
 import {
   lenderForgotPassword,
   lenderVerifyResetCode,
+  ApiError,
 } from '@/lib/api/lender-auth';
 import { Button } from '@/components/ui/button';
 import {
@@ -52,9 +53,10 @@ export function LenderResetCodeForm({ email }: { email: string }) {
   const verify = useMutation({
     mutationFn: (v: LenderResetCodeInput) =>
       lenderVerifyResetCode({ email, code: v.code }),
-    onSuccess: () =>
+    // The verify step returns a short-lived token that authorises the confirm.
+    onSuccess: (data) =>
       router.push(
-        `${ROUTES.lender.resetPassword}?email=${encodeURIComponent(email)}`,
+        `${ROUTES.lender.resetPassword}?token=${encodeURIComponent(data.token)}`,
       ),
   });
 
@@ -98,6 +100,13 @@ export function LenderResetCodeForm({ email }: { email: string }) {
         />
 
         <div className='flex flex-col items-center gap-6'>
+          {verify.isError && (
+            <p role='alert' className='text-center text-sm text-destructive'>
+              {verify.error instanceof ApiError
+                ? verify.error.message
+                : 'Could not verify the code. Please try again.'}
+            </p>
+          )}
           <Button
             type='submit'
             loading={verify.isPending}

@@ -5,12 +5,12 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Eye, EyeOff } from 'lucide-react';
 
 import { ROUTES } from '@/lib/routes';
 import { loginSchema, type LoginInput } from '@/lib/validations/auth';
-import { lenderSignIn } from '@/lib/api/lender-auth';
+import { lenderSignIn, ApiError } from '@/lib/api/lender-auth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -26,6 +26,7 @@ import {
 export function LenderSignInForm() {
   const [showPassword, setShowPassword] = useState(false);
   const router = useRouter();
+  const qc = useQueryClient();
 
   const form = useForm<LoginInput>({
     resolver: zodResolver(loginSchema),
@@ -35,13 +36,21 @@ export function LenderSignInForm() {
 
   const mutation = useMutation({
     mutationFn: (v: LoginInput) =>
-      lenderSignIn({
-        email: v.email,
-        password: v.password,
-        rememberMe: Boolean(v.rememberMe),
-      }),
-    onSuccess: () => router.push(ROUTES.lender.dashboard),
+      lenderSignIn({ email: v.email, password: v.password }),
+    onSuccess: () => {
+      // Drop any stale cache from a prior session (same token cookie as SME).
+      qc.clear();
+      router.push(ROUTES.lender.dashboard);
+    },
   });
+
+  // Valid credentials but no lender access → a clearer message than the raw 403.
+  const errorMessage =
+    mutation.error instanceof ApiError
+      ? mutation.error.code === 'NOT_LENDER_ACCOUNT'
+        ? "This account doesn't have access to the Lender Portal."
+        : mutation.error.message
+      : 'Unable to sign in. Please try again.';
 
   const onSubmit = form.handleSubmit((v) => mutation.mutate(v));
 
@@ -139,6 +148,11 @@ export function LenderSignInForm() {
         </div>
 
         <div className='flex flex-col items-center justify-center gap-6'>
+          {mutation.isError && (
+            <p role='alert' className='w-full text-sm text-destructive'>
+              {errorMessage}
+            </p>
+          )}
           <Button
             type='submit'
             loading={mutation.isPending}

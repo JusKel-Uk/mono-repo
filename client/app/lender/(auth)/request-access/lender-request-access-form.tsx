@@ -1,17 +1,18 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { useForm, type Control, type FieldPath } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation } from '@tanstack/react-query';
+import { CircleCheck } from 'lucide-react';
 
 import { ROUTES } from '@/lib/routes';
 import {
   lenderRequestAccessSchema,
   type LenderRequestAccessInput,
 } from '@/lib/validations/lender';
-import { lenderRequestAccess } from '@/lib/api/lender-auth';
+import { lenderRequestAccess, ApiError } from '@/lib/api/lender-auth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -64,7 +65,7 @@ function TextField({
 }
 
 export function LenderRequestAccessForm() {
-  const router = useRouter();
+  const [submittedEmail, setSubmittedEmail] = useState<string | null>(null);
 
   const form = useForm<LenderRequestAccessInput>({
     resolver: zodResolver(lenderRequestAccessSchema),
@@ -82,14 +83,52 @@ export function LenderRequestAccessForm() {
 
   const mutation = useMutation({
     mutationFn: lenderRequestAccess,
-    onSuccess: () => router.push(ROUTES.lender.login),
+    onSuccess: (_data, variables) => setSubmittedEmail(variables.workEmail),
   });
 
   const onSubmit = form.handleSubmit((v) => mutation.mutate(v));
 
+  // Confirmation state — the team reviews the request and emails an invite.
+  if (submittedEmail) {
+    return (
+      <section className='flex w-full flex-col items-center gap-10 text-center'>
+        <div className='flex flex-col items-center gap-3'>
+          <CircleCheck className='size-18 text-success-600' strokeWidth={1.5} />
+          <div className='flex flex-col gap-2'>
+            <h1 className='text-h3 font-semibold text-carbon-black xl:text-[40px]'>
+              Request submitted
+            </h1>
+            <p className='text-base text-foreground-secondary xl:text-xl'>
+              Thanks. We&apos;ve received your request for lender access. We&apos;ll
+              review the information provided and contact you at {submittedEmail}{' '}
+              with the next steps.
+            </p>
+          </div>
+        </div>
+        <Link
+          href={ROUTES.lender.login}
+          className='inline-flex h-14 w-full items-center justify-center rounded-lg bg-primary text-base font-semibold text-mineral-white shadow-xs transition-opacity hover:opacity-90'
+        >
+          Return to sign in
+        </Link>
+      </section>
+    );
+  }
+
   return (
-    <Form {...form}>
-      <form onSubmit={onSubmit} noValidate className='flex flex-col gap-10'>
+    <section className='flex w-full flex-col gap-14'>
+      <div className='flex flex-col items-center justify-center gap-2 text-center'>
+        <h1 className='text-[28px] font-semibold text-carbon-black xl:text-5xl'>
+          Request access to the Lender Portal
+        </h1>
+        <p className='text-base text-foreground-secondary xl:text-2xl'>
+          Tell us about yourself and your organisation. We&apos;ll review your
+          request and contact you with the next steps.
+        </p>
+      </div>
+
+      <Form {...form}>
+        <form onSubmit={onSubmit} noValidate className='flex flex-col gap-10'>
         <div className='flex flex-col gap-8 xl:gap-10'>
           <div className='grid gap-8 sm:grid-cols-2'>
             <TextField
@@ -156,6 +195,13 @@ export function LenderRequestAccessForm() {
         </div>
 
         <div className='flex flex-col items-center justify-center gap-6'>
+          {mutation.isError && (
+            <p role='alert' className='w-full text-sm text-destructive'>
+              {mutation.error instanceof ApiError
+                ? mutation.error.message
+                : 'Unable to submit your request. Please try again.'}
+            </p>
+          )}
           <Button
             type='submit'
             loading={mutation.isPending}
@@ -172,6 +218,7 @@ export function LenderRequestAccessForm() {
           </Link>
         </div>
       </form>
-    </Form>
+      </Form>
+    </section>
   );
 }

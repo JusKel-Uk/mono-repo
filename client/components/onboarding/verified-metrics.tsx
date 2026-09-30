@@ -71,34 +71,48 @@ export function accountingMetricGroups(
   const c = m.currency;
   return compact([
     {
-      heading: 'Profitability',
+      heading: 'Income & profitability',
       rows: [
-        row('Annual revenue', money(m.annualRevenue, c)),
+        row('Revenue / turnover', money(m.annualRevenue, c)),
+        row('Cost of sales', money(m.costOfSales, c)),
         row('Gross profit', money(m.grossProfit, c)),
         row('Operating expenses', money(m.operatingExpenses, c)),
         row('Operating profit', money(m.operatingProfit, c)),
         row('Net income', money(m.netIncome, c)),
         row('Interest expense', money(m.interestExpense, c)),
+        row('Depreciation & amortisation', money(m.depreciationAmortisation, c)),
       ],
     },
     {
-      heading: 'Liquidity',
+      heading: 'Liquidity & working capital',
       rows: [
         row('Cash balance', money(m.cashBalance, c)),
         row('Accounts receivable', money(m.accountsReceivable, c)),
         row('Accounts payable', money(m.accountsPayable, c)),
+        row('Inventory', money(m.inventory, c)),
         row('Current assets', money(m.currentAssets, c)),
         row('Current liabilities', money(m.currentLiabilities, c)),
-        row('Operating cash flow', money(m.operatingCashFlow, c)),
       ],
     },
     {
-      heading: 'Financial resilience',
+      heading: 'Resilience & leverage',
       rows: [
         row('Total assets', money(m.totalAssets, c)),
         row('Total liabilities', money(m.totalLiabilities, c)),
         row('Net assets / equity', money(m.totalEquity, c)),
         row('Outstanding debt', money(m.outstandingDebt, c)),
+        row('Short-term borrowings', money(m.shortTermDebt, c)),
+        row('Long-term borrowings', money(m.longTermDebt, c)),
+      ],
+    },
+    {
+      heading: 'Cash generation',
+      rows: [
+        row('Operating cash flow', money(m.operatingCashFlow, c)),
+        row('Capital expenditure', money(m.capitalExpenditure, c)),
+        row('Investing cash flow', money(m.investingCashFlow, c)),
+        row('Financing cash flow', money(m.financingCashFlow, c)),
+        row('Net change in cash', money(m.netChangeInCash, c)),
       ],
     },
     {
@@ -108,8 +122,23 @@ export function accountingMetricGroups(
         row('EBITDA', money(m.ebitda, c)),
         row('Current ratio', ratio(m.currentRatio)),
         row('Debt-to-assets', ratio(m.debtToAssets)),
+        row('Debt-to-equity', ratio(m.debtToEquity)),
         row('Profit margin', percent(m.profitMargin)),
         row('Revenue growth (YoY)', percent(m.revenueGrowthYoY)),
+      ],
+    },
+    {
+      heading: 'Data source',
+      rows: [
+        row('Entity', m.sourceEntityName ?? null),
+        row('Accounting basis', m.accountingBasis ?? null),
+        row('Data freshness', m.dataFreshnessStatus ?? null),
+        row('Coverage', percent(m.completeness)),
+        row(
+          'Last synced',
+          m.lastSuccessfulSync ? formatDate(m.lastSuccessfulSync) : null,
+        ),
+        row('Mapping version', m.mappingVersion ?? null),
       ],
     },
   ]);

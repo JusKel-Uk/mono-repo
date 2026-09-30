@@ -6,7 +6,6 @@ import {
   optionalText,
   requiredText,
   enumSelect,
-  optionalEnumSelect,
 } from './sanitize';
 
 /** UK postcode — mirrors the backend's server-side rule. */
@@ -32,11 +31,6 @@ import {
   FUNDING_PURPOSE,
   FUNDING_URGENCY,
   BUSINESS_SECTOR,
-  ANNUAL_REVENUE_BAND,
-  EBITDA_BAND,
-  EXISTING_DEBT_BAND,
-  CASH_RESERVES_BAND,
-  AVG_MONTHLY_REVENUE_BAND,
 } from '@/lib/onboarding/enums';
 
 /* ---- Step 1: Company setup ---- */
@@ -89,16 +83,9 @@ export const businessProfileSchema = z.object({
 export type BusinessProfileInput = z.infer<typeof businessProfileSchema>;
 
 /* ---- Step 3: Financial profile ---- */
-
-// All bands are self-declared and optional; options come from /lookups.
-export const financialProfileSchema = z.object({
-  annualRevenueBand: optionalEnumSelect(ANNUAL_REVENUE_BAND),
-  avgMonthlyRevenue: optionalEnumSelect(AVG_MONTHLY_REVENUE_BAND),
-  ebitdaBand: optionalEnumSelect(EBITDA_BAND),
-  existingDebtBand: optionalEnumSelect(EXISTING_DEBT_BAND),
-  cashReserves: optionalEnumSelect(CASH_RESERVES_BAND),
-});
-export type FinancialProfileInput = z.infer<typeof financialProfileSchema>;
+// No form schema — the step collects verified figures from connected sources
+// and gathers self-reported figures (SelfReportedFinancials), which are logged
+// client-side for now. The self-declared enum bands were removed.
 
 /* ---- Step 4: Sustainability profile ---- */
 

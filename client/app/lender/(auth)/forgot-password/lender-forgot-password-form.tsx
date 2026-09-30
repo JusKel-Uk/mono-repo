@@ -11,7 +11,7 @@ import {
   lenderForgotPasswordSchema,
   type LenderForgotPasswordInput,
 } from '@/lib/validations/lender';
-import { lenderForgotPassword } from '@/lib/api/lender-auth';
+import { lenderForgotPassword, ApiError } from '@/lib/api/lender-auth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -67,6 +67,13 @@ export function LenderForgotPasswordForm() {
         />
 
         <div className='flex flex-col items-center justify-center gap-6'>
+          {mutation.isError && (
+            <p role='alert' className='w-full text-sm text-destructive'>
+              {mutation.error instanceof ApiError
+                ? mutation.error.message
+                : 'Unable to send the code. Please try again.'}
+            </p>
+          )}
           <Button
             type='submit'
             loading={mutation.isPending}

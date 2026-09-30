@@ -87,14 +87,16 @@ export type RequestOptions = {
   body?: unknown;
   /** Attach the Bearer token. Required by every onboarding/funding/scoring route. */
   auth?: boolean;
+  /** Extra request headers (e.g. `X-Juskel-Portal: lender`). */
+  headers?: Record<string, string>;
 };
 
 export async function request<T>(
   path: string,
-  { method = 'POST', body, auth = false }: RequestOptions = {},
+  { method = 'POST', body, auth = false, headers: extraHeaders }: RequestOptions = {},
 ): Promise<T> {
   const isForm = typeof FormData !== 'undefined' && body instanceof FormData;
-  const headers: Record<string, string> = {};
+  const headers: Record<string, string> = { ...extraHeaders };
   // Let the browser set multipart boundaries; only set JSON content-type here.
   if (body !== undefined && !isForm) headers['Content-Type'] = 'application/json';
   if (auth) {
